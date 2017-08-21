@@ -83,8 +83,8 @@ assert_a()
 test_a()
 {
    (
-      MULLE_BOOTSTRAP_CACHES_PATH="`pwd -P`/main"
-      export MULLE_BOOTSTRAP_CACHES_PATH
+      MULLE_BOOTSTRAP_LOCAL_PATH="`pwd -P`/main"
+      export MULLE_BOOTSTRAP_LOCAL_PATH
 
       cd main/a ;
 

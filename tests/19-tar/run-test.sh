@@ -57,7 +57,7 @@ test_a()
 {
    (
       cd a
-      MULLE_BOOTSTRAP_CACHES_PATH=/tmp run_mulle_bootstrap "$@" fetch
+      MULLE_BOOTSTRAP_LOCAL_PATH=/tmp run_mulle_bootstrap "$@" fetch
    )
 }
 
@@ -67,8 +67,8 @@ test_a()
 #
 echo "mulle-bootstrap: `mulle-bootstrap version`(`mulle-bootstrap library-path`)" >&2
 
-MULLE_BOOTSTRAP_CACHES_PATH="`pwd -P`"
-export MULLE_BOOTSTRAP_CACHES_PATH
+MULLE_BOOTSTRAP_LOCAL_PATH="`pwd -P`"
+export MULLE_BOOTSTRAP_LOCAL_PATH
 
 
 setup_test_case

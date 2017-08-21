@@ -67,7 +67,7 @@ Commands:
    upgrade  :  execute a "pull" in fetched repositories
 
 Options:
-   --caches            :  use CACHES_PATH to locate local repositories
+   --caches            :  use LOCALS_PATH to locate local repositories
    --check-usr-local   :  check /usr/local for duplicates
    --embedded-only     :  fetch embedded repositories only
 
@@ -244,23 +244,21 @@ So symlinking is the only way to go."
 }
 
 
-_search_for_git_repository_in_cache()
+_git_search_local()
 {
-   local directory
-   local name
-   local branch
+   log_entry "_git_search_local" "$@"
+
+   local directory="$1"
+   local name="$2"
+   local branch="$3"
 
    [ $# -ne 3 ] && internal_fail "fail"
 
-   directory="$1"
-   name="$2"
-   branch="$3"
-
    local found
 
-   if [ "${MULLE_FLAG_LOG_CACHE}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_LOCALS}" = "YES" ]
    then
-      log_trace "Checking cache path \"${directory}\""
+      log_trace "Checking local path \"${directory}\""
    fi
 
    if [ ! -z "${branch}" ]
@@ -299,31 +297,35 @@ _search_for_git_repository_in_cache()
 }
 
 
-search_for_git_repository_in_caches()
+git_search_local()
 {
-   log_entry "search_for_git_repository_in_caches(${CACHES_PATH})" "$@"
+   log_entry "git_search_local [${LOCAL_PATH}]" "$@"
+
+   local name="$1"
+   local branch="$2"
+#   local url="$3"
 
    local found
    local directory
    local realdir
    local curdir
 
-   if [ "${MULLE_FLAG_LOG_CACHE}" = "YES" -a -z "${CACHES_PATH}" ]
+   if [ "${MULLE_FLAG_LOG_LOCAL}" = "YES" -a -z "${LOCAL_PATH}" ]
    then
-      log_trace "CACHES_PATH is empty"
+      log_trace "LOCAL_PATH is empty"
    fi
 
    curdir="`pwd -P`"
    IFS=":"
-   for directory in ${CACHES_PATH}
+   for directory in ${LOCAL_PATH}
    do
       IFS="${DEFAULT_IFS}"
 
       if [ ! -d "${directory}" ]
       then
-         if [ "${MULLE_FLAG_LOG_CACHE}" = "YES" ]
+         if [ "${MULLE_FLAG_LOG_LOCALS}" = "YES" ]
          then
-            log_trace2 "Cache path \"${realdir}\" does not exist"
+            log_trace2 "Local path \"${realdir}\" does not exist"
          fi
          continue
       fi
@@ -331,10 +333,10 @@ search_for_git_repository_in_caches()
       realdir="`realpath "${directory}"`"
       if [ "${realdir}" = "${curdir}" ]
       then
-         fail "config setting \"search_path\" mistakenly contains \"${directory}\", which is the current directory"
+         fail "Config setting \"search_path\" mistakenly contains \"${directory}\", which is the current directory"
       fi
 
-      found="`_search_for_git_repository_in_cache "${realdir}" "$@"`" || exit 1
+      found="`_git_search_local "${realdir}" "${name}" "${branch}"`" || exit 1
       if [ ! -z "${found}" ]
       then
          echo "${found}"
@@ -347,9 +349,9 @@ search_for_git_repository_in_caches()
 }
 
 
-_search_for_archive_in_caches()
+_archive_search_local()
 {
-   log_entry "_search_for_archive_in_caches" "$@"
+   log_entry "_archive_search_local" "$@"
 
    local directory="$1"
    local name="$2"
@@ -381,22 +383,27 @@ _search_for_archive_in_caches()
 }
 
 
-search_for_archive_in_caches()
+archive_search_local()
 {
-   log_entry "search_for_archive_in_caches" "$@"
+   log_entry "archive_search_local" "$@"
 
    local name="$1"
-   local filename="$2"
+#   local branch="$2"
+   local url="$3"
+
+   local  filename
+
+   filename="`basename -- "${url}"`"
 
    local found
    local directory
 
    IFS=":"
-   for directory in ${CACHES_PATH}
+   for directory in ${LOCAL_PATH}
    do
       IFS="${DEFAULT_IFS}"
 
-      found="`_search_for_archive_in_caches "${directory}" "${name}" "${filename}"`" || exit 1
+      found="`_archive_search_local "${directory}" "${name}" "${filename}"`" || exit 1
       if [ ! -z "${found}" ]
       then
          found="`absolutepath "${found}"`"
@@ -429,7 +436,7 @@ mkdir_stashparent_if_missing()
 }
 
 
-get_cache_item()
+get_local_item()
 {
    local reposdir="$1"  # ususally .bootstrap.repos
    local name="$2"      # name of the clone, extensionless
@@ -439,19 +446,19 @@ get_cache_item()
    local tag="$6"       # tag to checkout of the clone
    local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
 
-   if [ "${OPTION_ALLOW_SEARCH_CACHES}" = "NO" ]
+   if [ "${OPTION_ALLOW_SEARCH_LOCALS}" = "NO" ]
    then
-      log_fluff "Not searching caches because --no-caches"
+      log_fluff "Not searching local filesystem because --no-locals"
       return
    fi
 
    case "${scm}" in
       git*)
-         search_for_git_repository_in_caches "${name}" "${branch}"
+         git_search_local "${name}" "${branch}" "${url}"
       ;;
 
       tar*|zip*)
-         search_for_archive_in_caches "${name}" "`basename -- "${url}"`"
+         archive_search_local "${name}" "${branch}" "${url}"
       ;;
 
       *)
@@ -532,7 +539,7 @@ clone_or_symlink()
       ;;
 
       *)
-         found="`get_cache_item "${reposdir}" \
+         found="`get_local_item "${reposdir}" \
                                 "${name}" \
                                 "${url}" \
                                 "${branch}" \
@@ -555,14 +562,14 @@ clone_or_symlink()
 
             case "${operation}" in
                link_command)
-                 log_verbose "Using symlink to cached item \"${found}\""
+                 log_verbose "Using symlink to local item \"${found}\""
 
                  # compatible to earlier code
                  found="`symlink_relpath "${found}" "${ROOT_DIR}"`"
                ;;
 
                *)
-                 log_verbose "Using cached item \"${found}\""
+                 log_verbose "Using local item \"${found}\""
                ;;
             esac
          fi
@@ -1682,7 +1689,7 @@ _common_main()
    local MULLE_FLAG_FOLLOW_SYMLINKS="NO"
    local OPTION_ALLOW_CREATING_SYMLINKS="NO"
    local OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS="NO"
-   local OPTION_ALLOW_SEARCH_CACHES="YES"
+   local OPTION_ALLOW_SEARCH_LOCALS="YES"
    local OPTION_ALLOW_GIT_MIRROR="YES"
    local OPTION_ALLOW_REFRESH_GIT_MIRROR="YES"
    local OPTION_EMBEDDED_ONLY="NO"
@@ -1763,8 +1770,8 @@ _common_main()
             OPTION_ALLOW_REFRESH_GIT_MIRROR="NO"
          ;;
 
-         --no-caches)
-            OPTION_ALLOW_SEARCH_CACHES="NO"
+         --no-caches|--no-locals)
+            OPTION_ALLOW_SEARCH_LOCALS="NO"
          ;;
 
          --no-symlink-creation|--no-symlinks)
@@ -1822,10 +1829,10 @@ _common_main()
    #
    # "repository" caches can and usually are outside the project folder
    # this can be multiple paths!
-   if [ "${OPTION_ALLOW_SEARCH_CACHES}" = "YES" ]
+   #
+   if [ "${OPTION_ALLOW_SEARCH_LOCALS}" = "YES" -a -z "${LOCAL_PATH}" ]
    then
-      CACHES_PATH="`read_config_setting "search_path" "${MULLE_BOOTSTRAP_CACHES_PATH}"`"
-      CACHES_PATH="`add_path "${CACHES_PATH}" "${CLONE_CACHE}"`"
+      LOCAL_PATH="`read_config_setting "search_path" "${MULLE_BOOTSTRAP_LOCAL_PATH}"`"
    fi
 
    if [ "${OPTION_ALLOW_GIT_MIRROR}" = "YES" ]

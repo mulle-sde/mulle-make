@@ -116,8 +116,8 @@ bootstrap_technical_flags()
          MULLE_FLAG_EXEKUTOR_DRY_RUN="YES"
       ;;
 
-      -lc|--log-cache)
-         MULLE_FLAG_LOG_CACHE="YES"
+      -lc|--log-cache|-ll|--log-local)
+         MULLE_FLAG_LOG_LOCAL="YES"
       ;;
 
       -ld|--log-debug)

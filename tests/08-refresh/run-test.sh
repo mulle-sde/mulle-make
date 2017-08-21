@@ -55,8 +55,8 @@ create_demo_repo()
 ##
 ## Setup test environment
 ##
-MULLE_BOOTSTRAP_CACHES_PATH="`pwd -P`"
-export MULLE_BOOTSTRAP_CACHES_PATH
+MULLE_BOOTSTRAP_LOCAL_PATH="`pwd -P`"
+export MULLE_BOOTSTRAP_LOCAL_PATH
 
 rm -rf a b c d e f g h main 2> /dev/null
 

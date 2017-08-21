@@ -105,10 +105,7 @@ fetch_brew_if_needed()
       fail "brew was not successfully installed (PATH=$PATH)"
    fi
 
-   #
-   # if brew is from clone cache update it
-   #
-   if [ ! -z "${CLONE_CACHE}" ]
+   if 1
    then
       "${BREW}" update
    fi
