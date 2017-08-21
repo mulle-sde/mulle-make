@@ -49,6 +49,17 @@ EOF
 }
 
 
+
+#
+# first find a project with matching name, otherwise find
+# first nearest project
+#
+find_xcodeproj()
+{
+   find_nearest_matching_pattern "${PWD}" "*.xcodeproj" "$1.xcodeproj"
+}
+
+
 list_configurations()
 {
    local project
@@ -384,6 +395,7 @@ xcode_main()
 
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]        && . mulle-bootstrap-settings.sh
    [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
+   [ -z "${MULLE_BOOTSTRAP_COMMON_XCODE_SH}" ]    && . mulle-bootstrap-common-xcode.sh
 
    if [ "${UNAME}" != 'darwin' ]
    then

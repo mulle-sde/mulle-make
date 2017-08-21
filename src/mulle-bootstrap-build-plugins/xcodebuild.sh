@@ -42,11 +42,10 @@ find_xcodebuild()
 }
 
 
-
 tools_environment_xcodebuild()
 {
    local name="$1"
-   local srcdir="$2"
+#   local projectdir="$2"
 
    tools_environment_common "$@"
 
@@ -70,11 +69,37 @@ xcode_get_setting()
 }
 
 
+xcode_fixup_header_path()
+{
+   local key="$1" ; shift
+   local setting_key="$1" ; shift
+   local name="$1"; shift
+   local default="$1" ; shift
+
+   headers="`read_build_setting "${name}" "${setting_key}"`"
+
+   # headers setting overrides
+   if [ -z "${headers}" ]
+   then
+      if ! read_yes_no_build_setting "${name}" "xcode_mangle_header_paths"
+      then
+         return
+      fi
+
+      headers="`create_mangled_header_path "${key}" "${name}" "${default}"`"
+   fi
+
+   log_fluff "${key} set to \"${headers}\""
+
+   echo "${headers}"
+}
+
+
 _build_xcodebuild()
 {
    log_entry "_build_xcodebuild" "$@"
 
-   local project="$1"
+   local projectfile="$1"
    local configuration="$2"
    local srcdir="$3"
    local builddir="$4"
@@ -88,36 +113,11 @@ _build_xcodebuild()
    [ ! -z "${builddir}" ]      || internal_fail "builddir is empty"
    [ ! -z "${name}" ]          || internal_fail "name is empty"
    [ ! -z "${sdk}" ]           || internal_fail "sdk is empty"
-   [ ! -z "${project}" ]       || internal_fail "project is empty"
+   [ ! -z "${projectfile}" ]   || internal_fail "project is empty"
 
+   local projectdir
 
-   local toolname
-
-   toolname="`read_config_setting "xcodebuild" "xcodebuild"`"
-
-   local info
-
-   info=""
-   if [ ! -z "${targetname}" ]
-   then
-      info=" Target ${C_MAGENTA}${C_BOLD}${targetname}${C_INFO}"
-   fi
-
-   if [ ! -z "${schemename}" ]
-   then
-      info=" Scheme ${C_MAGENTA}${C_BOLD}${schemename}${C_INFO}"
-   fi
-
-   log_info "Let ${C_RESET_BOLD}${toolname}${C_INFO} do a \
-${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
-${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
-${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${info} in \
-\"${builddir}\" ..."
-
-   local projectname
-
-    # always pass project directly
-   projectname=`read_build_setting "${name}" "xcode_project" "${project}"`
+   projectdir="`dirname -- "${projectfile}"`"
 
    local mapped
    local fallback
@@ -168,16 +168,18 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${info} in \
    # xcodebuild can just use a target
    # xctool is by and large useless fluff IMO
    #
-   if [ "${toolname}" = "xctool"  -a "${schemename}" = ""  ]
+   if [ "${TOOLNAME}" = "xctool"  -a "${schemename}" = ""  ]
    then
       if [ ! -z "$targetname" ]
       then
          schemename="${targetname}"
          targetname=
       else
-         echo "Please specify a scheme to compile in ${BOOTSTRAP_DIR}/${name}/SCHEME for xctool" >& 2
-         echo "and be sure that this scheme exists and is shared." >& 2
-         echo "Or just delete ${HOME}/.mulle-bootstrap/xcodebuild and use xcodebuild (preferred)" >& 2
+         cat <<EOF >&2
+Please specify a scheme to compile in ${BOOTSTRAP_DIR}/${name}/SCHEME for
+xctool and be sure that this scheme exists and is shared. Or delete
+${HOME}/.mulle-bootstrap/xcodebuild and use xcodebuild (preferred).
+EOF
          exit 1
       fi
    fi
@@ -216,15 +218,15 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${info} in \
    local default
 
    default="/include/${name}"
-   public_headers="`fixup_header_path "PUBLIC_HEADERS_FOLDER_PATH" "xcode_public_headers" "${name}" "${default}" ${arguments}`"
+   public_headers="`xcode_fixup_header_path "PUBLIC_HEADERS_FOLDER_PATH" "xcode_public_headers" "${name}" "${default}" ${arguments}`"
    default="/include/${name}/private"
-   private_headers="`fixup_header_path "PRIVATE_HEADERS_FOLDER_PATH" "xcode_private_headers" "${name}" "${default}" ${arguments}`"
+   private_headers="`xcode_fixup_header_path "PRIVATE_HEADERS_FOLDER_PATH" "xcode_private_headers" "${name}" "${default}" ${arguments}`"
 
    local logfile
 
    mkdir_if_missing "${BUILDLOGS_DIR}"
 
-   logfile="`build_log_name "${toolname}" "${name}" "${configuration}" "${targetname}" "${schemename}" "${sdk}"`"
+   logfile="`build_log_name "${TOOLNAME}" "${name}" "${configuration}" "${targetname}" "${schemename}" "${sdk}"`" || exit 1
 
    set -f
 
@@ -281,7 +283,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${info} in \
    fi
 
    owd=`pwd`
-   exekutor cd "${srcdir}" || exit 1
+   exekutor cd "${projectdir}" || exit 1
 
       # DONT READ CONFIG SETTING IN THIS INDENT
       if [ "${MULLE_FLAG_VERBOSE_BUILD}" = "YES" ]
@@ -399,7 +401,7 @@ FRAMEWORK_SEARCH_PATHS='${dependencies_framework_search_path}'"
       rval=$?
 
       PATH="${oldpath}"
-      [ $rval -ne 0 ] && build_fail "${logfile}" "${toolname}"
+      [ $rval -ne 0 ] && build_fail "${logfile}" "${TOOLNAME}"
       set +f
 
    exekutor cd "${owd}"
@@ -456,19 +458,38 @@ test_xcodebuild()
 {
    log_entry "test_xcodebuild" "$@"
 
+   [ -z "${MULLE_BOOTSTRAP_XCODE_SH}" ] && . mulle-bootstrap-xcode.sh
+
    local configuration="$1"
    local srcdir="$2"
    local builddir="$3"
    local name="$4"
 
-   project="`(cd "${srcdir}" ; find_xcodeproj "${name}")`"
-   if [ -z "${project}" ]
+   local projectfile
+   local projectdir
+
+   local projectname
+
+    # always pass project directly
+   projectfile=`read_build_setting "${name}" "xcode_project"`
+   if [ ! -z "${projectfile}" ]
    then
-      log_fluff "There is no Xcode project in \"${srcdir}\""
-      return 1
+      projectfile="${srcdir}/${projectfile}"
    fi
 
-   tools_environment_xcodebuild "${name}" "${srcdir}"
+   if [ ! -d "${projectfile}" ]
+   then
+      projectfile="`find_nearest_matching_pattern "${srcdir}" "*.xcodeproj" "${name}.xcodeproj"`"
+      if [ -z "${projectfile}" ]
+      then
+         log_fluff "There is no Xcode project in \"${srcdir}\""
+         return 1
+      fi
+      projectfile="${srcdir}/${projectfile}"
+   fi
+   projectdir="`dirname -- "${projectfile}"`"
+
+   tools_environment_xcodebuild "${name}" "${projectdir}"
 
    if [ -z "${XCODEBUILD}" ]
    then
@@ -476,7 +497,18 @@ test_xcodebuild()
       return 1
    fi
 
-   PARAMETER="${project}"
+   if [ ! -z "${targetname}" ]
+   then
+      AUXINFO=" Target ${C_MAGENTA}${C_BOLD}${targetname}${C_INFO}"
+   fi
+
+   if [ ! -z "${schemename}" ]
+   then
+      AUXINFO=" Scheme ${C_MAGENTA}${C_BOLD}${schemename}${C_INFO}"
+   fi
+
+   TOOLNAME="`read_config_setting "xcodebuild" "xcodebuild"`"
+   PROJECTFILE="${projectfile}"
    WASXCODE="YES"
 
    return 0

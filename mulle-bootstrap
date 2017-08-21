@@ -144,7 +144,7 @@ EOF
 
 _bootstrap_main()
 {
-   local command
+   local cmd
 
    log_debug "::: bootstrap begin :::"
 
@@ -311,11 +311,12 @@ bootstrap_init()
    set -o pipefail
 }
 
-
+#
+# global variables used (sick)
+#  orgpwd
+#  cmd
 bootstrap_cd_projectpath()
 {
-   local  orgpwd
-
    orgpwd="$PWD"
 
    while ! is_bootstrap_project
@@ -327,7 +328,7 @@ bootstrap_cd_projectpath()
 
       if [ "$PWD" = "${old}" ]
       then
-         if [ "${command}" = "seting" ]
+         if [ "${cmd}" = "setting" ]
          then
             cd "${orgpwd}"
          else
@@ -340,9 +341,6 @@ bootstrap_cd_projectpath()
 
 bootstrap_main()
 {
-   local command
-   local ps4string
-
    local MULLE_FLAG_ANSWER="ASK"
    local MULLE_FLAG_MAGNUM_FORCE="NONE"
    local MULLE_FLAG_IGNORE_GRAVEYARD="NO"
@@ -445,9 +443,12 @@ bootstrap_main()
    # hierarchy until we find a .bootstrap or .bootstrap.local folder
    # this is useful for `mulle-bootstrap paths` (with absolute paths)
    #
-   command="${1:-bootstrap}"
+   local cmd
+   local orgpwd
 
-   case "${command}" in
+   cmd="${1:-bootstrap}"
+
+   case "${cmd}" in
       help|init|uname)
       ;;
 
@@ -483,7 +484,7 @@ bootstrap_main()
       ;;
 
       "NONE")
-         case "${command}" in
+         case "${cmd}" in
             bootstrap|build|systeminstall|tag|update|upgrade)
                bootstrap_ensure_consistency
             ;;
@@ -491,12 +492,12 @@ bootstrap_main()
       ;;
    esac
 
-   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE} ${command}"
+   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE} ${cmd}"
    [ $# -eq 0 ] || shift
 
    MULLE_EXECUTABLE_OPTIONS="$@"
 
-   case "${command}" in
+   case "${cmd}" in
       bootstrap)
          _bootstrap_main "$@"
       ;;
@@ -641,6 +642,13 @@ bootstrap_main()
          exit 0
       ;;
 
+      uninit)
+         . mulle-bootstrap-clean.sh
+
+         uninit_main "$@" || exit 1
+      ;;
+
+
       update)
          . mulle-bootstrap-fetch.sh
 
@@ -666,7 +674,7 @@ bootstrap_main()
       ;;
 
       *)
-         log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${command}\""
+         log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${cmd}\""
          mulle_bootstrap_usage
       ;;
    esac

@@ -43,11 +43,7 @@ build_script()
 {
    log_entry "build_script" "$@"
 
-   local script
-
-   script="$1"
-   shift
-
+   local script="$1"
    local configuration="$1"
    local srcdir="$2"
    local builddir="$3"
@@ -138,6 +134,6 @@ test_script()
       return 1
    fi
 
-   PARAMETER="${script}"
+   PROJECTFILE="${script}"
    return 0
 }

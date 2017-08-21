@@ -45,7 +45,7 @@ find_cmake()
 tools_environment_cmake()
 {
    local name="$1"
-   local srcdir="$2"
+#   local projectdir="$2"
 
    tools_environment_make "$@"
 
@@ -92,29 +92,16 @@ build_cmake()
 {
    log_entry "build_cmake" "$@"
 
-   local cmakefile="$1"
-   shift
+   local projectfile="$1"
+   local configuration="$2"
+   local srcdir="$3"
+   local builddir="$4"
+   local name="$5"
+   local sdk="$6"
 
-   local configuration="$1"
-   local srcdir="$2"
-   local builddir="$3"
-   local name="$4"
-   local sdk="$5"
+   local projectdir
 
-   if [ -z "${CMAKE}" ]
-   then
-      fail "No cmake available"
-   fi
-
-   if [ -z "${MAKE}" ]
-   then
-      fail "No make available"
-   fi
-
-   log_info "Let ${C_RESET_BOLD}cmake${C_INFO} do a \
-${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
-${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
-${C_MAGENTA}${C_BOLD}${sdk}${C_INFO} in \"${builddir}\" ..."
+   projectdir="`dirname -- "${projectfile}"`"
 
    local sdkparameter
    local local_cmake_flags
@@ -161,7 +148,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO} in \"${builddir}\" ..."
    mapped="`read_build_setting "${name}" "cmake-${configuration}.map" "${configuration}"`"  || exit 1
 
    flaglines="`build_cmake_flags "${configuration}" \
-                                 "${srcdir}" \
+                                 "${projectdir}" \
                                  "${builddir}" \
                                  "${name}" \
                                  "${sdk}" \
@@ -310,12 +297,12 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO} in \"${builddir}\" ..."
          cmake_dirs="`concat "${cmake_dirs}" "-DCMAKE_FRAMEWORK_PATH='${frameworklines}'"`"
       fi
 
-      local relative_srcdir
+      local relative_projectdir
 
-      relative_srcdir="`relative_path_between "${owd}/${srcdir}" "${PWD}"`"
+      relative_projectdir="`relative_path_between "${owd}/${projectdir}" "${PWD}"`"
       case "${UNAME}" in
          mingw)
-            relative_srcdir="`echo "${relative_srcdir}" | tr '/' '\\'  2> /dev/null`"
+            relative_projectdir="`echo "${relative_projectdir}" | tr '/' '\\'  2> /dev/null`"
       esac
 
       logging_redirect_eval_exekutor "${logfile1}" "'${CMAKE}'" \
@@ -330,7 +317,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO} in \"${builddir}\" ..."
 "${cxx_compiler_line}" \
 "${local_cmake_flags}" \
 "${CMAKEFLAGS}" \
-"'${relative_srcdir}'"
+"'${relative_projectdir}'"
       rval=$?
 
       if [ $rval -ne 0 ]
@@ -360,19 +347,32 @@ test_cmake()
    local builddir="$3"
    local name="$4"
 
-   if [ ! -f "${srcdir}/CMakeLists.txt" ]
+   local projectfile
+   local projectdir
+
+   projectfile="`find_nearest_matching_pattern "${srcdir}" "CMakeLists.txt"`"
+   if [ ! -f "${projectfile}" ]
    then
       log_fluff "There is no CMakeLists.txt file in \"${srcdir}\""
       return 1
    fi
+   projectfile="${srcdir}/${projectfile}"
+   projectdir="`dirname -- "${projectfile}"`"
 
-   tools_environment_cmake "${name}" "${srcdir}"
+   tools_environment_cmake "${name}" "${projectdir}"
 
    if [ -z "${CMAKE}" ]
    then
       log_warning "Found a CMakeLists.txt, but ${C_RESET}${C_BOLD}cmake${C_WARNING} is not installed"
       return 1
    fi
+
+   if [ -z "${MAKE}" ]
+   then
+      fail "No make available"
+   fi
+
+   PROJECTFILE="${projectfile}"
 
    return 0
 }

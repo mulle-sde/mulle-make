@@ -570,41 +570,6 @@ create_mangled_header_path()
 }
 
 
-fixup_header_path()
-{
-   local key
-   local setting_key
-   local default
-   local name
-
-   key="$1"
-   shift
-   setting_key="$1"
-   shift
-   name="$1"
-   shift
-   default="$1"
-   shift
-
-   headers="`read_build_setting "${name}" "${setting_key}"`"
-   if [ "$headers" = "" ]
-   then
-      read_yes_no_build_setting "${name}" "xcode_mangle_header_paths"
-      if [ $? -ne 0 ]
-      then
-         return 1
-      fi
-
-      headers="`create_mangled_header_path "${key}" "${name}" "${default}"`"
-   fi
-
-   log_fluff "${key} set to \"${headers}\""
-
-   echo "${headers}"
-}
-
-
-
 build_with_configuration_sdk_preferences()
 {
    log_entry "build_with_configuration_sdk_preferences" "$@"
@@ -636,17 +601,30 @@ build_with_configuration_sdk_preferences()
    local project
    local rval
    local WASXCODE
-   local PARAMETER
+   local PROJECTFILE
+   local TOOLNAME
+   local AUX_INFO
 
    rval=1
    for preference in ${preferences}
    do
       WASXCODE="NO"
-      PARAMETER=
+      PROJECTFILE=
+      TOOLNAME="${preference}"
+      AUX_INFO=
+
       test_${preference} "${configuration}" "${srcdir}" "${builddir}" "${name}"
       if [ $? -eq 0 ]
       then
-         build_${preference} "${PARAMETER}" "${configuration}" "${srcdir}" "${builddir}" "${name}" "${sdk}"
+         [ -z "${PROJECTFILE}" ] && internal_fail "test_${preference} did not set PROJECTFILE"
+            #statements
+
+         log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
+${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
+${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
+${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir}\" ..."
+
+         build_${preference} "${PROJECTFILE}" "${configuration}" "${srcdir}" "${builddir}" "${name}" "${sdk}"
          if [ $? -ne 0 ]
          then
             internal_fail "$build_${preference} should exit on failure and not return"
@@ -751,6 +729,7 @@ build()
             preferences="`read_config_setting "build_preferences" "script
 cmake
 configure
+autoconf
 xcodebuild"`"
          ;;
 
@@ -758,7 +737,8 @@ xcodebuild"`"
          *)
             preferences="`read_config_setting "build_preferences" "script
 cmake
-configure"`"
+configure
+autoconf"`"
          ;;
       esac
    fi

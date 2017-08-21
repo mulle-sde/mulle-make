@@ -39,26 +39,18 @@ MULLE_BOOTSTRAP_BUILD_PLUGIN_CONFIGURE_SH="included"
 #
 build_configure()
 {
-   log_debug "build_configure" "$*"
+   log_entry "build_configure" "$@"
 
-   local script="$1"
-   shift
+   local projectfile="$1"
+   local configuration="$2"
+   local srcdir="$3"
+   local builddir="$4"
+   local name="$5"
+   local sdk="$6"
 
-   local configuration="$1"
-   local srcdir="$2"
-   local builddir="$3"
-   local name="$4"
-   local sdk="$5"
+   local projectdir
 
-   if [ -z "${MAKE}" ]
-   then
-      fail "No make available"
-   fi
-
-   log_info "Let ${C_RESET_BOLD}configure${C_INFO} do a \
-${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
-${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
-${C_MAGENTA}${C_BOLD}${sdk}${C_INFO} in \"${builddir}\" ..."
+   projectdir="`dirname -- "${projectfile}"`"
 
    local configure_flags
 
@@ -205,7 +197,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO} in \"${builddir}\" ..."
          "${c_compiler_line}" \
          "${cxx_compiler_line}" \
          "${env_flags}" \
-         "'${owd}/${script}'" \
+         "'${owd}/${projectdir}/configure'" \
          "${configure_flags}" \
          --prefix "'${prefixbuild}'"
       rval=$?
@@ -237,19 +229,25 @@ test_configure()
    local builddir="$3"
    local name="$4"
 
-   if [ ! -f "${srcdir}/configure" ]
+   local projectfile
+   local projectdir
+
+   projectfile="`find_nearest_matching_pattern "${srcdir}" "configure"`"
+   if [ -z "${projectfile}" ]
    then
-      log_fluff "No configure script found in \"${srcdir}\""
+      log_fluff "There is no configure project in \"${srcdir}\""
+      return 1
+   fi
+   projectfile="${srcdir}/${projectfile}"
+   projectdir="`dirname -- "${projectfile}"`"
+
+   if ! [ -x "${projectdir}/configure" ]
+   then
+      log_fluff "Configure script in \"${projectdir}\" is not executable"
       return 1
    fi
 
-   if ! [ -x "${srcdir}/configure" ]
-   then
-      log_fluff "Configure script in \"${srcdir}\" is not executable"
-      return 1
-   fi
-
-   tools_environment_make "${name}" "${srcdir}"
+   tools_environment_make "${name}" "${projectdir}"
 
    if [ -z "${MAKE}" ]
    then
@@ -257,6 +255,6 @@ test_configure()
       return 1
    fi
 
-   PARAMETER="${srcdir}/configure"
+   PROJECTFILE="${projectfile}"
    return 0
 }

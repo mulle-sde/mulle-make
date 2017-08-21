@@ -141,54 +141,6 @@ platform_cmake_generator()
 }
 
 
-#
-# first find a project with matching name, otherwise find
-# first nearest project
-#
-find_xcodeproj()
-{
-   local found
-   local expect
-   local depth
-
-   found=""
-   expect="$1"
-   depth=1000
-   #     IFS='\0'
-
-   local match
-   local new_depth
-
-   #
-   # don't go too deep in search
-   #
-   for i in `find . -maxdepth 2 -name "*.xcodeproj" -print`
-   do
-      match=`basename -- "${i}" .xcodeproj`
-      if [ "$match" = "$expect" ]
-      then
-         echo "$i"
-         return 0
-      fi
-
-      new_depth=`path_depth "$i"`
-      if [ "$new_depth" -lt "$depth" ]
-      then
-         found="${i}"
-         depth="$new_depth"
-      fi
-   done
-
-   if [ ! -z "$found" ]
-   then
-      echo "${found}"
-      return 0
-   fi
-
-   return 1
-}
-
-
 which_binary()
 {
    local toolname

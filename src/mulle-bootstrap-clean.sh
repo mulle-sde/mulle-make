@@ -486,8 +486,6 @@ clean_main()
    [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
    [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ]    && . mulle-bootstrap-repositories.sh
 
-   [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
-
    while [ $# -ne 0 ]
    do
       case "$1" in
@@ -551,3 +549,55 @@ clean_main()
       ;;
    esac
 }
+
+
+clean_usage()
+{
+   cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE} uninit
+
+   Completely remove all mulle-bootstrap files from project.
+EOF
+   exit 1
+}
+
+
+uninit_main()
+{
+   log_debug "::: uninit :::"
+
+   local ROOT_DIR="`pwd -P`"
+
+   local OPTION_MINION_NAMES=
+
+   [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]        && . mulle-bootstrap-settings.sh
+   [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
+   [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ]    && . mulle-bootstrap-repositories.sh
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -h|-help|--help)
+            unit_usage
+         ;;
+
+         -*)
+            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown uninit option $1"
+            clean_usage
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   clean_execute "dist"
+   clean_directories "${BOOTSTRAP_DIR}"
+   clean_directories "${BOOTSTRAP_DIR}.local"
+}
+
+

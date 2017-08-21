@@ -1174,6 +1174,90 @@ remove_file_if_present()
    fi
 }
 
+
+#
+# first find a project with matching name, otherwise find
+# first nearest project
+#
+_find_nearest_matching_pattern()
+{
+   local pattern="$1"
+   local expectation="$2"
+
+   local found
+   local depth
+
+   found=""
+   depth=1000
+
+   #     IFS='\0'
+
+   local match
+   local new_depth
+
+   #
+   # don't go too deep in search
+   #
+   IFS="
+"
+   for i in `find . -maxdepth 2 -name "${pattern}" -print`
+   do
+      IFS="${DEFAULT_IFS}"
+
+      match=`basename -- "$i"`
+      if [ "${match}" = "${expectation}" ]
+      then
+         echo "$i"
+         return 0
+      fi
+
+      new_depth="`path_depth "$i"`"
+      if [ "${new_depth}" -lt "${depth}" ]
+      then
+         found="$i"
+         depth="${new_depth}"
+      fi
+   done
+
+   if [ ! -z "${found}" ]
+   then
+      found="`sed 's|^\./||g' <<< "${found}"`"
+      echo "${found}"
+      return 0
+   fi
+
+   return 1
+}
+
+
+find_nearest_matching_pattern()
+{
+   log_entry "find_nearest_matching_pattern" "$@"
+
+   local directory="$1" ; shift
+
+   if [ ! -d "${directory}" ]
+   then
+      log_warning "\"${directory}\" not found"
+      return 1
+   fi
+
+   local rval
+   local oldwd
+
+   oldwd="${PWD}"
+   cd "${directory}"
+
+      _find_nearest_matching_pattern "$@"
+      rval="$?"
+      IFS="${DEFAULT_IFS}"
+
+   cd "${oldwd}"
+
+   return $rval
+}
+
+
 # ####################################################################
 #                        Symbolic Links
 # ####################################################################
