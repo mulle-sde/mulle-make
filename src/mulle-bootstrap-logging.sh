@@ -123,6 +123,28 @@ log_debug()
 }
 
 
+log_entry()
+{
+   local function="$1" ; shift
+
+   local args
+
+   if [ $# -ne 0 ]
+   then
+      args="'$1'"
+      shift
+   fi
+
+   while [ $# -ne 0 ]
+   do
+      args="${args}, '$1'"
+      shift
+   done
+
+   log_debug "${function}" "${args}"
+}
+
+
 log_trace()
 {
    log_printf "${C_TRACE}%b${C_RESET}\n" "$*"

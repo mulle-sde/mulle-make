@@ -239,7 +239,7 @@ _bootstrap_auto_create()
 
 bootstrap_auto_create()
 {
-   log_debug ":bootstrap_auto_create begin:"
+   log_entry ":bootstrap_auto_create begin:" "$@"
 
    _bootstrap_auto_create "${BOOTSTRAP_DIR}.auto" "${BOOTSTRAP_DIR}"
 
@@ -279,7 +279,7 @@ _bootstrap_merge_expanded_settings_in_front()
 #
 _bootstrap_auto_merge_root_settings()
 {
-   log_debug ":_bootstrap_auto_merge_root_settings:"
+   log_entry ":_bootstrap_auto_merge_root_settings:" "$@"
 
    dst="$1"
    directory="$2"

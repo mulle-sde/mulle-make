@@ -41,6 +41,7 @@ src/mulle-bootstrap-common-settings.sh
 src/mulle-bootstrap-core-options.sh
 src/mulle-bootstrap-copy.sh
 src/mulle-bootstrap-defer.sh
+src/mulle-bootstrap-dispense.sh
 src/mulle-bootstrap-dependency-resolve.sh
 src/mulle-bootstrap-fetch.sh
 src/mulle-bootstrap-functions.sh
@@ -66,6 +67,15 @@ src/mulle-bootstrap-xcode.sh
 src/mulle-bootstrap-zombify.sh
 )
 
+
+set( BUILD_PLUGIN_SCRIPTS
+src/mulle-bootstrap-build-plugins/cmake.sh
+src/mulle-bootstrap-build-plugins/configure.sh
+src/mulle-bootstrap-build-plugins/script.sh
+src/mulle-bootstrap-build-plugins/xcodebuild.sh
+)
+
+
 INSTALL( FILES ${SCRIPTS}
 PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             GROUP_EXECUTE GROUP_READ
@@ -81,6 +91,12 @@ PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             GROUP_EXECUTE GROUP_READ
             WORLD_EXECUTE WORLD_READ
 DESTINATION "libexec/mulle-bootstrap")
+
+INSTALL( FILES ${BUILD_PLUGIN_SCRIPTS}
+PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+            GROUP_EXECUTE GROUP_READ
+            WORLD_EXECUTE WORLD_READ
+DESTINATION "libexec/mulle-bootstrap/mulle-bootstrap-build-plugins")
 
 #
 # CPack and project specific stuff

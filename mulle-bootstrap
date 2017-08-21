@@ -263,16 +263,14 @@ bootstrap_libexec_path()
 
 bootstrap_init()
 {
-   local libexecpath
-
-   libexecpath="`bootstrap_libexec_path "$0"`"
-   if [ -z "${libexecpath}" ]
+   MULLE_BOOTSTRAP_LIBEXEC_PATH="`bootstrap_libexec_path "$0"`"
+   if [ -z "${MULLE_BOOTSTRAP_LIBEXEC_PATH}" ]
    then
       echo "Fatal Error: Could not find libexec for ${MULLE_EXECUTABLE} ($PWD)" >&2
       exit 1
    fi
 
-   PATH="${libexecpath}:$PATH"
+   PATH="${MULLE_BOOTSTRAP_LIBEXEC_PATH}:$PATH"
    export PATH
 
    if [ ! -z "${MULLE_BOOTSTRAP_LIBEXEC_TRACE}" ]

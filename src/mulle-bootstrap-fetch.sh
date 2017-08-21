@@ -301,7 +301,7 @@ _search_for_git_repository_in_cache()
 
 search_for_git_repository_in_caches()
 {
-   log_debug "search_for_git_repository_in_caches" "$@" "(${CACHES_PATH})"
+   log_entry "search_for_git_repository_in_caches(${CACHES_PATH})" "$@"
 
    local found
    local directory
@@ -349,7 +349,7 @@ search_for_git_repository_in_caches()
 
 _search_for_archive_in_caches()
 {
-   log_debug "_search_for_archive_in_caches" "$@"
+   log_entry "_search_for_archive_in_caches" "$@"
 
    local directory="$1"
    local name="$2"
@@ -383,7 +383,7 @@ _search_for_archive_in_caches()
 
 search_for_archive_in_caches()
 {
-   log_debug "search_for_archive_in_caches" "$@" "(${CACHES_PATH})"
+   log_entry "search_for_archive_in_caches" "$@"
 
    local name="$1"
    local filename="$2"
@@ -886,6 +886,8 @@ upgrade_deep_embedded_repositories()
 ##
 required_action_for_clone()
 {
+   log_entry "required_action_for_clone" "$@"
+
    local newclone="$1" ; shift
 
    local newreposdir="$1"  # ususally .bootstrap.repos
@@ -1031,6 +1033,8 @@ required_action_for_clone()
 
 get_old_stashdir()
 {
+   log_entry "get_old_stashdir" "$@"
+
    local reposdir="$1"
    local name="$2"
 
@@ -1064,6 +1068,8 @@ get_old_stashdir()
 
 auto_update_minions()
 {
+   log_entry "auto_update_minions" "$@"
+
    local minions="$1"
 
    local minion
@@ -1094,6 +1100,8 @@ auto_update_minions()
 
 work_clones()
 {
+   log_entry "work_clones" "$@"
+
    local reposdir="$1"
    local clones="$2"
    local required_clones="$3"
@@ -1343,7 +1351,7 @@ work_clones()
 #
 fetch_once_embedded_repositories()
 {
-   log_debug "fetch_once_embedded_repositories"
+   log_entry "fetch_once_embedded_repositories" "$@"
 
    (
       STASHES_DEFAULT_DIR=""
@@ -1365,7 +1373,7 @@ fetch_once_embedded_repositories()
 #
 fetch_once_minions_embedded_repositories()
 {
-   log_debug "fetch_once_minions_embedded_repositories"
+   log_entry "fetch_once_minions_embedded_repositories" "$@"
 
    local minions
 
@@ -1420,6 +1428,8 @@ fetch_once_minions_embedded_repositories()
 
 _fetch_once_deep_embedded_repository()
 {
+   log_entry "_fetch_once_minions_embedded_repositories" "$@"
+
    local reposdir="$1"  # ususally .bootstrap.repos
    local name="$2"      # name of the clone
    local url="$3"       # URL of the clone
@@ -1460,7 +1470,7 @@ _fetch_once_deep_embedded_repository()
 # but not minions
 fetch_once_deep_embedded_repositories()
 {
-   log_debug "fetch_once_deep_embedded_repositories"
+   log_entry "fetch_once_deep_embedded_repositories" "$@"
 
    local permissions
 
@@ -1473,6 +1483,8 @@ fetch_once_deep_embedded_repositories()
 
 extract_minion_precis()
 {
+   log_entry "extract_minion_precis" "$@"
+
    local minions
 
    minions="`read_root_setting "minions"`"
@@ -1482,14 +1494,14 @@ extract_minion_precis()
 
 fetch_loop_repositories()
 {
+   log_entry "fetch_loop_repositories" "$@"
+
    local loops
    local before
    local after
    local auxbefore
    local auxafter
    local required
-
-   log_debug "fetch_loop_repositories"
 
    loops=""
    before=""
@@ -1568,6 +1580,8 @@ bury_zombies_in_graveyard()
 #
 fetch_loop()
 {
+   log_entry "fetch_loop" "$@"
+
    unpostpone_trace
 
    # tell this for windows, it's so slow..
@@ -1608,7 +1622,6 @@ fetch_loop()
 #
 _common_fetch()
 {
-
    fetch_loop "${REPOS_DIR}"
 
    #

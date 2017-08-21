@@ -38,12 +38,15 @@ clean_usage()
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} clean [command]
+   ${MULLE_EXECUTABLE} clean [options] [command]
 
    Default clean command is "full".
 
+Options:
+   -m <minion> : restrict build clean to minion. Multiple -m options are OK.
+
 Commands:
-   build : useful to run mulle-bootstrap build again. It deletes
+   build   : useful to run mulle-bootstrap build again. It deletes
 `echo "${CRUFT_CLEANABLE_SUBDIRS}
 ${BUILD_CLEANABLE_SUBDIRS}
 ${BUILD_CLEANABLE_FILES}
@@ -178,9 +181,11 @@ print_stashdir_embedded_repositories()
 }
 
 
-setup_clean_environment()
+_setup_clean_environment()
 {
    build_complete_environment
+
+   [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
 
    [ -z "${DEPENDENCIES_DIR}"  ]   && internal_fail "DEPENDENCIES_DIR is empty"
    [ -z "${CLONESBUILD_DIR}" ]     && internal_fail "CLONESBUILD_DIR is empty"
@@ -188,7 +193,12 @@ setup_clean_environment()
    [ -z "${STASHES_DEFAULT_DIR}" ] && internal_fail "STASHES_DEFAULT_DIR is empty"
 
    CLEAN_EMPTY_PARENTS="`read_config_setting "clean_empty_parent_folders" "YES"`"
+}
 
+
+setup_clean_environment()
+{
+   _setup_clean_environment
 
    CRUFT_CLEANABLE_SUBDIRS="`read_sane_config_path_setting "clean_folders" "${CLONESBUILD_DIR}
 ${DEPENDENCIES_DIR}/tmp"`"
@@ -215,8 +225,6 @@ ${BOOTSTRAP_DIR}.auto"`"
    then
       DIST_CLEANABLE_SUBDIRS="`add_line "${DIST_CLEANABLE_SUBDIRS}" ".repos"`"
    fi
-
-   [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
 
    #
    # as a master we don't throw the minions out
@@ -340,11 +348,9 @@ clean_directories()
 # to have other tools provide stuff besides /include and /lib
 # and sometimes  projects install other stuff into /share
 #
-clean_execute()
+_clean_execute()
 {
    local style="$1"
-
-   setup_clean_environment
 
    # CRUFT
    case "${style}" in
@@ -399,20 +405,67 @@ clean_execute()
 }
 
 
+clean_execute()
+{
+   setup_clean_environment
+
+   _clean_execute "$@"
+}
+
+
 #
 # clean embedded repositories out of minion
 #
-clean_minion()
+clean_minions()
 {
-   local minion="$1"
+   local style="$1"
+   local minions="$2"
 
-   local directories
+   _setup_clean_environment
 
-   [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
+   CRUFT_CLEANABLE_SUBDIRS="${DEPENDENCIES_DIR}/tmp"
 
-   directories="`_all_repository_stashes "${REPOS_DIR}/.deep/${minion}.d"`"
-   clean_directories "${directories}"
-   clean_directories "${REPOS_DIR}/.deep/${minion}.d"
+   # BUILD is: CRUFT +  ...
+   BUILD_CLEANABLE_SUBDIRS=
+
+   local minion
+
+   IFS="
+"
+   for minion in ${minions}
+   do
+      IFS="${DEFAULT_IFS}"
+
+      if [ -z "${minion}" ]
+      then
+         continue
+      fi
+
+      BUILD_CLEANABLE_SUBDIRS="`add_line "${BUILD_CLEANABLE_SUBDIRS}" "${CLONESBUILD_DIR}/${minion}"`"
+      if [ -z "${egreppattern}" ]
+      then
+         egreppattern="${minion}"
+      else
+         egreppattern="${egreppattern}|${minion}"
+      fi
+   done
+   IFS="${DEFAULT_IFS}"
+
+   if [ -z "${egreppattern}" ]
+   then
+      fail "No minions given, nothing to clean"
+   fi
+
+   _clean_execute "${style}"
+
+   if [ -f "${REPOS_DIR}/.build_done" ]
+   then
+      log_info "Removing \"`sed 's/|/, /g' <<< "${egreppattern}"`\" from \"${REPOS_DIR}/.build_done\""
+      exekutor egrep -v -x "${egreppattern}" "${REPOS_DIR}/.build_done" > "${REPOS_DIR}/.build_done.bak"
+      exekutor mv "${REPOS_DIR}/.build_done.bak" "${REPOS_DIR}/.build_done"
+   else
+      log_verbose "No file \"${REPOS_DIR}/.build_done\" present"
+   fi
 }
 
 
@@ -427,7 +480,7 @@ clean_main()
 
    local ROOT_DIR="`pwd -P`"
 
-   local MINION_NAME
+   local OPTION_MINION_NAMES=
 
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]        && . mulle-bootstrap-settings.sh
    [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
@@ -447,7 +500,7 @@ clean_main()
             shift
             [ $# -ne 0 ] || clean_usage
 
-            MINION_NAME="${1}"
+            OPTION_MINION_NAMES="`add_line "${OPTION_MINION_NAMES}" "$1"`"
          ;;
 
          -*)
@@ -468,13 +521,24 @@ clean_main()
    style=${1:-"full"}
 
    case "${style}" in
-      "cruft"|"build"|"output"|"full"|"dist"|"install"|"output")
-         if [ -z "${MINION_NAME}" ]
+      "cruft"|"build")
+         case "${OPTION_MINION_NAMES}" in
+            "")
+               clean_execute "${style}"
+            ;;
+
+            *)
+               clean_minions "${style}" "${OPTION_MINION_NAMES}"
+            ;;
+         esac
+      ;;
+
+      "dist"|"full"|"install"|"output")
+         if [ ! -z "${OPTION_MINION_NAME}" ]
          then
-            clean_execute "${style}"
-         else
-            clean_minion "${MINION_NAME}"
+            fail "Can not use minion options with \"${style}\""
          fi
+         clean_execute "${style}"
       ;;
 
       help)
