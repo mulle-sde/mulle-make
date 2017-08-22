@@ -48,9 +48,10 @@ MULLE_BOOTSTRAP_FETCH_SH="included"
 # name="$2"       # name of the clone
 # url="$3"        # URL of the clone
 # branch="$4"     # branch of the clone
-# scm="$5"        # scm to use for this clone
-# tag="$6"        # tag to checkout of the clone
-# stashdir="$7"     # stashdir of this clone (absolute or relative to $PWD)
+# tag="$5"        # tag to checkout of the clone
+# scm="$6"        # scm to use for this clone
+# scmoptions="$7" # scmoptions
+# stashdir="$8"   # stashdir of this clone (absolute or relative to $PWD)
 #
 
 fetch_usage()
@@ -112,6 +113,8 @@ assert_sane_parameters()
 #
 check_tars()
 {
+   log_entry "check_tars" "$@"
+
    local tarballs
    local tar
 
@@ -145,13 +148,14 @@ log_action()
 {
    local action="$1" ; shift
 
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+   local reposdir="$1"     # ususally .bootstrap.repos
+   local name="$2"         # name of the clone
+   local url="$3"          # URL of the clone
+   local branch="$4"       # branch of the clone
+   local tag="$5"          # tag to checkout of the clone
+   local scm="$6"          # scm to use for this clone
+   local scmoptions="$7"   # options to use on scm
+   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    assert_sane_parameters "empty reposdir is ok"
 
@@ -171,52 +175,15 @@ log_action()
 #
 ###
 #
-link_command()
-{
-#   local reposdir="$1"  # ususally .bootstrap.repos
-#   local name="$2"      # name of the clone
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-#   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
-
-   assert_sane_parameters "empty reposdir is ok"
-
-   local absolute
-
-   absolute="`read_config_setting "absolute_symlinks" "NO"`"
-   if ! exekutor create_symlink "${url}" "${stashdir}" "${absolute}"
-   then
-      return 1
-   fi
-
-   local branchlabel
-
-   branchlabel="branch"
-   if [ -z "${branch}" -a ! -z "${tag}" ]
-   then
-      branchlabel="tag"
-      branch="${tag}"
-   fi
-
-   if [ "${branch}" != "master" ]
-   then
-      log_warning "The intended ${branchlabel} ${C_RESET_BOLD}${branch}${C_WARNING} \
-will be ignored, because the repository is symlinked.
-If you want to checkout this ${branchlabel} do:
-   ${C_RESET_BOLD}(cd ${stashdir}; git checkout ${GITOPTIONS} \"${branch}\" )${C_WARNING}"
-   fi
-}
-
-
 can_symlink_it()
 {
-   local  directory="$1"
+   log_entry "can_symlink_it" "$@"
+
+   local directory="$1"
 
    if [ "${OPTION_ALLOW_CREATING_SYMLINKS}" != "YES" ]
    then
-      log_fluff "Can't symlink it, because forbidden"
+      log_fluff "Can't symlink it, because it's been forbidden to create symlinks"
       return 1
    fi
 
@@ -244,179 +211,6 @@ So symlinking is the only way to go."
 }
 
 
-_git_search_local()
-{
-   log_entry "_git_search_local" "$@"
-
-   local directory="$1"
-   local name="$2"
-   local branch="$3"
-
-   [ $# -ne 3 ] && internal_fail "fail"
-
-   local found
-
-   if [ "${MULLE_FLAG_LOG_LOCALS}" = "YES" ]
-   then
-      log_trace "Checking local path \"${directory}\""
-   fi
-
-   if [ ! -z "${branch}" ]
-   then
-      found="${directory}/${name}.${branch}"
-      log_fluff "Looking for \"${found}\""
-
-      if [ -d "${found}" ]
-      then
-         log_fluff "Found \"${name}.${branch}\" in \"${directory}\""
-
-         echo "${found}"
-         return
-      fi
-   fi
-
-   found="${directory}/${name}.git"
-   log_fluff "Looking for \"${found}\""
-   if [ -d "${found}" ]
-   then
-      log_fluff "Found \"${name}.git\" in \"${directory}\""
-
-      echo "${found}"
-      return
-   fi
-
-   found="${directory}/${name}"
-   log_fluff "Looking for \"${found}\""
-   if [ -d "${found}" ]
-   then
-      log_fluff "Found \"${name}\" in \"${directory}\""
-
-      echo "${found}"
-      return
-   fi
-}
-
-
-git_search_local()
-{
-   log_entry "git_search_local [${LOCAL_PATH}]" "$@"
-
-   local name="$1"
-   local branch="$2"
-#   local url="$3"
-
-   local found
-   local directory
-   local realdir
-   local curdir
-
-   if [ "${MULLE_FLAG_LOG_LOCAL}" = "YES" -a -z "${LOCAL_PATH}" ]
-   then
-      log_trace "LOCAL_PATH is empty"
-   fi
-
-   curdir="`pwd -P`"
-   IFS=":"
-   for directory in ${LOCAL_PATH}
-   do
-      IFS="${DEFAULT_IFS}"
-
-      if [ ! -d "${directory}" ]
-      then
-         if [ "${MULLE_FLAG_LOG_LOCALS}" = "YES" ]
-         then
-            log_trace2 "Local path \"${realdir}\" does not exist"
-         fi
-         continue
-      fi
-
-      realdir="`realpath "${directory}"`"
-      if [ "${realdir}" = "${curdir}" ]
-      then
-         fail "Config setting \"search_path\" mistakenly contains \"${directory}\", which is the current directory"
-      fi
-
-      found="`_git_search_local "${realdir}" "${name}" "${branch}"`" || exit 1
-      if [ ! -z "${found}" ]
-      then
-         echo "${found}"
-         return
-      fi
-   done
-
-   IFS="${DEFAULT_IFS}"
-   return 1
-}
-
-
-_archive_search_local()
-{
-   log_entry "_archive_search_local" "$@"
-
-   local directory="$1"
-   local name="$2"
-   local filename="$3"
-
-   [ $# -ne 3 ] && internal_fail "fail"
-
-   local found
-
-   found="${directory}/${name}-${filename}"
-   log_fluff "Looking for \"${found}\""
-   if [ -f "${found}" ]
-   then
-      log_fluff "Found \"${name}\" in \"${directory}\" as \"${found}\""
-
-      echo "${found}"
-      return
-   fi
-
-   found="${directory}/${filename}"
-   log_fluff "Looking for \"${found}\""
-   if [ -f "${found}" ]
-   then
-      log_fluff "Found \"${name}\" in \"${directory}\" as \"${found}\""
-
-      echo "${found}"
-      return
-   fi
-}
-
-
-archive_search_local()
-{
-   log_entry "archive_search_local" "$@"
-
-   local name="$1"
-#   local branch="$2"
-   local url="$3"
-
-   local  filename
-
-   filename="`basename -- "${url}"`"
-
-   local found
-   local directory
-
-   IFS=":"
-   for directory in ${LOCAL_PATH}
-   do
-      IFS="${DEFAULT_IFS}"
-
-      found="`_archive_search_local "${directory}" "${name}" "${filename}"`" || exit 1
-      if [ ! -z "${found}" ]
-      then
-         found="`absolutepath "${found}"`"
-         echo "file:///${found}"
-         return
-      fi
-   done
-
-   IFS="${DEFAULT_IFS}"
-   return 1
-}
-
-
 mkdir_stashparent_if_missing()
 {
    local stashdir="$1"
@@ -438,13 +232,16 @@ mkdir_stashparent_if_missing()
 
 get_local_item()
 {
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone, extensionless
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+   log_entry "get_local_item" "$@"
+
+   local reposdir="$1"     # ususally .bootstrap.repos
+   local name="$2"         # name of the clone
+   local url="$3"          # URL of the clone
+   local branch="$4"       # branch of the clone
+   local tag="$5"          # tag to checkout of the clone
+   local scm="$6"          # scm to use for this clone
+   local scmoptions="$7"   # options to use on scm
+   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    if [ "${OPTION_ALLOW_SEARCH_LOCALS}" = "NO" ]
    then
@@ -452,82 +249,96 @@ get_local_item()
       return
    fi
 
-   case "${scm}" in
-      git*)
-         git_search_local "${name}" "${branch}" "${url}"
+   local operation
+
+   operation="`get_scm_function "${scm}" "search_local"`"
+
+   if [ ! -z "${operation}" ]
+   then
+      "${operation}" "${url}" "${name}" "${branch}"
+   else
+      log_fluff "Not searching caches because scm \"${scm}\" does not support \"${operation}\""
+   fi
+}
+
+
+do_operation()
+{
+   log_entry "do_operation" "$@"
+
+   local opname="$1" ; shift
+
+   [ -z "${opname}" ] && internal_fail "operation is empty"
+
+   log_action "${opname}" "$@"
+
+#   local reposdir="$1"     # ususally .bootstrap.repos
+   local name="$2"         # name of the clone
+#   local url="$3"          # URL of the clone
+#   local branch="$4"       # branch of the clone
+#   local tag="$5"          # tag to checkout of the clone
+   local scm="$6"          # scm to use for this clone
+#   local scmoptions="$7"   # options to use on scm
+#   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
+
+   [ -z "${scm}" ] && internal_fail "scm is empty"
+
+   script="`find_build_setting_file "${name}" "bin/${opname}.sh"`"
+   if [ ! -z "${script}" ]
+   then
+      run_script "${script}" "@"
+      return $?
+   fi
+
+   scm_operation "${opname}" "$@"
+
+   case $? in
+      0)
       ;;
 
-      tar*|zip*)
-         archive_search_local "${name}" "${branch}" "${url}"
+      111)
+         fail "SCM \"${scm}\" does not support ${opname}"
       ;;
 
       *)
-         log_fluff "Not searching caches because scm is \"${scm}\""
+         fail "SCM \"${scm}\" ${opname} failed for \"${name}\""
       ;;
    esac
 }
 
-
+##
+## CLONE
+##
 clone_or_symlink()
 {
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone, extensionless
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+   log_entry "clone_or_symlink" "$@"
 
+   local reposdir="$1"     # ususally .bootstrap.repos
+   local name="$2"         # name of the clone
+   local url="$3"          # URL of the clone
+   local branch="$4"       # branch of the clone
+   local tag="$5"          # tag to checkout of the clone
+   local scm="$6"          # scm to use for this clone
+   local scmoptions="$7"   # options to use on scm
+   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    assert_sane_parameters "empty reposdir is ok"
 
-   [ $# -le 7 ] || internal_fail "too many parameters"
-
-   local operation
-   local scmflagsdefault
-
-   case "${scm}" in
-      git*)
-         operation="git_clone"
-      ;;
-
-      svn*)
-         operation="svn_checkout"
-      ;;
-
-      zip*)
-         operation="zip_unpack"
-      ;;
-
-      tar*)
-         operation="tar_unpack"
-      ;;
-
-      *)
-         fail "Unknown scm system \"${scm}\""
-      ;;
-   esac
+   [ $# -le 8 ] || internal_fail "too many parameters"
 
    local stashparent
+   local operation
 
    stashparent="`mkdir_stashparent_if_missing "${stashdir}"`"
 
    local found
-   local script
-
-   script="`find_root_setting_file "bin/clone.sh"`"
-
-   if [ ! -z "${script}" ]
-   then
-      run_script "${script}" "$@"
-      return $?
-   fi
+   local rval
 
    case "${url}" in
       /*)
          if can_symlink_it "${directory}"
          then
-            operation=link_command
+            scm="symlink"
          fi
       ;;
 
@@ -539,56 +350,50 @@ clone_or_symlink()
       ;;
 
       *)
-         found="`get_local_item "${reposdir}" \
-                                "${name}" \
-                                "${url}" \
-                                "${branch}" \
-                                "${scm}" \
-                                "${tag}" \
-                                "${stashdir}"`"
+         found="`get_local_item "$@"`"
 
          if [ ! -z "${found}" ]
          then
+            log_verbose "Using local item \"${found}\""
             url="${found}"
 
             case "${scm}" in
-               git*)
+               "git")
                   if can_symlink_it "${url}"
                   then
-                     operation=link_command
+                     scm="symlink"
+                     log_verbose "Using symlink to local item \"${found}\""
+                     url="`symlink_relpath "${url}" "${ROOT_DIR}"`"
                   fi
-               ;;
-            esac
-
-            case "${operation}" in
-               link_command)
-                 log_verbose "Using symlink to local item \"${found}\""
-
-                 # compatible to earlier code
-                 found="`symlink_relpath "${found}" "${ROOT_DIR}"`"
-               ;;
-
-               *)
-                 log_verbose "Using local item \"${found}\""
                ;;
             esac
          fi
       ;;
    esac
 
-   local rval
+   do_operation "clone" \
+                "${reposdir}" \
+                "${name}" \
+                "${url}" \
+                "${branch}" \
+                "${tag}" \
+                "${scm}" \
+                "${scmoptions}" \
+                "${stashdir}"
+   rval="$?"
+   case $rval in
+      0)
+      ;;
 
-   if ! "${operation}" "${reposdir}" \
-                       "${name}" \
-                       "${url}" \
-                       "${branch}" \
-                       "${scm}" \
-                       "${tag}" \
-                       "${stashdir}"
-   then
-      log_debug "Clone \"${operation}\" failed"
-      return 1
-   fi
+      111)
+         fail "SCM \"${scm}\" is unknown"
+      ;;
+
+      *)
+         log_debug "SCM \"${scm}\" clone failed"
+         return 1
+      ;;
+   esac
 
    if [ "${DONT_WARN_SCRIPTS}" != "YES" ]
    then
@@ -597,32 +402,31 @@ clone_or_symlink()
       warn_scripts_main "${stashdir}/.bootstrap" "${stashdir}" || fail "Ok, aborted"  #sic
    fi
 
-   if [ "${operation}" = "link_command" ]
+   if [ "${scm}" = "symlink" ]
    then
-      log_debug "Symlink \"${operation}\" successful"
+      log_debug "Symlink successful"
       return 2
    fi
 
-   log_debug "Clone \"${operation}\" successful"
+   log_debug "SCM \"${scm}\" clone was successful"
    return 0
 }
 
-##
-## CLONE
-##
+
 clone_repository()
 {
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+   log_entry "clone_repository" "$@"
 
-   [ $# -eq 7 ] || internal_fail "fail"
+   local reposdir="$1"     # ususally .bootstrap.repos
+   local name="$2"         # name of the clone
+   local url="$3"          # URL of the clone
+   local branch="$4"       # branch of the clone
+   local tag="$5"          # tag to checkout of the clone
+   local scm="$6"          # scm to use for this clone
+   local scmoptions="$7"   # options to use on scm
+   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
-   log_action "clone" "$@"
+   [ $# -eq 8 ] || internal_fail "fail"
 
    assert_sane_parameters "empty is ok"
 
@@ -660,41 +464,7 @@ Suggested fix:
 ##
 checkout_repository()
 {
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
-
-   log_action "checkout" "$@"
-
-   local operation
-
-   case "${scm}" in
-      git*)
-         operation="git_checkout"
-      ;;
-      svn*)
-         operation="svn_checkout"
-      ;;
-      zip*|tar*)
-         log_info "No checkout for \"${scm}\""
-         return
-      ;;
-      *)
-         fail "Unknown scm system \"${scm}\""
-      ;;
-   esac
-
-   script="`find_build_setting_file "${name}" "bin/checkout.sh"`"
-   if [ ! -z "${script}" ]
-   then
-      run_script "${script}" "$@"
-   else
-      "${operation}" "$@"
-   fi
+   do_operation "checkout" "$@"
 }
 
 
@@ -702,81 +472,20 @@ checkout_repository()
 ## UPDATE
 ## this like git fetch, does not update repository
 ##
+
 update_repository()
 {
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
-
-   log_action "update" "$@"
-
-   local operation
-
-   case "${scm}" in
-      git*)
-         operation="git_fetch"
-      ;;
-      svn*|zip*|tar*)
-         log_info "No update for \"${scm}\""
-         return
-      ;;
-      *)
-         fail "Unknown scm system \"${scm}\""
-      ;;
-   esac
-
-   script="`find_build_setting_file "${name}" "bin/update.sh"`"
-   if [ ! -z "${script}" ]
-   then
-      run_script "${script}" "$@"
-   else
-      "${operation}" "$@"
-   fi
+   do_operation "update" "$@"
 }
 
 
 ##
 ## UPGRADE
 ## This is a pull
-
+##
 upgrade_repository()
 {
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
-
-   log_action "upgrade" "$@"
-
-   local operation
-
-   case "${scm}" in
-      git)
-         operation="git_pull"
-      ;;
-      svn|zip*|tar*)
-         log_info "No upgrade for \"${scm}\""
-         return
-      ;;
-      *)
-         fail "Unknown scm system \"${scm}\""
-      ;;
-   esac
-
-   script="`find_build_setting_file "${name}" "bin/upgrade.sh"`"
-   if [ ! -z "${script}" ]
-   then
-      run_script "${script}" "$@"
-   else
-      "${operation}" "$@"
-   fi
+   do_operation "upgrade" "$@"
 }
 
 
@@ -850,18 +559,24 @@ _update_operation_walk_deep_embedded_auto_repositories()
 ##
 update_repositories()
 {
+   log_entry "update_repositories" "$@"
+
    _update_operation_walk_repositories "update_repository"
 }
 
 
 update_embedded_repositories()
 {
+   log_entry "update_embedded_repositories" "$@"
+
    _update_operation_walk_embedded_repositories "update_repository"
 }
 
 
 update_deep_embedded_repositories()
 {
+   log_entry "update_deep_embedded_repositories" "$@"
+
    _update_operation_walk_deep_embedded_auto_repositories "update_repository"
 }
 
@@ -871,21 +586,43 @@ update_deep_embedded_repositories()
 ##
 upgrade_repositories()
 {
+   log_entry "upgrade_repositories" "$@"
+
    _update_operation_walk_repositories "upgrade_repository"
 }
 
 
 upgrade_embedded_repositories()
 {
+   log_entry "upgrade_embedded_repositories" "$@"
+
    _update_operation_walk_embedded_repositories "upgrade_repository"
 }
 
 
 upgrade_deep_embedded_repositories()
 {
+   log_entry "upgrade_deep_embedded_repositories" "$@"
+
    _update_operation_walk_deep_embedded_auto_repositories "upgrade_repository"
 }
 
+
+
+default_action_for_clone()
+{
+   local scm="$1"
+   local stashdir="$2"
+
+   if [ "${scm}" = "minion" ]
+   then
+      log_fluff "Not removing \"${stashdir}\" because it's a minion"
+   else
+      echo "remove"
+   fi
+
+   echo "clone"
+}
 
 
 ##
@@ -897,13 +634,14 @@ required_action_for_clone()
 
    local newclone="$1" ; shift
 
-   local newreposdir="$1"  # ususally .bootstrap.repos
-   local newname="$2"      # name of the clone
-   local newurl="$3"       # URL of the clone
-   local newbranch="$4"    # branch of the clone
-   local newscm="$5"       # scm to use for this clone
-   local newtag="$6"       # tag to checkout of the clone
-   local newstashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+   local newreposdir="$1"    # ususally .bootstrap.repos
+   local newname="$2"        # name of the clone
+   local newurl="$3"         # URL of the clone
+   local newbranch="$4"      # branch of the clone
+   local newtag="$5"         # tag to checkout of the clone
+   local newscm="$6"         # scm to use for this clone
+   local newscmoptions="$7"  # scm to use for this clone
+   local newstashdir="$8"    # stashdir of this clone (absolute or relative to $PWD)
 
    local clone
 
@@ -935,31 +673,30 @@ required_action_for_clone()
    local name
    local url
    local branch
-   local scm
    local tag
+   local scm
+   local scmoptions
    local stashdir
 
    parse_clone "${clone}"
 
    log_debug "Change: \"${clone}\" -> \"${newclone}\""
 
+   #
+   # SCM change is big (except if old is symlink and new is git)
+   #
    if [ "${scm}" != "${newscm}" ]
    then
       if ! [ "${scm}" = "symlink" -a "${newscm}" = "git" ]
       then
-         log_fluff "SCM has changed from \"${scm}\" to \"${newscm}\", need to refetch"
-
-         if [ "${scm}" != "minion" ]
-         then
-            log_fluff "Not removing \"${stashdir}\" because it's a minion"
-            echo "remove"
-         fi
-
-         echo "clone"
+         default_action_for_clone "${scm}" "${stashdir}"
          return
       fi
    fi
 
+   #
+   # Handle positional changes
+   #
    if [ "${stashdir}" != "${newstashdir}" ]
    then
       if [ -e "${newstashdir}" ]
@@ -992,48 +729,60 @@ required_action_for_clone()
    fi
 
    #
-   # if scm is not git, don't try to be clever
+   # Check that the scm can actually do the supported operation
    #
-   case "${scm}" in
-      git*)
-      ;;
+   local have_set_url
+   local have_checkout
+   local have_upgrade
 
-      symlink*)
+   case "${scm}" in
+      symlink)
          if [ -e "${newstashdir}" ]
          then
             log_fluff "\"${stashdir}\" is symlink. Ignoring possible differences."
             return
          fi
-
-         log_fluff "\"${newstashdir}\" is missing, reget."
-         echo "clone"
-         return
-      ;;
-
-      *)
-         log_fluff "Reget because scm is \"${scm}\"."
-         echo "clone"
-         return
       ;;
    esac
 
+   have_upgrade="`git_scm_function "${scm}" "upgrade"`"
    if [ "${branch}" != "${newbranch}" ]
    then
       log_fluff "Branch has changed from \"${branch}\" to \"${newbranch}\", need to fetch"
-      echo "upgrade"
+      if [ ! -z "${have_upgrade}" ]
+      then
+         echo "upgrade"
+      else
+         default_action_for_clone "${scm}" "${stashdir}"
+         return
+      fi
    fi
 
+   have_checkout="`git_scm_function "${scm}" "checkout"`"
    if [ "${tag}" != "${newtag}" ]
    then
       log_fluff "Tag has changed from \"${tag}\" to \"${newtag}\", need to check-out"
-      echo "checkout"
+      if [ ! -z "${have_checkout}" ]
+      then
+         echo "checkout"
+      else
+         default_action_for_clone "${scm}" "${stashdir}"
+         return
+      fi
    fi
 
+   have_set_url="`git_scm_function "${scm}" "set_url"`"
    if [ "${url}" != "${newurl}" ]
    then
       log_fluff "URL has changed from \"${url}\" to \"${newurl}\", need to set remote url and fetch"
-      echo "set-remote"
-      echo "upgrade"
+      if [ ! -z "${have_upgrade}" -a ! -z "${have_set_url}" ]
+      then
+         echo "set-remote"
+         echo "upgrade"
+      else
+         default_action_for_clone "${scm}" "${stashdir}"
+         return
+      fi
    fi
 }
 
@@ -1114,12 +863,15 @@ work_clones()
    local required_clones="$3"
    local autoupdate="$4"
 
+   [ -z "${clones}" ] && return
+
    local clone
    local name
    local url
    local branch
-   local scm
    local tag
+   local scm
+   local scmoptions
    local stashdir
    local dstdir
 
@@ -1187,7 +939,7 @@ work_clones()
       if is_minion_bootstrap_project "${name}"
       then
          log_fluff "\"${name}\" is a minion, ignoring possible changes"
-         clone="`echo "${name};${name};${branch};minion;${tag}" | sed 's/;*$//'`"
+         clone="`echo "${name};${name};${branch};${tag};minion" | sed 's/;*$//'`"
          remember="YES"
       else
          actionitems="`required_action_for_clone "${clone}" \
@@ -1195,8 +947,9 @@ work_clones()
                                                  "${name}" \
                                                  "${url}" \
                                                  "${branch}" \
-                                                 "${scm}" \
                                                  "${tag}" \
+                                                 "${scm}" \
+                                                 "${scmoptions}" \
                                                  "${stashdir}"`" || exit 1
 
          log_debug "${C_INFO}Actions for \"${name}\": ${actionitems:-none}"
@@ -1215,8 +968,9 @@ work_clones()
                                            "${name}" \
                                            "${url}" \
                                            "${branch}" \
-                                           "${scm}" \
                                            "${tag}" \
+                                           "${scm}" \
+                                           "${scmoptions}" \
                                            "${stashdir}"
                   then
                      fail "Failed to checkout"
@@ -1228,8 +982,9 @@ work_clones()
                                    "${name}" \
                                    "${url}" \
                                    "${branch}" \
-                                   "${scm}" \
                                    "${tag}" \
+                                   "${scm}" \
+                                   "${scmoptions}" \
                                    "${stashdir}"
 
                   case "$?" in
@@ -1282,8 +1037,9 @@ work_clones()
                                      "${name}" \
                                      "${url}" \
                                      "${branch}" \
-                                     "${scm}" \
                                      "${tag}" \
+                                     "${scm}" \
+                                     "${scmoptions}" \
                                      "${stashdir}"
                ;;
 
@@ -1322,7 +1078,7 @@ work_clones()
          fi
 
          # create clone as it is now
-         clone="`echo "${url};${dstdir};${branch};${scm};${tag}" | sed 's/;*$//'`"
+         clone="`echo "${url};${dstdir};${branch};${tag};${scm};${scmoptions}" | sed 's/;*$//'`"
       fi
 
       if [ "${skip}" = "YES" ]
@@ -1345,7 +1101,7 @@ work_clones()
                                       "${stashdir}" \
                                       "${PARENT_CLONE}"
       else
-         log_debug "ignoring because..."
+         log_debug "Don't need to remember it (should be unchanged)"
       fi
       mark_stash_as_alive "${reposdir}" "${name}"
    done
@@ -1360,18 +1116,19 @@ fetch_once_embedded_repositories()
 {
    log_entry "fetch_once_embedded_repositories" "$@"
 
-   (
-      STASHES_DEFAULT_DIR=""
-      STASHES_ROOT_DIR=""
-      OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
+   local STASHES_DEFAULT_DIR=""
+   local STASHES_ROOT_DIR=""
+   local OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
 
-      local clones
-      local required_clones
+   local clones
+   local required_clones
 
-      clones="`read_root_setting "embedded_repositories"`" ;
-      required_clones="`read_root_setting "embedded_required"`" ;
-      work_clones "${EMBEDDED_REPOS_DIR}" "${clones}" "${required_clones}" "NO"
-   ) || exit 1
+   clones="`read_root_setting "embedded_repositories"`" ;
+   required_clones="`read_root_setting "embedded_required"`" ;
+   if ! work_clones "${EMBEDDED_REPOS_DIR}" "${clones}" "${required_clones}" "NO"
+   then
+      exit 1
+   fi
 }
 
 
@@ -1415,18 +1172,19 @@ fetch_once_minions_embedded_repositories()
 
       reposdir="${REPOS_DIR}/.deep/${minion}.d"
 
-      (
-         STASHES_DEFAULT_DIR=""
-         STASHES_ROOT_DIR=""
-         OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
+      local STASHES_DEFAULT_DIR=""
+      local STASHES_ROOT_DIR=""
+      local OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
 
-         local clones
-         local required_clones
+      local clones
+      local required_clones
 
-         clones="`read_setting "${autodir}/embedded_repositories"`" ;
-         required_clones="`read_setting "${autodir}/embedded_required"`" ;
-         work_clones "${reposdir}" "${clones}" "${required_clones}" "NO"
-      ) || exit 1
+      clones="`read_setting "${autodir}/embedded_repositories"`"
+      required_clones="`read_setting "${autodir}/embedded_required"`"
+      if ! work_clones "${reposdir}" "${clones}" "${required_clones}" "NO"
+      then
+         exit 1
+      fi
    done
 
    IFS="${DEFAULT_IFS}"
@@ -1437,13 +1195,14 @@ _fetch_once_deep_embedded_repository()
 {
    log_entry "_fetch_once_minions_embedded_repositories" "$@"
 
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+   local reposdir="$1"     # ususally .bootstrap.repos
+   local name="$2"         # name of the clone
+   local url="$3"          # URL of the clone
+   local branch="$4"       # branch of the clone
+   local tag="$5"          # tag to checkout of the clone
+   local scm="$6"          # scm to use for this clone
+   local scmoptions="$7"   # options to use on scm
+   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    local autodir
 
@@ -1456,21 +1215,23 @@ _fetch_once_deep_embedded_repository()
    fi
 
    reposdir="${reposdir}/.deep/${name}.d"
-   (
-      STASHES_DEFAULT_DIR=""
-      STASHES_ROOT_DIR="${stashdir}"  # hackish
-      OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
-      PARENT_REPOSITORY_NAME="${name}"
-      PARENT_CLONE="${clone}"
 
-      local clones
-      local required_clones
+   local STASHES_DEFAULT_DIR=""
+   local STASHES_ROOT_DIR="${stashdir}"  # hackish
+   local OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
+   local PARENT_REPOSITORY_NAME="${name}"
+   local PARENT_CLONE="${clone}"
 
-      # ugliness
-      clones="`read_setting "${autodir}/embedded_repositories"`" ;
-      required_clones="`read_setting "${autodir}/embedded_required"`" ;
-      work_clones "${reposdir}" "${clones}" "${required_clones}" "NO"
-   ) || exit 1
+   local clones
+   local required_clones
+
+   # ugliness
+   clones="`read_setting "${autodir}/embedded_repositories"`"
+   required_clones="`read_setting "${autodir}/embedded_required"`"
+   if ! work_clones "${reposdir}" "${clones}" "${required_clones}" "NO"
+   then
+      exit 1
+   fi
 }
 
 
@@ -1681,6 +1442,8 @@ _common_upgrade()
 
 _common_main()
 {
+   log_entry "_common_main" "$@"
+
    [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ]      && . mulle-bootstrap-repositories.sh
    [ -z "${MULLE_BOOTSTRAP_LOCAL_ENVIRONMENT_SH}" ] && . mulle-bootstrap-local-environment.sh
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]          && . mulle-bootstrap-settings.sh

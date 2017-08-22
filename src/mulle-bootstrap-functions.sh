@@ -1134,7 +1134,7 @@ _create_file_if_missing()
    fi
 
    log_fluff "Creating \"${path}\""
-   if [ ! -z "$*" ]
+   if [  $# -ne 0 ]
    then
       redirect_exekutor "${path}" echo "$*" || fail "failed to create \"{path}\""
    else
@@ -1179,10 +1179,19 @@ remove_file_if_present()
 # first find a project with matching name, otherwise find
 # first nearest project
 #
-_find_nearest_matching_pattern()
+find_nearest_matching_pattern()
 {
-   local pattern="$1"
-   local expectation="$2"
+   log_entry "_find_nearest_matching_pattern" "$@"
+
+   local directory="$1"
+   local pattern="$2"
+   local expectation="$3"
+
+   if [ ! -d "${directory}" ]
+   then
+      log_warning "\"${directory}\" not found"
+      return 1
+   fi
 
    local found
    local depth
@@ -1200,7 +1209,7 @@ _find_nearest_matching_pattern()
    #
    IFS="
 "
-   for i in `find . -maxdepth 2 -name "${pattern}" -print`
+   for i in `find "${directory}" -maxdepth 2 -name "${pattern}" -print`
    do
       IFS="${DEFAULT_IFS}"
 
@@ -1218,6 +1227,7 @@ _find_nearest_matching_pattern()
          depth="${new_depth}"
       fi
    done
+   IFS="${DEFAULT_IFS}"
 
    if [ ! -z "${found}" ]
    then
@@ -1229,33 +1239,6 @@ _find_nearest_matching_pattern()
    return 1
 }
 
-
-find_nearest_matching_pattern()
-{
-   log_entry "find_nearest_matching_pattern" "$@"
-
-   local directory="$1" ; shift
-
-   if [ ! -d "${directory}" ]
-   then
-      log_warning "\"${directory}\" not found"
-      return 1
-   fi
-
-   local rval
-   local oldwd
-
-   oldwd="${PWD}"
-   cd "${directory}"
-
-      _find_nearest_matching_pattern "$@"
-      rval="$?"
-      IFS="${DEFAULT_IFS}"
-
-   cd "${oldwd}"
-
-   return $rval
-}
 
 
 # ####################################################################

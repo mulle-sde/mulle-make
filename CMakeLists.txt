@@ -46,6 +46,7 @@ src/mulle-bootstrap-dependency-resolve.sh
 src/mulle-bootstrap-fetch.sh
 src/mulle-bootstrap-functions.sh
 src/mulle-bootstrap-gcc.sh
+src/mulle-bootstrap-git.sh
 src/mulle-bootstrap-init.sh
 src/mulle-bootstrap-local-environment.sh
 src/mulle-bootstrap-logging.sh
@@ -76,6 +77,15 @@ src/mulle-bootstrap-build-plugins/xcodebuild.sh
 )
 
 
+set( SCM_PLUGIN_SCRIPTS
+src/mulle-bootstrap-scm-plugins/git.sh
+src/mulle-bootstrap-scm-plugins/svn.sh
+src/mulle-bootstrap-scm-plugins/symlink.sh
+src/mulle-bootstrap-scm-plugins/tar.sh
+src/mulle-bootstrap-scm-plugins/zip.sh
+)
+
+
 INSTALL( FILES ${SCRIPTS}
 PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             GROUP_EXECUTE GROUP_READ
@@ -97,6 +107,12 @@ PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             GROUP_EXECUTE GROUP_READ
             WORLD_EXECUTE WORLD_READ
 DESTINATION "libexec/mulle-bootstrap/mulle-bootstrap-build-plugins")
+
+INSTALL( FILES ${SCM_PLUGIN_SCRIPTS}
+PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+            GROUP_EXECUTE GROUP_READ
+            WORLD_EXECUTE WORLD_READ
+DESTINATION "libexec/mulle-bootstrap/mulle-bootstrap-scm-plugins")
 
 #
 # CPack and project specific stuff

@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 clear_test_dirs()
 {
    local i
@@ -9,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -47,7 +47,9 @@ setup_test_dirs()
 setup_test_case()
 {
    echo "b" > a/.bootstrap/repositories
+   mulle-bootstrap --version > a/.bootstrap/version
    echo "c" > b/.bootstrap/repositories
+   mulle-bootstrap --version > b/.bootstrap/version
 }
 
 
@@ -62,8 +64,8 @@ test()
    local expect
 
    result="`cat .bootstrap.auto/repositories`"
-   expect="c;stashes/c;master;git
-b;stashes/b;master;git"
+   expect="c;stashes/c;master;;git
+b;stashes/b;master;;git"
    if [ "${expect}" != "${result}" ]
    then
       fail ": ($result)"

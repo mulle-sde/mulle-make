@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 clear_test_dirs()
 {
    local i
@@ -9,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -52,6 +52,7 @@ setup_test_case()
    ) || exit 1
 
    echo "b" > a/.bootstrap/repositories
+   echo "4" > a/.bootstrap/version
 }
 
 
@@ -75,7 +76,7 @@ move_test_case()
 _assert_a()
 {
    result="`cat .bootstrap.auto/repositories`"
-   expected="b;stashes/b;master;git"
+   expected="b;stashes/b;master;;git"
 
    [ "${expected}" = "${result}" ] || fail ".bootstrap.auto/repositories, result:${result} != expected:${expected}"
    [ ! -e "stashes/b" ] && fail "stashes not created ($result)"

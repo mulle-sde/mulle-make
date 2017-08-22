@@ -16,6 +16,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -84,7 +85,7 @@ create_demo_repo c
 # b embeds a
 (
    cd b;
-   mkdir .bootstrap ;
+   mulle-bootstrap init -d -n ;
    echo "a;src/a" > .bootstrap/embedded_repositories ;
    git add .bootstrap/embedded_repositories ;
    git commit -m "embedded added"
@@ -93,7 +94,7 @@ create_demo_repo c
 # c depends on b
 (
    cd c ;
-   mkdir .bootstrap ;
+   mulle-bootstrap init -d -n ;
    echo "b" > .bootstrap/repositories ;
    git add .bootstrap/repositories ;
    git commit -m "repository added"

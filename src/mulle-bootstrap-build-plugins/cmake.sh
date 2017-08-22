@@ -356,7 +356,6 @@ test_cmake()
       log_fluff "There is no CMakeLists.txt file in \"${srcdir}\""
       return 1
    fi
-   projectfile="${srcdir}/${projectfile}"
    projectdir="`dirname -- "${projectfile}"`"
 
    tools_environment_cmake "${name}" "${projectdir}"
@@ -371,6 +370,8 @@ test_cmake()
    then
       fail "No make available"
    fi
+
+   log_verbose "Found cmake project file \"${projectfile}\""
 
    PROJECTFILE="${projectfile}"
 

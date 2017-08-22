@@ -8,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -39,19 +40,20 @@ setup_test_case()
    mkdir -p a/.bootstrap
    mkdir -p b
    echo "b" > a/.bootstrap/repositories
+   mulle-bootstrap --version > a/.bootstrap/version
 }
 
 
 assert_a()
 {
    result="`cat .bootstrap.auto/repositories`"
-   expected="b;stashes/b;master;git"
+   expected="b;stashes/b;master;;git"
 
    [ "${expected}" = "${result}" ] || fail ".bootstrap.auto/repositories: ${result} != ${expected}"
    [ ! -e "stashes/b" ] && fail "stashes not created ($result)"
 
    result="`cat .bootstrap.repos/b`"
-   expected="b;stashes/b;master;symlink"
+   expected="b;stashes/b;master;;symlink"
    [ "${expected}" = "${result}" ] || fail ".bootstrap.repos/b: ${result} != ${expected}"
    :
 
@@ -81,7 +83,6 @@ test_a()
    #
    # lets upgrade, should not change anything
    #
-
    run_mulle_bootstrap "$@" upgrade
    assert_a
 }

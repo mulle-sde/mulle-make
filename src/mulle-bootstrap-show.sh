@@ -115,13 +115,14 @@ show_minion()
 
 show_repository()
 {
-   local reposdir="$1"  # ususally .bootstrap.repos
-   local name="$2"      # name of the clone
-   local url="$3"       # URL of the clone
-   local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
-   local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+   local reposdir="$1"   # ususally .bootstrap.repos
+   local name="$2"       # name of the clone
+   local url="$3"        # URL of the clone
+   local branch="$4"     # branch of the clone
+   local tag="$5"        # tag to checkout of the clone
+   local scm="$6"        # scm to use for this clone
+   local scmoptions="$7" # scm to use for this clone
+   local stashdir="$8"   # stashdir of this clone (absolute or relative to $PWD)
 
    printf "%b"  "${SHOW_PREFIX}${C_MAGENTA}"
    if is_minion_bootstrap_project "${stashdir}"
@@ -146,7 +147,7 @@ show_repository()
 
    if [ "${SHOW_SCM}" = "YES" ]
    then
-      printf "%b"  "  [${scm}"
+      printf "%b"  "  [${scm} ${scmoptions}"
 
       if [ ! -z "${tag}" -o ! -z "${branch}" ]
       then
@@ -169,8 +170,9 @@ show_raw_repository()
    local url="$1"       # URL of the clone
    local dstdir="$2"    # branch of the clone
    local branch="$3"       # scm to use for this clone
-   local scm="$4"       # scm to use for this clone
-   local tag="$5"       # tag to checkout of the clone
+   local tag="$4"       # tag to checkout of the clone
+   local scm="$5"       # scm to use for this clone
+   local scmoptions="$6"       # scm to use for this clone
 
    local name
    local stashdir
@@ -182,8 +184,9 @@ show_raw_repository()
       printf "%b" "${SHOW_PREFIX}${url}"
       printf "%b" ";${dstdir}"
       printf "%b" ";${branch}"
-      printf "%b" ";${scm}"
       printf "%b" ";${tag}"
+      printf "%b" ";${scm}"
+      printf "%b" ";${scmoptions}"
       printf "\n"
    ) | sed 's/;*$//'
 

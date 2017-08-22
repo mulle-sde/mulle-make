@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 clear_test_dirs()
 {
    local i
@@ -9,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -41,6 +41,7 @@ setup_test_case()
    clear_test_dirs a b
 
    mkdir -p a/.bootstrap
+   mulle-bootstrap --version > a/.bootstrap/version
    mkdir -p b
 
    (
@@ -73,12 +74,12 @@ assert_a_1()
 assert_a_2()
 {
    result="`cat .bootstrap.auto/repositories`"
-   [ "b;b2;master;git" != "${result}" ] &&  fail ".bootstrap.auto/repositories ($result)"
+   [ "b;b2;master;;git" != "${result}" ] &&  fail ".bootstrap.auto/repositories ($result)"
 
    [ ! -e "b2" ] && fail "stashes not created ($result)"
 
    result="`head -1 .bootstrap.repos/b`"
-   [ "b;b2;master;git" != "${result}" ] && fail "($result)"
+   [ "b;b2;master;;git" != "${result}" ] && fail "($result)"
 
    result="`cat b2/README.md`"
    [ "${result}" != "# VfL Bochum 1848" ] && fail "stashes not created ($result)"

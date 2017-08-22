@@ -485,7 +485,6 @@ test_xcodebuild()
          log_fluff "There is no Xcode project in \"${srcdir}\""
          return 1
       fi
-      projectfile="${srcdir}/${projectfile}"
    fi
    projectdir="`dirname -- "${projectfile}"`"
 

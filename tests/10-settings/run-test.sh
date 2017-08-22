@@ -8,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -82,13 +83,13 @@ setup()
 
    (
       cd a
-      mkdir -p .bootstrap
+      mulle-bootstrap -s init -n
       echo "b" > .bootstrap/repositories
    )
 
    (
       cd b
-      mkdir -p .bootstrap
+      mulle-bootstrap -s init -n
       echo "c" > .bootstrap/repositories
 
       create_settings "b"
@@ -140,12 +141,14 @@ cat <<EOF | sort > "${expect}"
 stashes
 a/.bootstrap:
 repositories
+version
 a/.bootstrap.auto:
 b.build
 build_order
 c.build
 repositories
 required
+version
 a/.bootstrap.auto/b.build:
 b
 bin

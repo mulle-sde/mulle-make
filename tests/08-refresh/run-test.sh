@@ -8,11 +8,11 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
 }
-
 
 fail()
 {
@@ -76,7 +76,7 @@ set -e
 # one subdirectory has an embedded dir
 (
    cd a;
-   mkdir .bootstrap
+   mulle-bootstrap init -d -n
    cat <<EOF > .bootstrap/embedded_repositories
 d
 EOF
@@ -87,7 +87,7 @@ EOF
 # one project depends on "a": another unknown
 (
    cd b;
-   mkdir .bootstrap
+   mulle-bootstrap init -d -n
    cat <<EOF > .bootstrap/repositories
 h
 EOF
@@ -98,7 +98,7 @@ EOF
 # one project depends on "a": another known
 (
    cd c;
-   mkdir .bootstrap
+   mulle-bootstrap init -d -n
    cat <<EOF > .bootstrap/repositories
 a
 EOF
@@ -110,7 +110,7 @@ EOF
 mkdir "main" || fail "mkdir"
 cd "main"
 
-mkdir .bootstrap
+mulle-bootstrap init -d -n
 cat <<EOF > .bootstrap/repositories
 b
 c

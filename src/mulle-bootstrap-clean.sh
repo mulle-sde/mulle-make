@@ -89,13 +89,15 @@ _collect_stashdir()
 {
    log_debug ":_collect_stashdir:" "$*"
 
-   # local reposdir="$1"  # ususally .bootstrap.repos
-   # local name="$2"      # name of the clone
-   # local url="$3"       # URL of the clone
-   # local branch="$4"    # branch of the clone
-   # local scm="$5"       # scm to use for this clone
-   # local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+   # local reposdir="$1"     # ususally .bootstrap.repos
+   # local name="$2"         # name of the clone
+   # local url="$3"          # URL of the clone
+   # local branch="$4"       # branch of the clone
+   # local tag="$5"          # tag to checkout of the clone
+   # local scm="$6"          # scm to use for this clone
+   # local scmoptions="$7"   # options to use on scm
+
+   local stashdir="$8"  # stashdir of this clone (absolute or relative to $PWD)
 
    is_minion_bootstrap_project "${stashdir}" && return
 
@@ -157,13 +159,14 @@ print_stashdir_deep_embedded_minion_repositories()
 
 _collect_embedded_stashdir()
 {
-   # local reposdir="$1"  # ususally .bootstrap.repos
-   # local name="$2"      # name of the clone
-   # local url="$3"       # URL of the clone
-   # local branch="$4"    # branch of the clone
-   # local scm="$5"       # scm to use for this clone
-   # local tag="$6"       # tag to checkout of the clone
-   local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
+#   local reposdir="$1"     # ususally .bootstrap.repos
+#   local name="$2"         # name of the clone
+#   local url="$3"          # URL of the clone
+#   local branch="$4"       # branch of the clone
+#   local tag="$5"          # tag to checkout of the clone
+#   local scm="$6"          # scm to use for this clone
+#   local scmoptions="$7"   # options to use on scm
+   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    stashparentdir="`dirname -- "${stashdir}"`"
 

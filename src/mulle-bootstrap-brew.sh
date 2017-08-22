@@ -105,7 +105,7 @@ fetch_brew_if_needed()
       fail "brew was not successfully installed (PATH=$PATH)"
    fi
 
-   if 1
+   if :
    then
       "${BREW}" update
    fi
@@ -583,7 +583,6 @@ brew_initialize()
 
    [ -z "${MULLE_BOOTSTRAP_LOCAL_ENVIRONMENT_SH}" ] && . mulle-bootstrap-local-environment.sh
    [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ]         && . mulle-bootstrap-functions.sh
-   [ -z "${MULLE_BOOTSTRAP_SCM_SH}" ]               && . mulle-bootstrap-scm.sh
 
    BREW="${ADDICTIONS_DIR}/bin/brew"
 

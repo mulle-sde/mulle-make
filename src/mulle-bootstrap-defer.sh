@@ -95,6 +95,7 @@ defer_main()
 
    local masterpath
    local minionpath
+   local masterversion
 
    minionpath="${PWD}"
    minionpath="`absolutepath "${minionpath}"`"
@@ -132,6 +133,20 @@ defer_main()
    if ! can_be_master_bootstrap_project "${masterpath}"
    then
       fail "\"${masterpath}\" contains a .bootstrap folder. It can't be used as a master"
+   fi
+
+   if is_master_bootstrap_project "${masterpath}"
+   then
+      masterversion="`get_master_bootstrap_version "${masterpath}"`"
+      if [ -z "${masterversion}" ]
+      then
+         fail "Minion \"${minionpath}\" can not acquire version of master at \"${masterpath}\""
+      fi
+
+      if [ "${masterversion}" != "${MULLE_EXECUTABLE_VERSION_MAJOR}" ]
+      then
+         fail "Minion \"${minionpath}\" version ${MULLE_EXECUTABLE_VERSION_MAJOR} mismatch with master at \"${masterpath}\" having version ${masterversion}"
+      fi
    fi
 
    if master_owns_minion_bootstrap_project "${masterpath}" "${minionpath}"

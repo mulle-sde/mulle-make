@@ -8,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -44,7 +45,7 @@ setup()
    (
       cd main/a
 
-      mkdir -p .bootstrap
+      mulle-bootstrap init -n -d
       echo "b" > .bootstrap/repositories
       cat <<EOF > a.c
 #include <b/b.h>
@@ -74,7 +75,7 @@ EOF
    (
       cd main/b
 
-      mkdir -p .bootstrap
+      mulle-bootstrap init -n -d
       cat <<EOF > b.c
 int   b()
 {
@@ -125,10 +126,8 @@ fi
 
 setup || exit 1
 
-(
-   ( cd main/a; run_mulle_bootstrap defer ) || exit 1
-   ( cd main/b; run_mulle_bootstrap defer ) || exit 1
-   ( cd main;   run_mulle_bootstrap ${BOOTSTRAP_FLAGS} ) || exit 1
-)
+( cd main/a; run_mulle_bootstrap defer ) || exit 1
+( cd main/b; run_mulle_bootstrap defer ) || exit 1
+( cd main;   run_mulle_bootstrap ${BOOTSTRAP_FLAGS} ) || exit 1
 
 echo "succeeded" >&2

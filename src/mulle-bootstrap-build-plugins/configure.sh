@@ -238,7 +238,6 @@ test_configure()
       log_fluff "There is no configure project in \"${srcdir}\""
       return 1
    fi
-   projectfile="${srcdir}/${projectfile}"
    projectdir="`dirname -- "${projectfile}"`"
 
    if ! [ -x "${projectdir}/configure" ]

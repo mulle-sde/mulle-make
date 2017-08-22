@@ -231,7 +231,6 @@ test_autoconf()
          return 1
       fi
    fi
-   projectfile="${srcdir}/${projectfile}"
    projectdir="`dirname -- "${projectfile}"`"
 
    tools_environment_autoconf "${name}" "${projectdir}"

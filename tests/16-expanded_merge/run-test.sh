@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 clear_test_dirs()
 {
    local i
@@ -9,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -39,10 +39,10 @@ setup_test_case()
 {
    clear_test_dirs main
 
-   mkdir -p main/a/.bootstrap
-   mkdir -p main/b/.bootstrap
-   mkdir -p main/c/.bootstrap
-   mkdir -p main/d/.bootstrap
+   mkdir -p main/a; ( cd main/a ; mulle-bootstrap -s init -n )
+   mkdir -p main/b; ( cd main/b ; mulle-bootstrap -s init -n )
+   mkdir -p main/c; ( cd main/c ; mulle-bootstrap -s init -n )
+   mkdir -p main/d; ( cd main/d ; mulle-bootstrap -s init -n )
 
    echo "a" > main/a/identity
    echo "b" > main/b/identity

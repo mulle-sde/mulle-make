@@ -42,7 +42,9 @@ MULLE_BOOTSTRAP_PROJECT_SH="included"
 #
 make_master_bootstrap_project()
 {
-   local  masterpath="${1:-.}"
+   log_entry "make_master_bootstrap_project" "$@"
+
+   local masterpath="${1:-.}"
 
    if [ -d "${masterpath}/${BOOTSTRAP_DIR}" ]
    then
@@ -50,13 +52,17 @@ make_master_bootstrap_project()
    fi
 
    create_file_if_missing "${masterpath}/${BOOTSTRAP_DIR}.local/is_master"
+   _create_file_if_missing "${masterpath}/${BOOTSTRAP_DIR}.local/version" \
+                           "${MULLE_EXECUTABLE_VERSION_MAJOR}"
 }
 
 
 make_minion_bootstrap_project()
 {
-   local  minionpath="${1:-.}"
-   local  masterpath="${2:-.}"
+   log_entry "make_minion_bootstrap_project" "$@"
+
+   local minionpath="${1:-.}"
+   local masterpath="${2:-.}"
 
    [ $# -eq 2 ] || internal_fail "parameter error"
 
@@ -69,6 +75,8 @@ make_minion_bootstrap_project()
 
 can_be_master_bootstrap_project()
 {
+   log_entry "can_be_master_bootstrap_project" "$@"
+
    local  masterpath="${1:-.}"
 
    [ ! -d "${masterpath}/${BOOTSTRAP_DIR}" ]
@@ -77,15 +85,20 @@ can_be_master_bootstrap_project()
 
 make_master_bootstrap_project()
 {
+   log_entry "make_master_bootstrap_project" "$@"
+
    local  masterpath="${1:-.}"
 
    create_file_if_missing "${masterpath}/${BOOTSTRAP_DIR}.local/is_master"
+   _create_file_if_missing "${masterpath}/${BOOTSTRAP_DIR}.local/version" "$MULLE_EXECUTABLE_VERSION_MAJOR"
 }
 
 
 emancipate_minion_bootstrap_project()
 {
-   local  minionpath="${1:-.}"
+   log_entry "emancipate_minion_bootstrap_project" "$@"
+
+   local minionpath="${1:-.}"
 
    exekutor rm "${minionpath}/${BOOTSTRAP_DIR}.local/is_minion"  >&2
 }
@@ -93,15 +106,29 @@ emancipate_minion_bootstrap_project()
 
 get_master_of_minion_bootstrap_project()
 {
-   local  minionpath="${1:-.}"
+   log_entry "get_master_of_minion_bootstrap_project" "$@"
+
+   local minionpath="${1:-.}"
 
    egrep -s -v '^#|^[ ]*$' "${minionpath}/${BOOTSTRAP_DIR}.local/is_minion"
    :
 }
 
 
+get_master_bootstrap_version()
+{
+   log_entry "get_master_bootstrap_version" "$@"
+
+   local masterpath="${1:-.}" ; shift
+
+   __read_setting "${masterpath}/${BOOTSTRAP_DIR}.local/version"
+}
+
+
 master_owns_minion_bootstrap_project()
 {
+   log_entry "master_owns_minion_bootstrap_project" "$@"
+
    local masterpath="${1:-.}" ; shift
    local minionpath="${1:-.}" ; shift
 
@@ -116,6 +143,8 @@ master_owns_minion_bootstrap_project()
 
 _copy_environment_files()
 {
+   log_entry "_copy_environment_files" "$@"
+
    local src="${1:-.}" ; shift
    local dst="${1:-.}" ; shift
 
@@ -143,6 +172,8 @@ _copy_environment_files()
 
 master_add_minion_bootstrap_project()
 {
+   log_entry "master_add_minion_bootstrap_project" "$@"
+
    local masterpath="${1:-.}" ; shift
    local minionpath="${1:-.}" ; shift
 
@@ -167,6 +198,8 @@ master_add_minion_bootstrap_project()
 #
 master_remove_minion_bootstrap_project()
 {
+   log_entry "master_remove_minion_bootstrap_project" "$@"
+
    local masterpath="${1:-.}" ; shift
    local minionpath="${1:-.}" ; shift
    local unregex

@@ -505,20 +505,18 @@ unpostpone_trace()
 #
 check_version()
 {
-   local version
-   local min_major
-   local min_minor
+   log_entry "check_version" "$@"
 
-   version="$1"
-   min_major="$2"
-   min_minor="$3"
+   local version="$1"
+   local min_major="$2"
+   local min_minor="$3"
 
    local major
    local minor
 
    if [ -z "${version}" ]
    then
-      return 0
+      return 1
    fi
 
    major="`echo "${version}" | head -1 | cut -d. -f1`"
@@ -532,8 +530,8 @@ check_version()
       return 1
    fi
 
-   minor="`echo "${version}" | head -1 | cut -d. -f2`"
-   [ "${minor}" -le "${min_minor}" ]
+   minor="`echo "${version}" | head -1 | cut -s -d. -f2`"
+   [ -z "${minor}" ] || [ "${minor}" -le "${min_minor}" ]
 }
 
 
@@ -681,14 +679,25 @@ assert_mulle_bootstrap_version()
    local version
 
    # has to be read before .auto is setup
-   version="`read_raw_setting "version"`"
+   version="`read_raw_setting "version"`" # assume too old
 
    if check_version "$version" "${MULLE_EXECUTABLE_VERSION_MAJOR}" "${MULLE_EXECUTABLE_VERSION_MINOR}"
    then
       return
    fi
 
-   fail "This ${BOOTSTRAP_DIR} requires ${MULLE_EXECUTABLE} version ${version} at least, you have ${MULLE_EXECUTABLE_VERSION}"
+   if [ -z "${version}" ]
+   then
+      version="3 or earlier"
+   fi
+
+   fail "\
+This mulle-bootstrap project at
+${C_RESET}${C_RED}$PWD${C_ERROR}
+is compatible with ${MULLE_EXECUTABLE} version ${version}.
+${C_INFO}This is ${MULLE_EXECUTABLE} version ${MULLE_EXECUTABLE_VERSION}.
+Consult ${C_RESET_BOLD}https://github.com/mulle-nat/mulle-bootstrap${C_INFO} for information on how to
+upgrade your executable or .bootstrap files."
 }
 
 

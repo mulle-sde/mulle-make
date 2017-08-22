@@ -568,8 +568,9 @@ bootstrap_auto_final()
    local name
    local url
    local branch
-   local scm
    local tag
+   local scm
+   local scmoptions
    local stashdir
 
    local clone

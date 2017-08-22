@@ -8,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -34,8 +35,6 @@ run_mulle_bootstrap()
 #
 #
 #
-
-
 # embedded repositories are
 setup()
 {
@@ -57,7 +56,7 @@ setup()
       cd ..
 
    cd b
-      run_mulle_bootstrap init -n
+      run_mulle_bootstrap init -n -d
       echo "a;src/a_1" > .bootstrap/embedded_repositories
       echo "# b" > README.md
       git init
@@ -66,7 +65,7 @@ setup()
       cd ..
 
    cd c
-      run_mulle_bootstrap init -n
+      run_mulle_bootstrap init -n -d
       echo "b;src/b_1" > .bootstrap/repositories
       echo "# c" > README.md
       git init
@@ -75,7 +74,7 @@ setup()
       cd ..
 
    cd d
-      run_mulle_bootstrap init -n
+      run_mulle_bootstrap init -n -d
       echo "c" > .bootstrap/repositories
       echo "# d" > README.md
       git init

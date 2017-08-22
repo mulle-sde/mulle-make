@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 clear_test_dirs()
 {
    local i
@@ -9,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done

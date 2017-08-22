@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 clear_test_dirs()
 {
    local i
@@ -9,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -37,16 +37,14 @@ run_mulle_bootstrap()
 #
 setup_test_case()
 {
-   clear_test_dirs a b c
+   mkdir -p a && ( cd a ; mulle-bootstrap -s init -n ) &&
+   mkdir -p b && ( cd b ; mulle-bootstrap -s init -n ) &&
+   mkdir -p b/bee &&
+   mkdir -p c/cee &&
 
-   mkdir -p a/.bootstrap
-   mkdir -p b/.bootstrap
-   mkdir -p b/bee
-   mkdir -p c/cee
-
-   echo '${B};b' > a/.bootstrap/repositories
-   echo 'b'      > a/.bootstrap/B
-   echo '${C};c' > b/.bootstrap/embedded_repositories
+   echo '${B};b' > a/.bootstrap/repositories &&
+   echo 'b'      > a/.bootstrap/B &&
+   echo '${C};c' > b/.bootstrap/embedded_repositories &&
    echo 'c'      > b/.bootstrap/C
 }
 
@@ -57,7 +55,7 @@ _test_1()
    run_mulle_bootstrap ${BOOTSTRAP_FLAGS} -y -f fetch  || exit 1
 
    result="`cat .bootstrap.auto/repositories 2> /dev/null`"
-   expect="b;b;master;git"
+   expect="b;b;master;;git"
    if [ "${expect}" != "${result}" ]
    then
       fail "($result)" >&2
@@ -87,7 +85,7 @@ _test_2()
    run_mulle_bootstrap ${BOOTSTRAP_FLAGS} -y -f fetch --embedded-symlinks --follow-symlinks || exit 1
 
    result="`cat .bootstrap.auto/repositories 2> /dev/null`"
-   expect="b;b;master;git"
+   expect="b;b;master;;git"
    if [ "${expect}" != "${result}" ]
    then
       fail "($result)" >&2
@@ -115,11 +113,12 @@ _test_2()
 
 test_1()
 {
-   clear_test_dirs a b c
-   setup_test_case
+   clear_test_dirs a b c &&
+   setup_test_case &&
+
 
    (
-      cd a || fail "a missing" ;
+      cd a &&
       _test_1 "$@"
    ) || exit 1
 }
@@ -127,11 +126,11 @@ test_1()
 
 test_2()
 {
-   clear_test_dirs a b c
-   setup_test_case
+   clear_test_dirs a b c &&
+   setup_test_case &&
 
    (
-      cd a || fail "a missing" ;
+      cd a &&
       _test_2 "$@"
    ) || exit 1
 }
@@ -144,10 +143,8 @@ export MULLE_BOOTSTRAP_LOCAL_PATH
 #
 # not that much of a test
 #
-test_1
-test_2
-
-clear_test_dirs a b c
-
+test_1 &&
+test_2 &&
 echo "succeeded" >&2
 
+clear_test_dirs a b c

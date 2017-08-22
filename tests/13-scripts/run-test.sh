@@ -8,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -36,9 +37,9 @@ run_mulle_bootstrap()
 #
 setup()
 {
-   [ -d a ] && rm -rf a
-   [ -d b ] && rm -rf b
-   [ -d c ] && rm -rf c
+   [ -d a ] && chmod -R a+wX a && rm -rf a
+   [ -d b ] && chmod -R a+wX b &&rm -rf b
+   [ -d c ] && chmod -R a+wX c &&rm -rf c
 
    mkdir a
    mkdir b
@@ -47,7 +48,8 @@ setup()
    (
       cd a
 
-      mkdir -p .bootstrap
+      mulle-bootstrap -s init -n
+
       echo "b" > .bootstrap/repositories
 
       mkdir -p .bootstrap/b.build/bin
@@ -68,7 +70,8 @@ setup()
    (
       cd b
 
-      mkdir -p .bootstrap
+      mulle-bootstrap -s init -n
+
       echo "c" > .bootstrap/repositories
 
       mkdir -p .bootstrap/c.build/bin
@@ -89,6 +92,7 @@ setup()
    (
       cd c
 
+      mulle-bootstrap -s init -n
       mkdir -p .bootstrap/bin
       echo "echo c/.bootstrap/bin/pre-build.sh >&2" > .bootstrap/bin/pre-build.sh
       chmod 755 .bootstrap/bin/pre-build.sh
@@ -127,9 +131,12 @@ b/.bootstrap/bin/build.sh
 b/.bootstrap/bin/post-build.sh
 a/.bootstrap/bin/post-build.sh"
 
-   [ "${results}" != "${expected}" ] && fail "${results} != ${expected}"
-   :
-)
+   if [ "${results}" != "${expected}" ]
+   then
+      fail "${results}" != "${expected}"
+      return 1
+   fi
+) || exit 1
 
 
 echo "succeeded" >&2

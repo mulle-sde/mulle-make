@@ -1086,9 +1086,11 @@ install_tars()
 
 build_main()
 {
+   log_entry "build_main" "$@"
+
    local  clean
 
-   log_entry "::: build begin :::" "$@"
+   log_debug "::: build begin :::"
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]        && . mulle-bootstrap-settings.sh

@@ -8,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -54,6 +55,11 @@ c" > b/.bootstrap/repositories
 
    echo "d" > c/.bootstrap/repositories
    echo "e" > d/.bootstrap/repositories
+
+   mulle-bootstrap --version > a/.bootstrap/version
+   mulle-bootstrap --version > b/.bootstrap/version
+   mulle-bootstrap --version > c/.bootstrap/version
+   mulle-bootstrap --version > d/.bootstrap/version
 }
 
 
@@ -113,19 +119,19 @@ setup_test_dirs
 (
    setup_test_case1 &&
    cd a &&
-   test "e;stashes/e;master;git
-d;stashes/d;master;git
-c;stashes/c;master;git
-b;stashes/b;master;git"
+   test "e;stashes/e;master;;git
+d;stashes/d;master;;git
+c;stashes/c;master;;git
+b;stashes/b;master;;git"
 ) || exit 1
 
 (
    setup_test_case2 &&
    cd a &&
-   test "d;stashes/d;master;git
-c;stashes/c;master;git
-b;stashes/b;master;git
-e;stashes/e;master;git"
+   test "d;stashes/d;master;;git
+c;stashes/c;master;;git
+b;stashes/b;master;;git
+e;stashes/e;master;;git"
 ) || exit 1
 clear_test_dirs a b c d e
 

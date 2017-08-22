@@ -62,36 +62,61 @@ EOF
 }
 
 
-_init_add_repositories()
+_print_repositories()
 {
-   redirect_exekutor "${BOOTSTRAP_DIR}/$1" cat <<EOF
+   cat <<EOF
 #
 # Add repository URLs to this file.
 #
-# mulle-bootstrap [fetch] will download these into your project root
-# mulle-bootstrap [build] will NOT build them
+# mulle-bootstrap [fetch] will download these into ./stashes
+# mulle-bootstrap [build] will build them into ./dependencies
 #
-# Each line consists of four fields, only the URL is necessary.
+# Each line consists of six fields, only the URL is necessary.
 # Possible URL forms for repositories:
 #
 # https://www.mulle-kybernetik.com/repositories/MulleScion
 # git@github.com:mulle-nat/MulleScion.git
-# ../MulleScion
 # /Volumes/Source/srcM/MulleScion
 #
-# With SUBDIR you can place the embedded repository somewhere in your
-# project directory structure. By default it will be placed into \"stashes\"
-# BRANCH is the specific branch to fetch.
-# TAG can be a git branch or a tag to checkout. SCM can be \"git\" or \"svn\".
+# SUBDIR     : should be left empty
+# BRANCH     : the specific branch to fetch.
+# TAG        : can be a git branch or a tag to checkout.
+# SCM        : defaults to git, can be tar, zip, svn
+# SCMOPTIONS : usually left empty
 #
-# URL;SUBDIR;TAG;SCM
-# ================
-# ex. foo.com/bla.git;src/mybla;release;git
-# ex. foo.com/bla.svn;;;svn
-#
-#
+# URL;SUBDIR;BRANCH;TAG;SCM;SCMOPTIONS
 EOF
 }
+
+
+_print_embedded_repositories()
+{
+   cat <<EOF
+#
+# Add repository URLs to this file. Use SUBDIR to place the directory in
+# your sourcetree
+#
+# mulle-bootstrap [fetch] will download the repostiory into a SUBDIR of your
+# project root
+# mulle-bootstrap [build] will NOT build it
+#
+# Each line consists of six fields, only the URL is necessary.
+# Possible URL forms for repositories:
+#
+# https://www.mulle-kybernetik.com/repositories/MulleScion
+# git@github.com:mulle-nat/MulleScion.git
+# /Volumes/Source/srcM/MulleScion
+#
+# SUBDIR     : specfiy place to clone repository to
+# BRANCH     : the specific branch to fetch.
+# TAG        : can be a git branch or a tag to checkout.
+# SCM        : defaults to git, can be tar, zip, svn
+# SCMOPTIONS : usually left empty
+#
+# URL;SUBDIR;BRANCH;TAG;SCM;SCMOPTIONS
+EOF
+}
+
 
 
 
@@ -192,8 +217,9 @@ ${MULLE_EXECUTABLE}${C_INFO}
    if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
    then
       mainfile="repositories"
-      _init_add_repositories "repositories"
-      _init_add_repositories "embedded_repositories"
+
+      _print_repositories > "${BOOTSTRAP_DIR}/repositories"
+      _print_embedded_repositories > "${BOOTSTRAP_DIR}/embedded_repositories"
    else
       mainfile="brews"
    fi

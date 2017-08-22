@@ -44,11 +44,11 @@ build_script()
    log_entry "build_script" "$@"
 
    local script="$1"
-   local configuration="$1"
-   local srcdir="$2"
-   local builddir="$3"
-   local name="$4"
-   local sdk="$5"
+   local configuration="$2"
+   local srcdir="$3"
+   local builddir="$4"
+   local name="$5"
+   local sdk="$6"
 
    local project
    local schemename

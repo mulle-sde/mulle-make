@@ -1,6 +1,5 @@
 #! /bin/sh
 
-
 clear_test_dirs()
 {
    local i
@@ -9,6 +8,7 @@ clear_test_dirs()
    do
       if [ -d "$i" ]
       then
+         chmod -R a+wX "$i"
          rm -rf "$i"
       fi
    done
@@ -45,7 +45,9 @@ setup_test_case()
    mkdir -p c/cee
 
    echo "b;b" > a/.bootstrap/repositories
+   mulle-bootstrap --version > a/.bootstrap/version
    echo "c;c" > b/.bootstrap/embedded_repositories
+   mulle-bootstrap --version > b/.bootstrap/version
 }
 
 
@@ -55,7 +57,7 @@ _test_1()
    run_mulle_bootstrap ${BOOTSTRAP_FLAGS} -y -f fetch  || exit 1
 
    result="`cat .bootstrap.auto/repositories 2> /dev/null`"
-   expect="b;b;master;git"
+   expect="b;b;master;;git"
    if [ "${expect}" != "${result}" ]
    then
       fail "($result)" >&2
@@ -85,7 +87,7 @@ _test_2()
    run_mulle_bootstrap ${BOOTSTRAP_FLAGS} -y -f fetch --embedded-symlinks --follow-symlinks || exit 1
 
    result="`cat .bootstrap.auto/repositories 2> /dev/null`"
-   expect="b;b;master;git"
+   expect="b;b;master;;git"
    if [ "${expect}" != "${result}" ]
    then
       fail "($result)" >&2

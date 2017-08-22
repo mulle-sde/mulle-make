@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 #
-#   Copyright (c) 2016 Nat! - Mulle kybernetiK
+#   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
 #
 #   Redistribution and use in source and binary forms, with or without
@@ -281,7 +281,7 @@ walk_check()
       # this not being in permissions makes things easier
       if [ "${MULLE_FLAG_FOLLOW_SYMLINKS}" != "YES" ]
       then
-         log_verbose "\"${stashdir}\" is a symlink, skipped"
+         log_fluff "\"${stashdir}\" is a symlink, skipped"
          return 1
       fi
    else
@@ -328,8 +328,9 @@ _walk_minions()
    local name
    local url
    local branch
-   local scm
    local tag
+   local scm
+   local scmoptions
    local stashdir
 
    permissions="`add_line "${permissions}" "minions"`"
@@ -355,8 +356,9 @@ _walk_minions()
                   "${name}" \
                   "${url}" \
                   "${branch}" \
-                  "${scm}" \
                   "${tag}" \
+                  "${scm}" \
+                  "${scmoptions}" \
                   "${stashdir}" \
                   "$@"
    done
@@ -378,8 +380,9 @@ _walk_repositories()
    local name
    local url
    local branch
-   local scm
    local tag
+   local scm
+   local scmoptions
    local stashdir
 
    IFS="
@@ -401,8 +404,9 @@ _walk_repositories()
                   "${name}" \
                   "${url}" \
                   "${branch}" \
-                  "${scm}" \
                   "${tag}" \
+                  "${scm}" \
+                  "${scmoptions}" \
                   "${stashdir}" \
                   "$@"
    done
@@ -416,13 +420,14 @@ _deep_walk_repos_trampoline()
 {
    log_debug ":_deep_walk_repos_trampoline:" "$@"
 
-   local reposdir="$1"; shift  # ususally .bootstrap.repos
-   local name="$1"; shift      # name of the clone
-   local url="$1"; shift       # URL of the clone
-   local branch="$1"; shift    # branch of the clone
-   local scm="$1"; shift       # scm to use for this clone
-   local tag="$1"; shift       # tag to checkout of the clone
-   local stashdir="$1"; shift  # stashdir of this clone (absolute or relative to $PWD)
+   local reposdir="$1"; shift     # ususally .bootstrap.repos
+   local name="$1"; shift         # name of the clone
+   local url="$1"; shift          # URL of the clone
+   local branch="$1"; shift       # branch of the clone
+   local tag="$1"; shift          # tag to checkout of the clone
+   local scm="$1"; shift          # scm to use for this clone
+   local scmoptions="$1"; shift   # options to use on scm
+   local stashdir="$1"; shift     # stashdir of this clone (absolute or relative to $PWD)
 
    local callback="$1"; shift
    local permissions="$1"; shift
@@ -455,13 +460,14 @@ _deep_walk_auto_trampoline()
 {
    log_debug ":_deep_walk_auto_trampoline:" "$@"
 
-   local reposdir="$1"; shift  # ususally .bootstrap.repos
-   local name="$1"; shift      # name of the clone
-   local url="$1"; shift       # URL of the clone
-   local branch="$1"; shift    # branch of the clone
-   local scm="$1"; shift       # scm to use for this clone
-   local tag="$1"; shift       # tag to checkout of the clone
-   local stashdir="$1"; shift  # stashdir of this clone (absolute or relative to $PWD)
+   local reposdir="$1"; shift     # ususally .bootstrap.repos
+   local name="$1"; shift         # name of the clone
+   local url="$1"; shift          # URL of the clone
+   local branch="$1"; shift       # branch of the clone
+   local tag="$1"; shift          # tag to checkout of the clone
+   local scm="$1"; shift          # scm to use for this clone
+   local scmoptions="$1"; shift   # options to use on scm
+   local stashdir="$1"; shift     # stashdir of this clone (absolute or relative to $PWD)
 
    local callback="$1"; shift
    local permissions="$1"; shift
@@ -646,8 +652,9 @@ walk_raw_clones()
    local url
    local dstdir
    local branch
-   local scm
    local tag
+   local scm
+   local scmoptions
 
    log_debug "Walking raw \"${clones}\" with \"${callback}\""
 
@@ -664,8 +671,9 @@ walk_raw_clones()
       "${callback}" "${url}" \
                     "${dstdir}" \
                     "${branch}" \
-                    "${scm}" \
                     "${tag}" \
+                    "${scm}" \
+                    "${scmoptions}" \
                     "$@"
    done
 
@@ -831,8 +839,9 @@ computed_stashdir()
 #   local url        # url of clone
 #   local dstdir
 #   local branch
-#   local scm
 #   local tag
+#   local scm
+#   local scmoptions
 #
 parse_raw_clone()
 {
@@ -840,7 +849,7 @@ parse_raw_clone()
 
    [ -z "${clone}" ] && internal_fail "parse_raw_clone: clone is empty"
 
-   IFS=";" read -r url dstdir branch scm tag <<< "${clone}"
+   IFS=";" read -r url dstdir branch tag scm scmoptions <<< "${clone}"
 }
 
 
@@ -865,8 +874,9 @@ process_raw_clone()
 #   local name
 #   local url
 #   local branch
-#   local scm
 #   local tag
+#   local scm
+#   local scmoptions
 #   local stashdir
 #
 # expansion is now done during .auto creation
@@ -885,12 +895,13 @@ parse_clone()
 
    if [ "$MULLE_FLAG_LOG_SETTINGS" = "YES" ]
    then
-      log_trace2 "URL:      \"${url}\""
-      log_trace2 "NAME:     \"${name}\""
-      log_trace2 "SCM:      \"${scm}\""
-      log_trace2 "BRANCH:   \"${branch}\""
-      log_trace2 "TAG:      \"${tag}\""
-      log_trace2 "STASHDIR: \"${stashdir}\""
+      log_trace2 "URL:        \"${url}\""
+      log_trace2 "NAME:       \"${name}\""
+      log_trace2 "BRANCH:     \"${branch}\""
+      log_trace2 "TAG:        \"${tag}\""
+      log_trace2 "SCM:        \"${scm}\""
+      log_trace2 "SCMOPTIONS: \"${scmoptions}\""
+      log_trace2 "STASHDIR:   \"${stashdir}\""
    fi
 
    # this is done  during auto already
@@ -917,8 +928,9 @@ names_from_repository_file()
    local dstdir
    local name
    local branch
-   local scm
    local tag
+   local scm
+   local scmoptions
 
    clones="`read_setting "${filename}"`"
 
@@ -962,9 +974,9 @@ read_repository_file()
    local dstdir
    local branch
    local scm
+   local scmoptions
    local tag
    local name
-
 
    IFS="
 "
@@ -1000,10 +1012,10 @@ read_repository_file()
 
       if [ "${MULLE_FLAG_LOG_MERGE}" = "YES" ]
       then
-         log_trace "${url};${dstdir};${branch};${scm};${tag}"
+         log_trace "${url};${dstdir};${branch};${tag};${scm};${scmoptions}"
       fi
 
-      echo "${url};${dstdir};${branch};${scm};${tag}"
+      echo "${url};${dstdir};${branch};${tag};${scm};${scmoptions}"
    done
 
    IFS="${DEFAULT_IFS}"
@@ -1255,6 +1267,7 @@ ${clone}"
       local stashdir
       local name
       local scm
+      local scmoptions
       local tag
       local url
       local clone
@@ -1333,6 +1346,9 @@ mulle_repositories_initialize()
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]        && . mulle-bootstrap-settings.sh
    [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ]       && . mulle-bootstrap-functions.sh
    [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
+
+   assert_mulle_bootstrap_version
+
    :
 }
 
