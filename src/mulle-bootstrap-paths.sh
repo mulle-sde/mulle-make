@@ -86,7 +86,7 @@ __collect_libraries()
 
    for i in "$1/"*
    do
-      name="`basename "$i"`"
+      name="`basename -- "$i"`"
       case "${name}" in
          lib*.a|lib*.lib)
             echo "${name}" | sed 's/\.[^.]*$//' | sed 's/^lib//'
@@ -103,7 +103,7 @@ __collect_frameworks()
 
    for i in "$1/"*
    do
-      name="`basename "$i"`"
+      name="`basename -- "$i"`"
       case "${name}" in
          *.framework)
             basename "${name}" | sed 's/\.[^.]*$//'
@@ -143,13 +143,13 @@ _collect_frameworks()
 
 collect_libraries()
 {
-   _collect_libraries "$@" | sort | sort -u
+   _collect_libraries | sort | sort -u
 }
 
 
 collect_frameworks()
 {
-   _collect_frameworks "$@" | sort | sort -u
+   _collect_frameworks | sort | sort -u
 }
 
 
@@ -191,6 +191,7 @@ _flags_binpath_value()
 {
    local pathline
    local line
+
    pathline="`_flags_emit_path_value "${DEPENDENCIES_DIR}/bin"`"
    line="`_flags_emit_path_value "${ADDICTIONS_DIR}/bin"`"
 
@@ -421,7 +422,6 @@ _flags_do_path()
 
    local values
    local line
-   local tmppath
 
    if [ "${OPTION_INHERIT}" = "YES" ]
    then
@@ -822,8 +822,6 @@ paths_main()
    subdir="`_dependencies_subdir`"
    DEPENDENCIES_DIR="${DEPENDENCIES_DIR}${subdir}"
 
-   local memo
-
    # hacque
    PATH_SEPARATOR="${OPTION_PATH_SEPARATOR}"
 
@@ -843,7 +841,7 @@ paths_main()
          ;;
 
          "cflags"|"cppflags"|"ldflags"|"binpath"|"frameworkpath"|"headerpath"|"librarypath")
-            values="`_flags_${type}_value`"
+            values="`"_flags_${type}_value"`"
             result="`add_line "${result}" "${values}"`"
          ;;
 

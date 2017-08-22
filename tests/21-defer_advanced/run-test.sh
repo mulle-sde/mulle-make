@@ -85,8 +85,8 @@ setup_test_case()
 {
    clear_test_dirs Master Boobie Foobie
 
-   mkdir -p Master/Minion1/.bootstrap
-   mkdir -p Master/Minion2/.bootstrap
+   mkdir -p Master/Minion1/ && ( cd Master/Minion1; mulle-bootstrap -s init -n)
+   mkdir -p Master/Minion2/ && ( cd Master/Minion2; mulle-bootstrap -s init -n)
    mkdir -p Foobie
    mkdir -p Boobie
 
@@ -166,13 +166,13 @@ test_fetch()
 Minion2"
    expect_contents "Master/.bootstrap.auto/minions" "Minion1
 Minion2"
-   expect_contents "Master/.bootstrap.auto/repositories" "Foobie;stashes/Foobie;master;git
-Minion2;Minion2;master;git"
+   expect_contents "Master/.bootstrap.auto/repositories" "Foobie;stashes/Foobie;master;;git
+Minion2;Minion2;master;;git"
 
    # abuse space cutting feature of bash here
-   expect_contents "Master/.bootstrap.repos/.deep/Minion1.d/Boobie" "Boobie;Minion1/Boobie;master;git"
-   expect_contents "Master/.bootstrap.repos/.deep/Minion2.d/Boobie" "Boobie;Minion2/Boobie;master;git"
-   expect_contents "Master/.bootstrap.repos/Foobie" "Foobie;stashes/Foobie;master;symlink"
+   expect_contents "Master/.bootstrap.repos/.deep/Minion1.d/Boobie" "Boobie;Minion1/Boobie;master;;git"
+   expect_contents "Master/.bootstrap.repos/.deep/Minion2.d/Boobie" "Boobie;Minion2/Boobie;master;;git"
+   expect_contents "Master/.bootstrap.repos/Foobie" "Foobie;stashes/Foobie;master;;symlink"
 
    expect_contents "Master/stashes/Foobie/i_am_foobie.txt" "Foobie"
    expect_contents "Master/Minion1/Boobie/i_am_boobie.txt" "Boobie"
@@ -196,13 +196,13 @@ test_move()
 Minion2"
    expect_contents "Master/.bootstrap.auto/minions" "Minion2
 Minion"
-   expect_contents "Master/.bootstrap.auto/repositories" "Foobie;stashes/Foobie;master;git
-Minion2;Minion2;master;git"
+   expect_contents "Master/.bootstrap.auto/repositories" "Foobie;stashes/Foobie;master;;git
+Minion2;Minion2;master;;git"
 
    # abuse space cutting feature of bash here
-   expect_contents "Master/.bootstrap.repos/.deep/Minion.d/Boobie"  "Boobie;Minion/Boobie;master;git"
-   expect_contents "Master/.bootstrap.repos/.deep/Minion2.d/Boobie" "Boobie;Minion2/Boobie;master;git"
-   expect_contents "Master/.bootstrap.repos/Foobie" "Foobie;stashes/Foobie;master;symlink"
+   expect_contents "Master/.bootstrap.repos/.deep/Minion.d/Boobie"  "Boobie;Minion/Boobie;master;;git"
+   expect_contents "Master/.bootstrap.repos/.deep/Minion2.d/Boobie" "Boobie;Minion2/Boobie;master;;git"
+   expect_contents "Master/.bootstrap.repos/Foobie" "Foobie;stashes/Foobie;master;;symlink"
 
    expect_contents "Master/stashes/Foobie/i_am_foobie.txt" "Foobie"
    expect_contents "Master/Minion/Boobie/i_am_boobie.txt" "Boobie"
@@ -217,26 +217,26 @@ Minion2;Minion2;master;git"
 #
 echo "mulle-bootstrap: `mulle-bootstrap version`(`mulle-bootstrap library-path`)" >&2
 
-setup_test_case
+setup_test_case || exit 1
 
 echo "-----------------------------------" >&2
 echo test_defer  >&2
 echo "-----------------------------------" >&2
 
-test_defer "$@"
+test_defer "$@" || exit 1
 
 echo "-----------------------------------" >&2
 echo test_fetch  >&2
 echo "-----------------------------------" >&2
 
 
-test_fetch "$@"
+test_fetch "$@" || exit 1
 
 echo "-----------------------------------" >&2
 echo test_move  >&2
 echo "-----------------------------------" >&2
 
-test_move "$@"
+test_move "$@" || exit 1
 
 echo "succeeded" >&2
 

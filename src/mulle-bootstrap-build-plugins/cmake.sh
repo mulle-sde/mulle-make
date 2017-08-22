@@ -51,7 +51,7 @@ tools_environment_cmake()
 
    local defaultgenerator
 
-   defaultgenerator="`platform_cmake_generator "${defaultmake}"`"
+   defaultgenerator="`platform_cmake_generator "${DEFAULTMAKE}"`"
    CMAKE="`find_cmake "${name}"`"
    CMAKE_GENERATOR="`read_build_setting "${name}" "cmake_generator" "${defaultgenerator}"`"
 }

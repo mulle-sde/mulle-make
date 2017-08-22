@@ -193,7 +193,7 @@ build_autoconf()
       fail "Could not run configure for \"${srcdir}"\"
    fi
 
-   [ -z "${PROJECTFILE}" ] && internal_fail "test_${preference} did not set PROJECTFILE"
+   [ -z "${PROJECTFILE}" ] && internal_fail "test_configure did not set PROJECTFILE"
          #statements
 
    log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
@@ -204,7 +204,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir}\" ..."
    build_configure "${PROJECTFILE}" "${configuration}" "${srcdir}" "${builddir}" "${name}" "${sdk}"
    if [ $? -ne 0 ]
    then
-      internal_fail "$build_${preference} should exit on failure and not return"
+      internal_fail "build_configure should exit on failure and not return"
    fi
 }
 

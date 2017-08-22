@@ -169,13 +169,11 @@ tools_environment_make()
 
    tools_environment_common "$@"
 
-   local defaultmake
-
-   defaultmake="`platform_make "${C_COMPILER}"`"
+   DEFAULTMAKE="`platform_make "${C_COMPILER}"`"
 
    case "${UNAME}" in
       mingw)
-         MAKE="`find_make "${name}" "${defaultmake}"`"
+         MAKE="`find_make "${name}" "${DEFAULTMAKE}"`"
       ;;
 
       darwin)
@@ -371,9 +369,7 @@ _build_flags()
 
    (
       local nativewd
-      local owd
 
-      owd="${PWD}"
       nativewd="`pwd ${BUILD_PWD_OPTIONS}`"
 
       cd "${builddir}"
@@ -533,7 +529,7 @@ create_mangled_header_path()
    local headers
 #   local prefix
 
-   headers="`xcode_get_setting "${key}" $*`"
+   headers="`xcode_get_setting "${key}" "$@"`"
    log_fluff "${key} read as \"${headers}\""
 
    case "${headers}" in
@@ -598,7 +594,6 @@ build_with_configuration_sdk_preferences()
 
    enforce_build_sanity "${builddir}"
 
-   local project
    local rval
    local WASXCODE
    local PROJECTFILE
@@ -613,7 +608,7 @@ build_with_configuration_sdk_preferences()
       TOOLNAME="${preference}"
       AUX_INFO=
 
-      test_${preference} "${configuration}" "${srcdir}" "${builddir}" "${name}"
+      "test_${preference}" "${configuration}" "${srcdir}" "${builddir}" "${name}"
       if [ $? -eq 0 ]
       then
          [ -z "${PROJECTFILE}" ] && internal_fail "test_${preference} did not set PROJECTFILE"
@@ -624,10 +619,10 @@ ${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
 ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir}\" ..."
 
-         build_${preference} "${PROJECTFILE}" "${configuration}" "${srcdir}" "${builddir}" "${name}" "${sdk}"
+         "build_${preference}" "${PROJECTFILE}" "${configuration}" "${srcdir}" "${builddir}" "${name}" "${sdk}"
          if [ $? -ne 0 ]
          then
-            internal_fail "$build_${preference} should exit on failure and not return"
+            internal_fail "build_${preference} should exit on failure and not return"
          fi
          rval=0
          break
@@ -665,7 +660,7 @@ load_build_plugins()
    do
       IFS="${DEFAULT_IFS}"
 
-      upcase="`tr '[a-z]' '[A-Z]' <<< "${preference}"`"
+      upcase="`tr 'a-z' 'A-Z' <<< "${preference}"`"
       plugindefine="MULLE_BOOTSTRAP_BUILD_PLUGIN_${upcase}_SH"
 
       if [ -z "`eval echo \$\{${plugindefine}\}`" ]
@@ -767,11 +762,9 @@ autoconf"`"
    # settings can override the commandline default
    configurations="`read_build_setting "${name}" "configurations" "${OPTION_CONFIGURATIONS}"`"
 
-   # "export" some globals
-   local BUILD_CONFIGURATIONS
+   # "export" a globala
    local BUILD_SDKS
 
-   BUILD_CONFIGURATIONS="${configurations}"
    BUILD_SDKS="${sdks}"
 
    for sdk in ${sdks}

@@ -41,7 +41,7 @@ setup_test_case()
 {
    clear_test_dirs a b
 
-   mkdir -p a/.bootstrap
+   mkdir -p a && ( cd a ; mulle-bootstrap -s init -n )
    mkdir -p b
 
    (
@@ -76,12 +76,12 @@ assert_a_1()
    [ -e ".bootstrap.repos/.embedded/b" ] && fail ".bootstrap.repos/.embedded/b not deleted"
 
    result="`cat .bootstrap.auto/repositories`"
-   [ "b;stashes/b;master;git" != "${result}" ] &&  fail ".bootstrap.auto/repositories ($result)"
+   [ "b;stashes/b;master;;git" != "${result}" ] &&  fail ".bootstrap.auto/repositories ($result)"
 
    [ ! -e "stashes/b" ] && fail "stashes not created"
 
    result="`head -1 .bootstrap.repos/b`"
-   [ "b;stashes/b;master;git" != "${result}" ] && fail "($result)"
+   [ "b;stashes/b;master;;git" != "${result}" ] && fail "($result)"
 
    result="`cat stashes/b/README.md`"
    [ "${result}" != "# VfL Bochum 1848" ] && fail "stashes/b/README.md not created ($result)"
@@ -96,12 +96,12 @@ assert_a_2()
    [ -e ".bootstrap.auto/repositories" ] && fail "auto repositories not deleted"
 
    result="`cat .bootstrap.auto/embedded_repositories`"
-   [ "b;b;master;git" != "${result}" ] &&  fail ".bootstrap.auto/embedded_repositories ($result)"
+   [ "b;b;master;;git" != "${result}" ] &&  fail ".bootstrap.auto/embedded_repositories ($result)"
 
    [ ! -e "b" ] && fail "b not created ($result)"
 
    result="`head -1 .bootstrap.repos/.embedded/b`"
-   [ "b;b;master;git" != "${result}" ] && fail "($result)"
+   [ "b;b;master;;git" != "${result}" ] && fail "($result)"
 
    result="`cat b/README.md`"
    [ "${result}" != "# VfL Bochum 1848" ] && fail "stashes not created ($result)"

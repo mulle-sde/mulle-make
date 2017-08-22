@@ -113,7 +113,7 @@ assert_sane_parameters()
 #
 check_tars()
 {
-   log_entry "check_tars" "$@"
+   log_entry "check_tars"
 
    local tarballs
    local tar
@@ -183,7 +183,7 @@ can_symlink_it()
 
    if [ "${OPTION_ALLOW_CREATING_SYMLINKS}" != "YES" ]
    then
-      log_fluff "Can't symlink it, because it's been forbidden to create symlinks"
+      log_fluff "Not allowed to symlink it. (Use --symlinks to allow)"
       return 1
    fi
 
@@ -286,7 +286,7 @@ do_operation()
    script="`find_build_setting_file "${name}" "bin/${opname}.sh"`"
    if [ ! -z "${script}" ]
    then
-      run_script "${script}" "@"
+      run_script "${script}" "%@"
       return $?
    fi
 
@@ -371,27 +371,42 @@ clone_or_symlink()
       ;;
    esac
 
-   do_operation "clone" \
-                "${reposdir}" \
-                "${name}" \
-                "${url}" \
-                "${branch}" \
-                "${tag}" \
-                "${scm}" \
-                "${scmoptions}" \
-                "${stashdir}"
+   script="`find_build_setting_file "${name}" "bin/clone.sh"`"
+   if [ ! -z "${script}" ]
+   then
+      run_script "${script}" \
+                 "${reposdir}" \
+                 "${name}" \
+                 "${url}" \
+                 "${branch}" \
+                 "${tag}" \
+                 "${scm}" \
+                 "${scmoptions}" \
+                 "${stashdir}"
+      return $?
+   fi
+
+   scm_operation "clone" \
+                 "${reposdir}" \
+                 "${name}" \
+                 "${url}" \
+                 "${branch}" \
+                 "${tag}" \
+                 "${scm}" \
+                 "${scmoptions}" \
+                 "${stashdir}"
+
    rval="$?"
    case $rval in
       0)
       ;;
 
       111)
-         fail "SCM \"${scm}\" is unknown"
+         log_fail "SCM \"${scm}\" is unknown"
       ;;
 
       *)
-         log_debug "SCM \"${scm}\" clone failed"
-         return 1
+         return $rval
       ;;
    esac
 
@@ -559,7 +574,7 @@ _update_operation_walk_deep_embedded_auto_repositories()
 ##
 update_repositories()
 {
-   log_entry "update_repositories" "$@"
+   log_entry "update_repositories"
 
    _update_operation_walk_repositories "update_repository"
 }
@@ -567,7 +582,7 @@ update_repositories()
 
 update_embedded_repositories()
 {
-   log_entry "update_embedded_repositories" "$@"
+   log_entry "update_embedded_repositories"
 
    _update_operation_walk_embedded_repositories "update_repository"
 }
@@ -575,7 +590,7 @@ update_embedded_repositories()
 
 update_deep_embedded_repositories()
 {
-   log_entry "update_deep_embedded_repositories" "$@"
+   log_entry "update_deep_embedded_repositories"
 
    _update_operation_walk_deep_embedded_auto_repositories "update_repository"
 }
@@ -586,7 +601,7 @@ update_deep_embedded_repositories()
 ##
 upgrade_repositories()
 {
-   log_entry "upgrade_repositories" "$@"
+   log_entry "upgrade_repositories"
 
    _update_operation_walk_repositories "upgrade_repository"
 }
@@ -594,7 +609,7 @@ upgrade_repositories()
 
 upgrade_embedded_repositories()
 {
-   log_entry "upgrade_embedded_repositories" "$@"
+   log_entry "upgrade_embedded_repositories"
 
    _update_operation_walk_embedded_repositories "upgrade_repository"
 }
@@ -602,7 +617,7 @@ upgrade_embedded_repositories()
 
 upgrade_deep_embedded_repositories()
 {
-   log_entry "upgrade_deep_embedded_repositories" "$@"
+   log_entry "upgrade_deep_embedded_repositories"
 
    _update_operation_walk_deep_embedded_auto_repositories "upgrade_repository"
 }
@@ -635,12 +650,12 @@ required_action_for_clone()
    local newclone="$1" ; shift
 
    local newreposdir="$1"    # ususally .bootstrap.repos
-   local newname="$2"        # name of the clone
+#   local newname="$2"        # name of the clone
    local newurl="$3"         # URL of the clone
    local newbranch="$4"      # branch of the clone
    local newtag="$5"         # tag to checkout of the clone
    local newscm="$6"         # scm to use for this clone
-   local newscmoptions="$7"  # scm to use for this clone
+#   local newscmoptions="$7"  # scm to use for this clone
    local newstashdir="$8"    # stashdir of this clone (absolute or relative to $PWD)
 
    local clone
@@ -854,6 +869,14 @@ auto_update_minions()
 }
 
 
+is_required_clone()
+{
+   log_entry "is_required_clone" "$@"
+
+   echo "${required_clones}" | fgrep -s -q -x "${name}" > /dev/null
+}
+
+
 work_clones()
 {
    log_entry "work_clones" "$@"
@@ -988,7 +1011,15 @@ work_clones()
                                    "${stashdir}"
 
                   case "$?" in
-                     1)
+                     0)
+                     ;;
+
+                     2)
+                        # if we used a symlink, we want to memorize that
+                        scm="symlink"
+                     ;;
+
+                     *)
                         #
                         # check if clone is an optional install component
                         # it is if it doesn't show up in "required"
@@ -996,23 +1027,19 @@ work_clones()
                         # you specify optionals, by specifying the required
                         # clones and leaving the optional out
                         #
-                        if ! echo "${required_clones}" | fgrep -s -q -x "${name}" > /dev/null
+                        if ! is_required_clone "${required_clones}" "${name}"
                         then
-                           log_info "${C_MAGENTA}${C_BOLD}${name}${C_INFO} is missing, but it's not required."
+                           log_info "${C_MAGENTA}${C_BOLD}${name}${C_INFO} is not required."
 
                            merge_line_into_file "${REPOS_DIR}/.missing" "${name}"
                            skip="YES"
                            continue
                         fi
 
-                        log_debug "don't continue, because a required fetch failed"
+                        log_debug "Don't continue, because a required fetch failed"
                         exit 1  # means exit
                      ;;
 
-                     2)
-                        # if we used a symlink, we want to memorize that
-                        scm="symlink"
-                     ;;
                   esac
                ;;
 
@@ -1114,7 +1141,7 @@ work_clones()
 #
 fetch_once_embedded_repositories()
 {
-   log_entry "fetch_once_embedded_repositories" "$@"
+   log_entry "fetch_once_embedded_repositories"
 
    local STASHES_DEFAULT_DIR=""
    local STASHES_ROOT_DIR=""
@@ -1137,7 +1164,7 @@ fetch_once_embedded_repositories()
 #
 fetch_once_minions_embedded_repositories()
 {
-   log_entry "fetch_once_minions_embedded_repositories" "$@"
+   log_entry "fetch_once_minions_embedded_repositories"
 
    local minions
 
@@ -1193,7 +1220,7 @@ fetch_once_minions_embedded_repositories()
 
 _fetch_once_deep_embedded_repository()
 {
-   log_entry "_fetch_once_minions_embedded_repositories" "$@"
+   log_entry "_fetch_once_minions_embedded_repositories"
 
    local reposdir="$1"     # ususally .bootstrap.repos
    local name="$2"         # name of the clone
@@ -1238,7 +1265,7 @@ _fetch_once_deep_embedded_repository()
 # but not minions
 fetch_once_deep_embedded_repositories()
 {
-   log_entry "fetch_once_deep_embedded_repositories" "$@"
+   log_entry "fetch_once_deep_embedded_repositories"
 
    local permissions
 
@@ -1251,7 +1278,7 @@ fetch_once_deep_embedded_repositories()
 
 extract_minion_precis()
 {
-   log_entry "extract_minion_precis" "$@"
+   log_entry "extract_minion_precis"
 
    local minions
 
@@ -1262,7 +1289,7 @@ extract_minion_precis()
 
 fetch_loop_repositories()
 {
-   log_entry "fetch_loop_repositories" "$@"
+   log_entry "fetch_loop_repositories"
 
    local loops
    local before
@@ -1459,7 +1486,9 @@ _common_main()
    local OVERRIDE_BRANCH
    local DONT_WARN_SCRIPTS="NO"
 
-   local ROOT_DIR="`pwd -P`"
+   local ROOT_DIR
+
+   ROOT_DIR="`pwd -P`"
 
    OPTION_CHECK_USR_LOCAL_INCLUDE="`read_config_setting "check_usr_local_include" "NO"`"
    OVERRIDE_BRANCH="`read_config_setting "override_branch"`"
@@ -1698,7 +1727,7 @@ _common_main()
          append_dir_to_gitignore_if_needed "${BOOTSTRAP_DIR}.auto"
          append_dir_to_gitignore_if_needed "${BOOTSTRAP_DIR}.local"
          append_dir_to_gitignore_if_needed "${DEPENDENCIES_DIR}"
-         if [ "${brew_permissions}" != "none" ]
+         if [ "${BREW_PERMISSIONS}" != "none" ]
          then
             append_dir_to_gitignore_if_needed "${ADDICTIONS_DIR}"
          fi

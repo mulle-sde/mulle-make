@@ -240,7 +240,7 @@ bootstrap_define_expansion()
 
    keyvalue="$1"
 
-   is_bootstrap_project || fail "This is not a ${MULLE_EXECUTABLE} project"
+   is_bootstrap_project "." || fail "This is not a ${MULLE_EXECUTABLE} project"
 
    if [ -z "${keyvalue}" ]
    then
@@ -253,7 +253,7 @@ bootstrap_define_expansion()
    local key
    local value
 
-   key="`echo "${keyvalue}" | cut -d= -f1 | tr '[a-z]' '[A-Z]'`"
+   key="`echo "${keyvalue}" | cut -d= -f1 | tr 'a-z' 'A-Z'`"
    if [ -z "${key}" ]
    then
       key="${keyvalue}"
@@ -300,7 +300,7 @@ bootstrap_should_defer_to_master()
    # master
    #
 
-   if ! is_minion_bootstrap_project
+   if ! is_minion_bootstrap_project "."
    then
       return 1
    fi
@@ -397,7 +397,7 @@ user_say_yes()
       esac
 
       printf "${C_WARNING}%b${C_RESET} (y/${C_GREEN}N${C_RESET}) > " "$*" >&2
-      read x
+      read -r x
 
       if [ -z "${x}" ]
       then
@@ -629,7 +629,7 @@ fetch_needed()
 
    IFS="
 "
-   for stashdir in `all_repository_stashes ${REPOS_DIR}`
+   for stashdir in `all_repository_stashes "${REPOS_DIR}"`
    do
       IFS="${DEFAULT_IFS}"
 
@@ -773,7 +773,7 @@ _expanded_variables()
          local url
 
          remote="`sed 's/GIT_REMOTE_\(.*\)/\1/' <<< "${key}"`"
-         remote="`tr '[A-Z]' '[a-z]' <<< "${remote}"`"
+         remote="`tr 'A-Z' 'a-z' <<< "${remote}"`"
          url="`_git_get_url "${ROOT_DIR}" "${remote}"`"
          value="`dirname "${url}"`"
       ;;
@@ -852,7 +852,7 @@ expanded_variables()
 
 is_bootstrap_project()
 {
-   local  masterpath="${1:-.}"
+   local masterpath="${1:-.}"
 
    [ -d "${masterpath}/${BOOTSTRAP_DIR}" -o -d "${masterpath}/${BOOTSTRAP_DIR}.local" ]
 }
@@ -860,7 +860,7 @@ is_bootstrap_project()
 
 is_master_bootstrap_project()
 {
-   local  masterpath="${1:-.}"
+   local masterpath="${1:-.}"
 
    [ -f "${masterpath}/${BOOTSTRAP_DIR}.local/is_master" ]
 }
@@ -868,7 +868,7 @@ is_master_bootstrap_project()
 
 is_minion_bootstrap_project()
 {
-   local  minionpath="${1:-.}"
+   local minionpath="${1:-.}"
 
    [ -f "${minionpath}/${BOOTSTRAP_DIR}.local/is_minion" ]
 }
@@ -876,7 +876,7 @@ is_minion_bootstrap_project()
 
 assert_sane_master_bootstrap_project()
 {
-   local  masterpath="$1"
+   local masterpath="$1"
 
    if [ -d "${masterpath}/${BOOTSTRAP_DIR}" ]
    then

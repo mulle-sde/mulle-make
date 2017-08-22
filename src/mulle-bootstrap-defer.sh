@@ -251,7 +251,7 @@ emancipate_main()
       local name
 
       name="`basename -- "${minionpath}"`"
-      ( mulle-bootstrap clean --minion "${name}" )
+      ( mulle-bootstrap clean -m "${name}" emancipate )
 
       log_info "Cleaning master before emancipation"
       ( mulle-bootstrap clean output )

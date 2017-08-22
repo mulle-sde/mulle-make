@@ -258,12 +258,12 @@ _bootstrap_merge_expanded_settings_in_front()
    local settings1
    local settings2
 
-   srcbootstrap="`dirname -- "${1}"`"
+   srcbootstrap="`dirname -- "${addition}"`"
 
-   settings1="`read_expanded_setting "$1" "" "${srcbootstrap}"`"
-   if [ ! -z "$2" ]
+   settings1="`read_expanded_setting "${addition}" "" "${srcbootstrap}"`"
+   if [ ! -z "${original}" ]
    then
-      settings2="`read_setting "$2"`"
+      settings2="`read_setting "${original}"`"
    fi
 
    _merge_settings_in_front "${settings1}" "${settings2}"
@@ -381,12 +381,10 @@ _bootstrap_auto_special_copy()
 
    dstfilepath="${dst}/${key}"
 
-   (
-      STASHES_DEFAULT_DIR=""
-      STASHES_ROOT_DIR="${directory}"
-      merge_repository_files "${filepath}" "${dstfilepath}" "NO"
+   local STASHES_DEFAULT_DIR=""
+   local STASHES_ROOT_DIR="${directory}"
 
-   )
+   merge_repository_files "${filepath}" "${dstfilepath}" "NO"
 }
 
 
@@ -631,10 +629,6 @@ tarballs
 repositories
 '
 
-   NON_MERGABLE_SETTINGS='embedded_repositories
-minions
-version
-'
    [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ] && . mulle-bootstrap-functions.sh
    [ -z "${MULLE_BOOTSTRAP_COPY_SH}" ] && . mulle-bootstrap-copy.sh
    :

@@ -84,12 +84,6 @@ build_script()
          logfile="/dev/null"
       fi
 
-      log_info "Let ${C_RESET_BOLD}script${C_INFO} do a \
-${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
-${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
-${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${info} in \
-\"${builddir}\" ..."
-
       local oldpath
       local rval
 

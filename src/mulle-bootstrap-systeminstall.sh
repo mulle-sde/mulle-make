@@ -216,7 +216,7 @@ merge_framework_configurations()
       if [ ! -z "${suffix}" ]
       then
          dstexe="${dstdir}/${name}${suffix}"
-         exekutor cp ${COPYMOVEFLAGS} "${srcexe}" "${dstexe}" >&2
+         exekutor cp ${COPYMOVEFLAGS} "${srcexe}" "${dstexe}" >&2
          exekutor chmod 755 "${dstexe}"  >&2
       fi
    done

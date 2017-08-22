@@ -187,15 +187,31 @@ _git_clone()
       log_info "Cloning ${C_MAGENTA}${C_BOLD}${url}${C_INFO} into \"${stashdir}\" ..."
    fi
 
+   #
    # "remote urls" go through caches
+   # local urls get checked ahead for better error messages
+   #
    case "${url}" in
-      file:*|/*|~*|.*)
+      file:*)
+         if ! git_is_repository "${url}"
+         then
+            log_error "\"${url}\" is not a git repository ($PWD)"
+            return 1
+         fi
       ;;
 
       *:*)
          if [ ! -z "${GIT_MIRROR}" ]
          then
             url="`_git_get_mirror_url "${url}"`" || return 1
+         fi
+      ;;
+
+      *)
+         if ! git_is_repository "${url}"
+         then
+            log_error "\"${url}\" is not a git repository ($PWD)"
+            return 1
          fi
       ;;
    esac

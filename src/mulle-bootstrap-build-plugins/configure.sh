@@ -130,19 +130,19 @@ build_configure()
 
    if [ ! -z "${other_cppflags}" ]
    then
-      env_flags="`concat "${cmake_flags}" "CPPFLAGS='${other_cppflags}'"`"
+      env_flags="`concat "${env_flags}" "CPPFLAGS='${other_cppflags}'"`"
    fi
    if [ ! -z "${other_cflags}" ]
    then
-      env_flags="`concat "${cmake_flags}" "CFLAGS='${other_cflags}'"`"
+      env_flags="`concat "${env_flags}" "CFLAGS='${other_cflags}'"`"
    fi
    if [ ! -z "${other_cxxflags}" ]
    then
-      env_flags="`concat "${cmake_flags}" "CXXFLAGS='${other_cxxflags}'"`"
+      env_flags="`concat "${env_flags}" "CXXFLAGS='${other_cxxflags}'"`"
    fi
    if [ ! -z "${other_ldflags}" ]
    then
-      env_flags="`concat "${cmake_flags}" "LDFLAGS='${other_ldflags}'"`"
+      env_flags="`concat "${env_flags}" "LDFLAGS='${other_ldflags}'"`"
    fi
 
    local logfile1

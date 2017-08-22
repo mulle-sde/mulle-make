@@ -126,12 +126,12 @@ svn_status_project()
 
    local options
 
-   options="$@"
+   options="`get_scmoption "${scmoptions}" "status"`"
 
    [ ! -z "${stashdir}" ] || internal_fail "stashdir is empty"
 
    (
       exekutor cd "${stashdir}" ;
-      exekutor svn status ${options} ${scmoptions} ${SVNOPTIONS}  >&2
+      exekutor svn status ${options} ${scmoptions} "$@" ${SVNOPTIONS}  >&2
    ) || fail "svn update of \"${stashdir}\" failed"
 }

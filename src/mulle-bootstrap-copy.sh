@@ -129,7 +129,9 @@ _copy_files()
 copy_files_stripping_last_extension()
 {
    local ext="$3"
-   local lastext="`echo "${ext}" | sed 's/\.[^.]*$//'`"
+   local lastext
+
+   lastext="`echo "${ext}" | sed 's/\.[^.]*$//'`"
 
    _copy_files "`tar_remove_extension "${lastext}"`" "$@"
 }

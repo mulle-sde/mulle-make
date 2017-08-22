@@ -49,8 +49,8 @@ EOF
          cat <<EOF >&2
    -c         : change @rpath for shared libraries and frameworks
    -n         : don't change @rpath for shared libraries (if config option is set)
-   -f <rpath> : @rpath for Frameworks (default: ${OPTION_RPATH_FRAMEWORKS})
-   -l <rpath> : @rpath for shared libraries (default: ${OPTION_RPATH_LIBRARIES})
+   -f <rpath> : @rpath for Frameworks (default: ${OPTION_RPATH_FRAMEWORK})
+   -l <rpath> : @rpath for shared libraries (default: ${OPTION_RPATH_LIBRARY})
 EOF
       ;;
    esac
@@ -329,9 +329,13 @@ _brew_install_brews()
    log_debug "_brew_install_brews" "$@"
 
    local brewcmd="$1" ; shift
-   local brews="$@"
+
 
    [ -z "${brewcmd}" ] && internal_fail "empty brewcmd"
+
+   local brews
+
+   brews="$*"
 
    if [ -z "${brews}" ]
    then
@@ -351,8 +355,6 @@ _brew_install_brews()
       return
    fi
 
-   local flag
-
    walk_brews "${brews}" _brew_action "${brewcmd}"
 }
 
@@ -364,9 +366,9 @@ brew_install_brews()
    unprotect=
    if [ -d "${ADDICTIONS_DIR}" ]
    then
-      log_fluff "Unprotecting \"${ADDICTIONS_DIR}\" for ${command}."
       exekutor chmod -R u+w "${ADDICTIONS_DIR}"
       unprotect="YES"
+      log_fluff "Unprotected \"${ADDICTIONS_DIR}\" for brew."
    fi
 
    _brew_install_brews "$@"

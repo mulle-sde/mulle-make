@@ -123,13 +123,13 @@ platform_cmake_generator()
       mingw)
          case "${make}" in
             n*|N*)
-               defaultgenerator="NMake Makefiles"
+               echo "NMake Makefiles"
             ;;
             mingw*|MINGW*)
-               defaultgenerator="MinGW Makefiles"
+               echo "MinGW Makefiles"
             ;;
             *)
-               defaultgenerator="MSYS Makefiles"
+               echo "MSYS Makefiles"
             ;;
          esac
       ;;

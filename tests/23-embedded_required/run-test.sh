@@ -40,24 +40,24 @@ setup_test_case()
 {
    clear_test_dirs a b c
 
-   mkdir -p a/.bootstrap
+   mkdir -p a && ( cd a ; mulle-bootstrap -s init -n )
    mkdir -p b
 
    (
       cd b &&
       git init &&
       echo "b) VfL Bochum 1848" > README.md &&
-      git add README.md && 
+      git add README.md &&
       git commit -m "bla bla"
    ) || exit 1
 
    mkdir -p c
 
    (
-      cd c && 
-      git init && 
+      cd c &&
+      git init &&
       echo "c) VfL Bochum 1848" > README.md &&
-      git add README.md && 
+      git add README.md &&
       git commit -m "bla bla"
    ) || exit 1
 

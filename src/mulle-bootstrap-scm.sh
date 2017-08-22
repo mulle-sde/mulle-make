@@ -367,7 +367,6 @@ validate_shasum256()
       ;;
    esac
 
-   log_fluff "Validating ${C_MAGENTA}${C_BOLD}${filename}${C_INFO} ..."
 
    local checksum
 
@@ -377,6 +376,7 @@ validate_shasum256()
       log_error "${filename} sha256 is ${checksum}, not ${expected} as expected"
       return 1
    fi
+   log_fluff "shasum256 did validate \"${filename}\""
 }
 
 
@@ -526,9 +526,8 @@ scm_operation()
 
 load_scm_plugins()
 {
-   log_entry "load_scm_plugins" "$@"
+   log_entry "load_scm_plugins"
 
-   local preference="$1"
    local upcase
    local plugindefine
    local pluginpath
@@ -543,7 +542,22 @@ load_scm_plugins()
       IFS="${DEFAULT_IFS}"
 
       name="`basename -- "${pluginpath}" .sh`"
-      upcase="`tr '[a-z]' '[A-Z]' <<< "${name}"`"
+
+      # don't load xcodebuild on non macos platforms
+      case "${UNAME}" in
+         darwin)
+         ;;
+
+         *)
+            case "${name}" in
+               xcodebuild)
+                  continue
+               ;;
+            esac
+         ;;
+      esac
+
+      upcase="`tr 'a-z' 'A-Z' <<< "${name}"`"
       plugindefine="MULLE_BOOTSTRAP_SCM_PLUGIN_${upcase}_SH"
 
       if [ -z "`eval echo \$\{${plugindefine}\}`" ]
@@ -552,7 +566,7 @@ load_scm_plugins()
 
          if [ "`type -t "${name}_clone_project"`" != "function" ]
          then
-            fail "SCM plugin \"${pluginpath}\" has no \"test_${preference}\" function"
+            fail "SCM plugin \"${pluginpath}\" has no \"${name}_clone_project\" function"
          fi
 
          log_fluff "SCM plugin \"${name}\" loaded"

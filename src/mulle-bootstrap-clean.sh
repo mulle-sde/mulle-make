@@ -410,6 +410,8 @@ _clean_execute()
 
 clean_execute()
 {
+   log_entry "clean_execute" "$@"
+
    setup_clean_environment
 
    _clean_execute "$@"
@@ -421,6 +423,8 @@ clean_execute()
 #
 clean_minions()
 {
+   log_entry "clean_minions" "$@"
+
    local style="$1"
    local minions="$2"
 
@@ -473,6 +477,41 @@ clean_minions()
 
 
 #
+# clean embedded repositories out of minion
+#
+clean_minion_embeds()
+{
+   log_entry "clean_minion_embeds" "$@"
+
+   local minions="$1"
+
+   local directories
+
+   [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
+
+   local minion
+
+   # used by a test...
+
+   IFS="
+"
+   for minion in ${minions}
+   do
+      IFS="${DEFAULT_IFS}"
+
+      if [ -z "${minion}" ]
+      then
+         continue
+      fi
+
+      directories="`_all_repository_stashes "${REPOS_DIR}/.deep/${minion}.d"`"
+      clean_directories "${directories}"
+      clean_directories "${REPOS_DIR}/.deep/${minion}.d"
+   done
+   IFS="${DEFAULT_IFS}"
+}
+
+#
 # don't rename these settings anymore, the consequences can be catastrophic
 # for users of previous versions.
 # Also don't change the search paths for read_sane_config_path_setting
@@ -481,7 +520,9 @@ clean_main()
 {
    log_debug "::: clean :::"
 
-   local ROOT_DIR="`pwd -P`"
+   local ROOT_DIR
+
+   ROOT_DIR="`pwd -P`"
 
    local OPTION_MINION_NAMES=
 
@@ -535,11 +576,15 @@ clean_main()
       ;;
 
       "dist"|"full"|"install"|"output")
-         if [ ! -z "${OPTION_MINION_NAME}" ]
+         if [ ! -z "${OPTION_MINION_NAMES}" ]
          then
             fail "Can not use minion options with \"${style}\""
          fi
          clean_execute "${style}"
+      ;;
+
+      "emancipate"|"minion-embeds")
+         clean_minion_embeds "${OPTION_MINION_NAMES}"
       ;;
 
       help)
@@ -570,7 +615,9 @@ uninit_main()
 {
    log_debug "::: uninit :::"
 
-   local ROOT_DIR="`pwd -P`"
+   local ROOT_DIR
+
+   ROOT_DIR="`pwd -P`"
 
    local OPTION_MINION_NAMES=
 

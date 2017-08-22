@@ -127,30 +127,32 @@ map_configuration()
 "
    for i in ${configurations}
    do
-      if [ "$i" = "$xcode_configuration" ]
+      if [ "$i" = "${xcode_configuration}" ]
       then
          mapped="${xcode_configuration}"
       fi
    done
+
+   if [ -z "$mapped" ]
+   then
+      case "${xcode_configuration}" in
+         *ebug*)
+            mapped="Debug"
+         ;;
+         *rofile*)
+            mapped="Release"
+         ;;
+         *eleas*)
+            mapped="Release"
+         ;;
+         *)
+            mapped="${default}"
+         ;;
+      esac
+   fi
+
    IFS="${DEFAULT_IFS}"
 
-   if [ "$mapped" = "" ]
-   then
-   case i in
-      *ebug*)
-         mapped="Debug"
-         ;;
-      *rofile*)
-         mapped="Release"
-         ;;
-      *eleas*)
-         mapped="Release"
-         ;;
-      *)
-         mapped="${default}"
-         ;;
-   esac
-   fi
    echo "${mapped}"
 }
 

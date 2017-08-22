@@ -381,7 +381,9 @@ extension_less_basename()
    echo "${filename%.*}"
 }
 
-
+#
+# TODO: who uses this and why ?
+#
 path_concat()
 {
    local i
@@ -410,7 +412,7 @@ path_concat()
       then
         s="$i"
       else
-        s="${s}/${i}"
+        s="${s}/${sep}${i}"
       fi
    done
 
@@ -743,7 +745,7 @@ _simplify_components()
    result= # voodoo linux fix ?
    IFS="
 "
-   for i in $*
+   for i in "$@"
    do
       IFS="${DEFAULT_IFS}"
 
@@ -965,7 +967,7 @@ assert_sane_path()
       ;;
 
       ""|/*)
-         if [ `path_depth "${file}"` -le 2 ]
+         if [ "`path_depth "${file}"`" -le 2 ]
          then
             log_error "refuse suspicious path \"$1\""
             exit 1
@@ -1311,7 +1313,7 @@ create_symlink()
 
    # need to do this otherwise the symlink fails
 
-   srcname="`basename -- ${url}`"
+   srcname="`basename -- "${url}"`"
    directory="`dirname -- "${stashdir}"`"
 
    mkdir_if_missing "${directory}"

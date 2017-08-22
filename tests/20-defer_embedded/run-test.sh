@@ -90,24 +90,24 @@ setup_test_case()
    mkdir -p Boobie
 
    (
-      cd Master/Minion/.bootstrap && 
+      cd Master/Minion/.bootstrap &&
       echo "Boobie" > embedded_repositories &&
       echo "Foobie" > repositories
    ) || exit 1
 
    (
-      cd Foobie && 
-      git init && 
-      echo "Foobie" > i_am_foobie.txt && 
-      git add i_am_foobie.txt && 
+      cd Foobie &&
+      git init &&
+      echo "Foobie" > i_am_foobie.txt &&
+      git add i_am_foobie.txt &&
       git commit -m "bla bla"
    ) || exit 1
 
    (
-      cd Boobie && 
-      git init && 
-      echo "Boobie" > i_am_boobie.txt && 
-      git add i_am_boobie.txt && 
+      cd Boobie &&
+      git init &&
+      echo "Boobie" > i_am_boobie.txt &&
+      git add i_am_boobie.txt &&
       git commit -m "bla bla"
    ) || exit 1
 }
@@ -129,7 +129,7 @@ test_defer()
    (
       cd Master/Minion
 
-      run_mulle_bootstrap "$@" emancipate 
+      run_mulle_bootstrap "$@" emancipate
    ) || exit 1
 
    expect_missing_file "Master/.bootstrap.local/is_master"
@@ -173,7 +173,7 @@ test_fetch()
 
    (
       cd Master
-      run_mulle_bootstrap clean --minion Minion
+      run_mulle_bootstrap clean -m Minion minion-embeds
    ) || exit 1
 
    expect_missing_file "Master/Minion/Boobie/i_am_boobie.txt"

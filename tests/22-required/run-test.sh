@@ -44,10 +44,10 @@ setup_test_case()
    mkdir -p b
 
    (
-      cd b ;
-      git init ;
-      echo "VfL Bochum 1848" > README.md ;
-      git add README.md ;
+      cd b &&
+      git init &&
+      echo "VfL Bochum 1848" > README.md &&
+      git add README.md &&
       git commit -m "bla bla"
    ) || exit 1
 
@@ -62,19 +62,23 @@ test_a()
       cd a ;
       if run_mulle_bootstrap "$@" fetch
       then
-         fail "mulle-bootstrap did not fail, though c is required"
+         fail "mulle-bootstrap wrongly did not fail, though c is required"
       fi
    ) || exit 1
+   echo "TEST PASSED" >&2
 
    echo "b" > a/.bootstrap/required
+   touch a/.bootstrap
 
    (
       cd a ;
       if ! run_mulle_bootstrap -f "$@" fetch
       then
-         fail "mulle-bootstrap failed, although c is not required"
+         fail "mulle-bootstrap wrongly did fail, although c is _not_ required"
       fi
    ) || exit 1
+
+   echo "TEST PASSED" >&2
 }
 
 

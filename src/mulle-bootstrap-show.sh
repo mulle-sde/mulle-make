@@ -428,7 +428,9 @@ _show_main()
 
    log_debug ":show_main:"
 
-   local ROOT_DIR="`pwd -P`"
+   local ROOT_DIR
+
+   ROOT_DIR="`pwd -P`"
 
    local SHOW_SCM="NO"
    local SHOW_URL="NO"

@@ -964,7 +964,6 @@ read_repository_file()
 
    local srcbootstrap
    local clones
-   local empty_expansion_is_error
 
    srcbootstrap="`dirname -- "${srcfile}"`"
 
@@ -1205,7 +1204,6 @@ unique_repository_contents()
 #
 sort_repository_file()
 {
-   local stop
    local match
 
    [ -z "${MULLE_BOOTSTRAP_DEPENDENCY_RESOLVE_SH}" ] && . mulle-bootstrap-dependency-resolve.sh

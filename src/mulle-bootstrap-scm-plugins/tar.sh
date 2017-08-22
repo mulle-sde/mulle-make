@@ -170,13 +170,15 @@ _tar_download()
       # we are in a tmp dir
       cachable_path=""
 
-      if ! _archive_test "${filename}" || \
+      if ! _archive_test "${cached_archive}" || \
          ! validate_download "${cached_archive}" "${scmoptions}"
       then
          remove_file_if_present "${cached_archive}"
          cached_archive=""
+      else
+         exekutor ln -s "${cached_archive}" "${download}" || fail "failed to symlink \"${cached_archive}\""
+         return
       fi
-      exekutor ln -s "${cached_archive}" "${download}" || fail "failed to symlink \"${cached_archive}\""
    fi
 
    local options

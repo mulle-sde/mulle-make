@@ -625,11 +625,11 @@ bootstrap_main()
       ;;
 
       type)
-         if is_minion_bootstrap_project
+         if is_minion_bootstrap_project "."
          then
             echo "Minion"
          else
-            if is_master_bootstrap_project
+            if is_master_bootstrap_project "."
             then
                echo "Master"
             else
@@ -687,7 +687,7 @@ bootstrap_main()
 # service both names
 #
 MULLE_EXECUTABLE="`basename -- "$0"`"
-MULLE_ARGUMENTS="$@"
+MULLE_ARGUMENTS="$*"
 MULLE_EXECUTABLE_ENV_PATH="$PATH"
 MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE}"
 MULLE_EXECUTABLE_PID="$$"

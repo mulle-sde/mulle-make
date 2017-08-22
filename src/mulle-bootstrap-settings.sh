@@ -304,7 +304,7 @@ _read_setting()
          [ "${key}" != "repositories" -a \
            "${key}" != "repositories.tmp" -a \
            "${key}" != "build_order" -a \
-           "${key}" != "versions" -a \
+           "${key}" != "version" -a \
            "${key}" != "embedded_repositories" -a \
            "${key}" != "MULLE_REPOSITORIES" -a \
            "${key}" != "MULLE_NAT_REPOSITORIES" \
@@ -431,7 +431,7 @@ list_environment_settings()
    local envkey
    local value
 
-   env | while read line
+   env | while read -r line
    do
       key="`echo "${line}" | \
             sed -n 's/^MULLE_BOOTSTRAP_\([^=]*\)=.*/\1/p' | \
@@ -778,7 +778,7 @@ read_expanded_setting()
 
    IFS="
 "
-   echo "${value}" | while read line
+   echo "${value}" | while read -r line
    do
       IFS="${DEFAULT_IFS}"
 
@@ -1534,34 +1534,34 @@ _generic_main()
    then
       fail "You can't set overrides and root at the same time"
    fi
-   if [ "${OPTION_OVERRIDES}" = "YES" -a ! -z "${repositories}" ]
+   if [ "${OPTION_OVERRIDES}" = "YES" -a ! -z "${repository}" ]
    then
       fail "You can't set overrides and repository at the same time"
    fi
-   if [ "${OPTION_ROOT}" = "YES" -a ! -z "${repositories}" ]
+   if [ "${OPTION_ROOT}" = "YES" -a ! -z "${repository}" ]
    then
       fail "You can't set root and repository at the same time"
    fi
 
    case "${command}" in
       delete)
-         _${type}_delete "${key}" "${repository}"
+         "_${type}_delete" "${key}" "${repository}"
       ;;
 
       list)
-         _${type}_list "${repository}"
+         "_${type}_list" "${repository}"
       ;;
 
       read)
-         _${type}_read "${key}" "${repository}"
+         "_${type}_read" "${key}" "${repository}"
       ;;
 
       write)
          if [ "${OPTION_APPEND}" = "YES" ]
          then
-            _${type}_append "${key}" "${value}" "${repository}"
+            "_${type}_append" "${key}" "${value}" "${repository}"
          else
-            _${type}_write "${key}" "${value}" "${repository}"
+            "_${type}_write" "${key}" "${value}" "${repository}"
          fi
       ;;
    esac
