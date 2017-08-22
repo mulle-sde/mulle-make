@@ -85,29 +85,29 @@ setup_test_case()
 {
    clear_test_dirs Master Boobie Foobie
 
-   mkdir -p Master/Minion/.bootstrap
+   mkdir -p Master/Minion && ( cd Master/Minion ; mulle-bootstrap -s init -n )
    mkdir -p Foobie
    mkdir -p Boobie
 
    (
-      cd Master/Minion/.bootstrap ;
-      echo "Boobie" > embedded_repositories
+      cd Master/Minion/.bootstrap && 
+      echo "Boobie" > embedded_repositories &&
       echo "Foobie" > repositories
    ) || exit 1
 
    (
-      cd Foobie ;
-      git init ;
-      echo "Foobie" > i_am_foobie.txt ;
-      git add i_am_foobie.txt ;
+      cd Foobie && 
+      git init && 
+      echo "Foobie" > i_am_foobie.txt && 
+      git add i_am_foobie.txt && 
       git commit -m "bla bla"
    ) || exit 1
 
    (
-      cd Boobie ;
-      git init ;
-      echo "Boobie" > i_am_boobie.txt ;
-      git add i_am_boobie.txt ;
+      cd Boobie && 
+      git init && 
+      echo "Boobie" > i_am_boobie.txt && 
+      git add i_am_boobie.txt && 
       git commit -m "bla bla"
    ) || exit 1
 }
@@ -119,7 +119,7 @@ test_defer()
    (
       cd Master/Minion
 
-      run_mulle_bootstrap "$@" defer || exit 1
+      run_mulle_bootstrap "$@" defer
    ) || fail "defer"
 
    expect_file "Master/.bootstrap.local/is_master"
@@ -129,9 +129,8 @@ test_defer()
    (
       cd Master/Minion
 
-      run_mulle_bootstrap "$@" emancipate || exit 1
-
-   )
+      run_mulle_bootstrap "$@" emancipate 
+   ) || exit 1
 
    expect_missing_file "Master/.bootstrap.local/is_master"
    expect_missing_file "Master/.bootstrap.local/minions"
@@ -162,11 +161,11 @@ test_fetch()
 
    expect_contents "Master/.bootstrap.auto/build_order" "Foobie"
    expect_contents "Master/.bootstrap.auto/minions" "Minion"
-   expect_contents "Master/.bootstrap.auto/repositories" "Foobie;stashes/Foobie;master;git"
+   expect_contents "Master/.bootstrap.auto/repositories" "Foobie;stashes/Foobie;master;;git"
 
    # abuse space cutting feature of bash here
-   expect_contents "Master/.bootstrap.repos/.deep/Minion.d/Boobie" "Boobie;Minion/Boobie;master;git"
-   expect_contents "Master/.bootstrap.repos/Foobie" "Foobie;stashes/Foobie;master;symlink"
+   expect_contents "Master/.bootstrap.repos/.deep/Minion.d/Boobie" "Boobie;Minion/Boobie;master;;git"
+   expect_contents "Master/.bootstrap.repos/Foobie" "Foobie;stashes/Foobie;master;;symlink"
 
    expect_contents "Master/stashes/Foobie/i_am_foobie.txt" "Foobie"
    expect_contents "Master/Minion/Boobie/i_am_boobie.txt" "Boobie"
@@ -175,7 +174,7 @@ test_fetch()
    (
       cd Master
       run_mulle_bootstrap clean --minion Minion
-   )
+   ) || exit 1
 
    expect_missing_file "Master/Minion/Boobie/i_am_boobie.txt"
 }
@@ -186,9 +185,8 @@ test_fetch()
 #
 echo "mulle-bootstrap: `mulle-bootstrap version`(`mulle-bootstrap library-path`)" >&2
 
-setup_test_case
-test_defer "$@"
-test_fetch "$@"
-
+setup_test_case &&
+test_defer "$@" &&
+test_fetch "$@" &&
 echo "succeeded" >&2
 

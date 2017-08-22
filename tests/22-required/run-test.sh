@@ -40,7 +40,7 @@ setup_test_case()
 {
    clear_test_dirs a b
 
-   mkdir -p a/.bootstrap
+   mkdir -p a && ( cd a ; mulle-bootstrap -s init -n )
    mkdir -p b
 
    (
@@ -86,9 +86,8 @@ echo "mulle-bootstrap: `mulle-bootstrap version`(`mulle-bootstrap library-path`)
 MULLE_BOOTSTRAP_LOCAL_PATH="`pwd -P`"
 export MULLE_BOOTSTRAP_LOCAL_PATH
 
-setup_test_case
-test_a "$@"
-clear_test_dirs a b
-
+setup_test_case &&
+test_a "$@" &&
+clear_test_dirs a b &&
 echo "succeeded" >&2
 

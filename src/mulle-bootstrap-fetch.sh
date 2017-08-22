@@ -745,7 +745,7 @@ required_action_for_clone()
       ;;
    esac
 
-   have_upgrade="`git_scm_function "${scm}" "upgrade"`"
+   have_upgrade="`get_scm_function "${scm}" "upgrade"`"
    if [ "${branch}" != "${newbranch}" ]
    then
       log_fluff "Branch has changed from \"${branch}\" to \"${newbranch}\", need to fetch"
@@ -758,7 +758,7 @@ required_action_for_clone()
       fi
    fi
 
-   have_checkout="`git_scm_function "${scm}" "checkout"`"
+   have_checkout="`get_scm_function "${scm}" "checkout"`"
    if [ "${tag}" != "${newtag}" ]
    then
       log_fluff "Tag has changed from \"${tag}\" to \"${newtag}\", need to check-out"
@@ -771,7 +771,7 @@ required_action_for_clone()
       fi
    fi
 
-   have_set_url="`git_scm_function "${scm}" "set_url"`"
+   have_set_url="`get_scm_function "${scm}" "set_url"`"
    if [ "${url}" != "${newurl}" ]
    then
       log_fluff "URL has changed from \"${url}\" to \"${newurl}\", need to set remote url and fetch"

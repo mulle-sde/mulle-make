@@ -45,10 +45,10 @@ setup_test_case()
    mkdir -p b
 
    (
-      cd b ;
-      git init ;
-      echo "# VfL Bochum 1848" > README.md ;
-      git add README.md ;
+      cd b && 
+      git init && 
+      echo "# VfL Bochum 1848" > README.md && 
+      git add README.md && 
       git commit -m "bla bla"
    ) || exit 1
 
@@ -104,7 +104,7 @@ _test_a_2()
 test_a()
 {
    (
-      cd a ;
+      cd a && 
       _test_a_1 "$@"
    ) || exit 1
 
@@ -114,7 +114,7 @@ test_a()
    move_test_case
 
    (
-      cd a ;
+      cd a && 
       _test_a_2 "$@"
    ) || exit 1
 }
@@ -128,9 +128,8 @@ echo "mulle-bootstrap: `mulle-bootstrap version`(`mulle-bootstrap library-path`)
 MULLE_BOOTSTRAP_LOCAL_PATH="`pwd -P`"
 export MULLE_BOOTSTRAP_LOCAL_PATH
 
-setup_test_case
-test_a "$@"
-clear_test_dirs a b
-
+setup_test_case &&
+test_a "$@" &&
+clear_test_dirs a b &&
 echo "succeeded" >&2
 
