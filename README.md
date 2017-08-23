@@ -6,7 +6,7 @@
 
 ... for C, C++, Objective-C
 
-... certainly not a "minimal" or "lightweight" project with ca. 10000 lines of
+... certainly not a "minimal" or "lightweight" project with ca. 30000 lines of
   shell script code
 
 
@@ -22,6 +22,35 @@ tickle your fancy
 **mulle-bootstrap** may enable you to do so
 * If you do cross-platform development, **mulle-bootstrap** may be your best bet for a dependency manager
 
+
+#### Read the [NAQ](dox/NAQ.md) for a quick introduction
+
+> #### OS X/Linux: Quick install with homebrew/linuxbrew
+>
+> ```console
+> brew install mulle-kybernetik/software/mulle-bootstrap
+> ```
+> Other platforms see [How to install](dox/INSTALL.md) for install
+> instructions.
+> 
+
+## A first use
+
+So you need zlib and expat to link against in your own project ? No problem:
+
+```
+mulle-bootstrap init
+mulle-bootstrap settings -g -r 'https://github.com/madler/zlib.git'
+mulle-bootstrap settings -g -r -a 'https://github.com/coapp-packages/expat.git'
+mulle-bootstrap
+```
+
+**mulle-bootstrap** will clone both into a common directory `stashes`.
+
+After cloning **mulle-bootstrap** looks for a `.bootstrap` folder in the freshly checked out repositories. They could have dependencies too. (If they 
+did, those dependencies would be now also added and fetched).
+
+Everything is now inplace so **mulle-bootstrap** can build both libraries. It will place the installable headers and the libraries into the `dependencies/lib` and `dependencies/include` folders.
 
 ## Core principles
 
@@ -42,55 +71,19 @@ shell scripts. If your system can run the bash, it can run **mulle-bootstrap**.
 In times of need, it can also checkout [svn](//andreasjacobsen.com/2008/10/26/subversion-sucks-get-over-it/).
 * builds [cmake](//blog.cppcms.com/post/54),
 [xcodebuild](//devcodehack.com/xcode-sucks-and-heres-why/) and
-[configure](//quetzalcoatal.blogspot.de/2011/06/why-autoconf-sucks.html)
+[autoconf/configure](//quetzalcoatal.blogspot.de/2011/06/why-autoconf-sucks.html)
 projects and installs their output into a "dependencies" folder.
 * installs [brew](//dzone.com/articles/why-osx-sucks-and-you-should) binaries and
 libraries into an "addictions" folder (on participating platforms)
 * alerts to the presence of shell scripts in fetched dependencies
 
 
-## A first use
-
-So you need a bunch of third party projects to build your own
-project ? No problem. Use **mulle-bootstrap init** to do the initial setup of
-a `.bootstrap` folder in your project directory. Then put the git repository
-URLs in a file called `./bootstrap/repositories`:
-
-```
-mkdir .bootstrap
-echo "# a comment
-https://github.com/madler/zlib.git
-https://github.com/coapp-packages/expat.git" > .bootstrap/repositories
-mulle-bootstrap
-```
-
-**mulle-bootstrap** will check them out into a common directory `.repos`.
-
-After cloning **mulle-bootstrap** looks for a `.bootstrap` folder in the freshly
-checked out repositories. They might have dependencies too, if they do, those
-dependencies are added and also fetched.
-
-Everything should now be in place so **mulle-bootstrap** that can now build the
-dependencies with **cmake**. It will place the headers and the produced
-libraries into the `dependencies/lib`  and `dependencies/include` folders.
-
-
 ## Tell me more
 
-* [How to install](dox/INSTALL.md)
-* [How to use](dox/COMMANDS.md)
-* [What has changed ?](RELEASENOTES.md)
-* [Tweak guide](dox/SETTINGS.md)
-* [CMakeLists.txt.example](dox/CMakeLists.txt.example) shows how to access dependencies from **cmake**
-* [FAQ](dox/FAQ.md)
+* The [WIKI](https://github.com/mulle-nat/mulle-bootstrap/wiki) should be your first stop, when looking for in-depth information about mulle-bootstrap.
 
-* [mulle-bootstrap: A dependency management tool](https://www.mulle-kybernetik.com/weblog/2015/mulle_bootstrap_work_in_progr.html)
-* [mulle-bootstrap: Understanding mulle-bootstrap (I)](https://www.mulle-kybernetik.com/weblog/2016/mulle_bootstrap_how_it_works.html)
-* [mulle-bootstrap: Understanding mulle-bootstrap (II), Recursion](https://www.mulle-kybernetik.com/weblog/2016/mulle_bootstrap_recursion.html)
+* [Releasenotes](RELEASENOTES.md)
 
-If you want to hack on mulle-bootstrap, I'd recommend to get
-[Sublime Text](//www.sublimetext.com) and [install the linter plugin](//blog.codybunch.com/2016/01/25/Better-Bash-with-Sublime-Linter-and-ShellCheck/) to use [Shellcheck](//www.shellcheck.net). It
-simplifies shell scripting by an order of magnitude.
 
 ## GitHub and Mulle kybernetiK
 
