@@ -298,6 +298,7 @@ unescape_linefeeds()
    echo "$@" | tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
 }
 
+
 escaped_sed_pattern()
 {
    sed -e 's/[]\/$*.^|[]/\\&/g' <<< "${1}"

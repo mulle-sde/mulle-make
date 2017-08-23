@@ -72,7 +72,10 @@ EOF
 
 fetch_brew_if_needed()
 {
-   [ ! -z "${BREW}" ] ||  internal_fail "BREW undefined"
+   log_entry "fetch_brew_if_needed"
+
+   [ ! -z "${BREW}" ]           ||  internal_fail "BREW undefined"
+   [ ! -z "${ADDICTIONS_DIR}" ] ||  internal_fail "ADDICTIONS_DIR undefined"
 
    if [ -x "${BREW}" ]
    then
@@ -87,12 +90,12 @@ fetch_brew_if_needed()
    case "${UNAME}" in
       darwin)
          log_info "Installing OS X brew"
-         _git_clone https://github.com/Homebrew/brew.git "${ADDICTIONS_DIR}"
+         _git_clone "https://github.com/Homebrew/brew.git" "${ADDICTIONS_DIR}"
       ;;
 
       linux)
          log_info "Installing Linux brew"
-         _git_clone https://github.com/Linuxbrew/brew.git "${ADDICTIONS_DIR}"
+         _git_clone "https://github.com/Linuxbrew/brew.git" "${ADDICTIONS_DIR}"
        ;;
 
       *)

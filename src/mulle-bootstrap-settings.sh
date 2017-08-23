@@ -32,6 +32,93 @@
 MULLE_BOOTSTRAP_SETTINGS_SH="included"
 
 
+repositories_usage()
+{
+    cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE} repositories <add|remove> [options] <url>
+   ${MULLE_EXECUTABLE} repositories show
+
+   Repositories will be placed into "${STASHES_DEFAULT_DIR}" and
+   they will be build.
+
+Commands:
+   add  <ulr>   : add a repository with the given URL
+   remove <ulr> : remove a repository with the given URL
+   show         : show current repositories
+
+Options:
+   --branch     : specify branch to use instead of the default
+   --tag        : specify tag to checkout
+   --scm        : specify scm to use instead of git
+EOF
+  exit 1
+}
+
+
+embedded_repositories_usage()
+{
+    cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE} embedded_repositories <add|remove> [options] <url>
+   ${MULLE_EXECUTABLE} embedded_repositories list
+
+   Embedded repositories can be placed anywhere in your project
+   file structures. They will not be build though.
+
+Commands:
+   add  <ulr>   : add a repository with the given URL
+   remove <ulr> : remove a repository with the given URL
+   show         : show current repositories
+
+Options:
+   --destination <dir> : where to checkout the repository too
+   --branch            : specify branch to use instead of the default
+   --tag               : specify tag to checkout
+   --scm               : specify scm to use instead of git
+EOF
+  exit 1
+}
+
+
+brews_usage()
+{
+    cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE} brews <add|remove> <name>
+   ${MULLE_EXECUTABLE} brews list
+
+   brews are installed into your addictions. Brews are available
+   on macos and linux.
+
+Commands:
+   add <name>    : add a brew with the given name
+   remove <name> : remove a brew with the given name
+   show          : show current brews
+EOF
+  exit 1
+}
+
+
+tarballs_usage()
+{
+    cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE} tarballs <add|remove> <path>
+   ${MULLE_EXECUTABLE} tarballs list
+
+   tarballs are installed into your dependencies before an actual
+   build begins.
+
+Commands:
+   add <path>    : add a tarball with the given path
+   remove <path> : remove a tarball with the given path
+   list          : list current tarballs
+EOF
+  exit 1
+}
+
+
 config_usage()
 {
     cat <<EOF >&2
@@ -1074,7 +1161,6 @@ _setting_list()
 }
 
 
-
 _setting_read()
 {
    local key="$1"
@@ -1169,6 +1255,49 @@ _setting_append()
 }
 
 
+_setting_subtract()
+{
+   local key="$1"
+   local value="$2"
+   local repository="$3"
+
+   local bootstrapdir
+   local directory
+
+   bootstrapdir="`_chosen_bootstrapdir`"
+   directory="`_chosen_setting_directory "${repository}"`"
+
+   mkdir_if_missing "${directory}"
+
+   local filename
+   local before
+
+   filename="${directory}/${key}"
+   before="`_read_setting "${filename}"`"
+
+   local escaped
+
+   escaped="`escaped_sed_pattern "${value}"`"
+
+   after="`egrep -v "^${escaped};|^${escaped}$" <<< "${before}"`"
+   if [ "${before}" = "${after}" ]
+   then
+      if [ "${OPTION_WARN_FAILED_SUBTRACT}" = "YES" ]
+      then
+         log_warning "Could not find line \"${value}\" in \"${filename}\""
+      fi
+      return 1
+   fi
+
+   redirect_exekutor "${filename}" echo "${after}"
+
+   if [ -d "${bootstrapdir}" ]
+   then
+      exekutor touch "${bootstrapdir}"
+   fi
+}
+
+
 _setting_delete()
 {
    local bootstrapdir
@@ -1212,6 +1341,12 @@ _config_read()
 
 
 _config_append()
+{
+   internal_fail "Not yet implemented"
+}
+
+
+_config_subtract()
 {
    internal_fail "Not yet implemented"
 }
@@ -1309,6 +1444,12 @@ _expansion_append()
 }
 
 
+_expansion_subtract()
+{
+   internal_fail "Not yet implemented"
+}
+
+
 _expansion_delete()
 {
    local bootstrapdir
@@ -1346,21 +1487,30 @@ _expansion_list()
 
 _generic_main()
 {
+   log_entry "_generic_main" "$@"
+
    local type="$1" ; shift
    local known_keys_1="$1"; shift
    local known_keys_2="$1"; shift
 
    local OPTION_APPEND="NO"
+   local OPTION_SUBTRACT="NO"
    local OPTION_GLOBAL="NO"
    local OPTION_OVERRIDES="NO"
    local OPTION_PROCESSED_READ="NO"
    local OPTION_ROOT="NO"
    local OPTION_USER="NO"
+   local OPTION_WARN_FAILED_SUBTRACT="${OPTION_WARN_FAILED_SUBTRACT:-YES}"
 
    local key
    local value
    local command
    local repository
+
+   if [ -z "${USAGE}" ]
+   then
+      USAGE="${type}_usage"
+   fi
 
    command="read"
 
@@ -1430,13 +1580,15 @@ _generic_main()
 
       case "$1" in
          -h|-help|--help)
-            ${type}_usage
+            "${USAGE}"
          ;;
 
          -a|--append)
             OPTION_APPEND="YES"
-            shift
-            continue
+         ;;
+
+         -s|--subtract)
+            OPTION_SUBTRACT="YES"
          ;;
 
          -d|--delete)
@@ -1459,7 +1611,7 @@ _generic_main()
 
          -*)
             log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown option $1"
-            config_usage
+            "${USAGE}"
          ;;
 
          *)
@@ -1473,7 +1625,7 @@ _generic_main()
    case "${command}" in
       read|write|delete)
          key="$1"
-         [ -z "${key}" ] && ${type}_usage
+         [ -z "${key}" ] && "${USAGE}"
          shift
       ;;
    esac
@@ -1528,7 +1680,7 @@ _generic_main()
 
    if [ $# -ne 0 ]
    then
-      ${type}_usage
+      "${USAGE}"
    fi
 
    if [ "${OPTION_ROOT}" = "YES" -a "${OPTION_OVERRIDES}" = "YES" ]
@@ -1562,7 +1714,12 @@ _generic_main()
          then
             "_${type}_append" "${key}" "${value}" "${repository}"
          else
-            "_${type}_write" "${key}" "${value}" "${repository}"
+            if [ "${OPTION_SUBTRACT}" = "YES" ]
+            then
+               "_${type}_subtract" "${key}" "${value}" "${repository}"
+            else
+               "_${type}_write" "${key}" "${value}" "${repository}"
+            fi
          fi
       ;;
    esac
@@ -1585,6 +1742,192 @@ setting_main()
 {
    _generic_main "setting" "${KNOWN_ROOT_SETTING_KEYS}" "${KNOWN_BUILD_SETTING_KEYS}" "$@"
 }
+
+
+_show_setting_header()
+{
+   local setting="$1"
+   local subtypes="$2"
+   local header="$3"
+   local options="$4"
+
+   local value
+
+   value="`setting_main ${options} -r "${setting}"`" || return 1
+
+   case "${subtypes}" in
+      "url")
+         echo "${header}"
+         echo "----"
+      ;;
+
+      *)
+         echo "URL;DESTINATION;BRANCH;TAG;SCM;SCMOPTIONS"
+         echo "---;-----------;------;---;---;----------"
+      ;;
+   esac
+
+   echo "${value}" | sed 's/;;/; ;/g'
+}
+
+
+_known_root_setting_main()
+{
+   log_entry "_known_root_setting_main" "$@"
+
+   local setting="$1" ; shift
+   local subtypes="$1" ; shift
+   local header="$1" ; shift
+   local cmd="$1" ; shift
+
+   local options="-g"
+
+   local url
+   local destination
+   local branch
+   local tag
+   local scm
+   local scmoptions
+
+   local USAGE
+
+   USAGE="${setting}_usage"
+
+   local option
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -h|-help|--help)
+            "${USAGE}"
+         ;;
+
+         -l|--local)
+            options=""
+         ;;
+
+         --destination|--branch|--tag|--scm|--scmoptions)
+            option="${1:2}"
+            [ $# -ne 0 ] || fail "value for ${option} is missing"
+            shift
+
+            if ! egrep -s -x "${subtypes}" <<< "${option}" > /dev/null
+            then
+               fail "Can't use $1 with ${setting}"
+            fi
+
+            eval "$option='$1'"
+
+            shift
+            continue
+         ;;
+      esac
+
+      break
+   done
+
+   case "${cmd}" in
+      add|remove)
+         [ $# -ne 1 ] && "${USAGE}"
+         url="$1"
+
+         [ -z "${url}" ] && "${USAGE}"
+      ;;
+
+      show|list)
+         [ $# -eq 0 ] || "${USAGE}"
+
+         if [ ! -z "`command -v column`" ]
+         then
+            _show_setting_header "${setting}" "${subtypes}" "${header}" "${options}" | column -t -s ';'
+         else
+            _show_setting_header "${setting}" "${subtypes}"  "${header}" ""
+         fi
+         return $?
+      ;;
+
+      *)
+         log_error "Unkown command \"$1\""
+         "${USAGE}"
+      ;;
+   esac
+
+   # build value from parts
+   local value
+
+   # build it from back to avoid useless trailing ';'
+
+   [ ! -z "${scmoptions}" ]                     && value=";${scmoptions}"
+   [ ! -z "${value}" -o ! -z "${scm}" ]         && value=";${scm}${value}"
+   [ ! -z "${value}" -o ! -z "${tag}" ]         && value=";${tag}${value}"
+   [ ! -z "${value}" -o ! -z "${branch}" ]      && value=";${branch}${value}"
+   [ ! -z "${value}" -o ! -z "${destination}" ] && value=";${destination}${value}"
+   value="${url}${value}"
+
+   [ -z "${value}" ] && internal_fail "should not be empty here"
+
+   case "${cmd}" in
+      add)
+         local OPTION_WARN_FAILED_SUBTRACT="NO"
+         setting_main ${options} -r -s "${setting}" "${url}"
+         if setting_main ${options} -r -a "${setting}" "${value}"
+         then
+            case "${setting}" in
+               tarballs)
+                  log_info "Tarballs changes require a full clean:
+${C_RESET_BOLD}mulle-bootstrap clean full
+mulle-bootstrap"
+               ;;
+            esac
+         fi
+      ;;
+
+      remove)
+         if setting_main ${options} -r -s "${setting}" "${url}"
+         then
+            case "${setting}" in
+               brews)
+                  log_info "Brews removals need a dist clean to come into effect:
+${C_RESET_BOLD}mulle-bootstrap clean dist
+mulle-bootstrap"
+               ;;
+
+               tarballs)
+                  log_info "Tarballs changes require a full clean:
+${C_RESET_BOLD}mulle-bootstrap clean full
+mulle-bootstrap"
+               ;;
+            esac
+         fi
+      ;;
+   esac
+
+}
+
+
+setting_repositories_main()
+{
+   _known_root_setting_main "repositories" "url|branch|tag|scm|scmoptions" "" "$@"
+}
+
+
+setting_embedded_repositories_main()
+{
+   _known_root_setting_main "embedded_repositories" "url|destination|branch|tag|scm|scmoptions" "" "$@"
+}
+
+
+setting_brews_main()
+{
+   _known_root_setting_main "brews" "url" "NAME" "$@"
+}
+
+
+setting_tarballs_main()
+{
+   _known_root_setting_main "tarballs" "url" "PATH" "$@"
+}
+
 
 #
 # read some config stuff now

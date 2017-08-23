@@ -153,14 +153,14 @@ _git_get_mirror_url()
 }
 
 
-_git_clone()
+__git_clone()
 {
-   log_entry "_git_clone" "$@"
+   log_entry "__git_clone" "$@"
 
    [ $# -lt 8 ] && internal_fail "parameters missing"
 
 #   local reposdir="$1"
-   local name="$2"
+#   local name="$2"
    local url="$3"
    local branch="$4"
 #   local tag="$5"
@@ -259,6 +259,31 @@ _git_clone()
 }
 
 
+_git_clone()
+{
+   local url="$1"
+   local dstdir="$2"
+   local branch="$3"
+
+##   local reposdir="$1"
+##   local name="$2"
+#   local url="$3"
+#   local branch="$4"
+##   local tag="$5"
+##   local scm="$6"
+#   local scmoptions="$7"
+#   local stashdir="$8"
+
+   __git_clone "n/a" \
+               "n/a" \
+               "${url}" \
+               "${branch}" \
+               "n/a" \
+               "git" \
+               "" \
+               "${dstdir}"
+}
+
 _get_fetch_remote()
 {
    local url="$1"
@@ -293,7 +318,7 @@ git_clone_project()
 {
    log_entry "git_clone_project" "$@"
 
-   if ! _git_clone "$@"
+   if ! __git_clone "$@"
    then
       return 1
    fi

@@ -183,20 +183,20 @@ EOF
       if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
       then
          log_info "${BOOTSTRAP_DIR} has been created. Use
-   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} setting -g -r -a repositories <url>${C_INFO}
+   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} repositories add <url>${C_INFO}
 to specify dependencies and then install them with
    ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE}${C_INFO}
 E.g.:${C_RESET}${C_FAINT}
-${MULLE_EXECUTABLE} setting -g -r -a repositories 'https://github.com/madler/zlib.git'
+${MULLE_EXECUTABLE} repositories add 'https://github.com/madler/zlib.git'
 ${MULLE_EXECUTABLE}${C_INFO}
 "
       else
          log_info "${BOOTSTRAP_DIR} has been created. Use
-   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} setting -g -r -a brews <name>${C_INFO}
+   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} brews add <name>${C_INFO}
 to specify brew formula to fetch and then install them with
    ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE}${C_INFO}
 E.g.:${C_RESET}${C_FAINT}
-${MULLE_EXECUTABLE} setting --g -r -a brews 'ack'
+${MULLE_EXECUTABLE} brews add 'ack'
 ${MULLE_EXECUTABLE}${C_INFO}
 "
       fi

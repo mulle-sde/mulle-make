@@ -503,6 +503,12 @@ bootstrap_main()
          _bootstrap_main "$@"
       ;;
 
+      brews)
+         . mulle-bootstrap-settings.sh
+
+         setting_brews_main "$@" || exit 1
+      ;;
+
       build)
          . mulle-bootstrap-build.sh
 
@@ -539,16 +545,16 @@ bootstrap_main()
          emancipate_main "$@" || exit 1
       ;;
 
+      embedded_repositories)
+         . mulle-bootstrap-settings.sh
+
+         setting_embedded_repositories_main "$@" || exit 1
+      ;;
+
       expansion|expansions)
          . mulle-bootstrap-settings.sh
 
          expansion_main "$@" || exit 1
-      ;;
-
-      path|paths)
-         . mulle-bootstrap-paths.sh
-
-         paths_main "$@" || exit 1
       ;;
 
       git)
@@ -583,6 +589,18 @@ bootstrap_main()
          return 0
       ;;
 
+      path|paths)
+         . mulle-bootstrap-paths.sh
+
+         paths_main "$@" || exit 1
+      ;;
+
+      repositories)
+         . mulle-bootstrap-settings.sh
+
+         setting_repositories_main "$@" || exit 1
+      ;;
+
       run)
          . mulle-bootstrap-paths.sh
 
@@ -593,12 +611,6 @@ bootstrap_main()
          . mulle-bootstrap-settings.sh
 
          setting_main "$@" || exit 1
-      ;;
-
-      systeminstall)
-         . mulle-bootstrap-systeminstall.sh
-
-         systeminstall_main "$@" || exit 1
       ;;
 
       show)
@@ -618,10 +630,22 @@ bootstrap_main()
          [ "$rval" -eq 0 ] || exit $rval
       ;;
 
+      systeminstall)
+         . mulle-bootstrap-systeminstall.sh
+
+         systeminstall_main "$@" || exit 1
+      ;;
+
       tag)
          . mulle-bootstrap-tag.sh
 
          tag_main "$@" || exit 1
+      ;;
+
+      tarballs)
+         . mulle-bootstrap-settings.sh
+
+         setting_tarballs_main "$@" || exit 1
       ;;
 
       type)

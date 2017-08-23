@@ -599,7 +599,7 @@ clean_main()
 }
 
 
-clean_usage()
+uninit_usage()
 {
    cat <<EOF >&2
 Usage:
@@ -629,12 +629,12 @@ uninit_main()
    do
       case "$1" in
          -h|-help|--help)
-            unit_usage
+            uninit_usage
          ;;
 
          -*)
             log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown uninit option $1"
-            clean_usage
+            uninit_usage
          ;;
 
          *)
