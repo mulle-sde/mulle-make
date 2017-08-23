@@ -93,12 +93,12 @@ build_script()
       log_fluff "PATH temporarily set to $PATH"
 
       run_log_build_script "${owd}/${script}" \
-         "${configuration}" \
-         "${owd}/${srcdir}" \
-         "${owd}/${builddir}" \
-         "${owd}/${BUILD_DEPENDENCIES_DIR}" \
-         "${name}" \
-         "${sdk}" > "${logfile}"
+                           "${configuration}" \
+                           "${owd}/${srcdir}" \
+                           "${owd}/${builddir}" \
+                           "${owd}/${BUILD_DEPENDENCIES_DIR}" \
+                           "${name}" \
+                           "${sdk}" > "${logfile}"
       rval=$?
 
       PATH="${oldpath}"

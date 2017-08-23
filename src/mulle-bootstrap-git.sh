@@ -66,8 +66,69 @@ git_get_default_remote()
 }
 
 
+git_add_remote()
+{
+   [ -z "$1" -o -z "$2" -o -z "$3" ] && internal_fail "empty parameter"
+
+   local repository="$1"
+   local remote="$2"
+   local url="$3"
+
+   (
+      cd "${repository}" &&
+      git remote add "${remote}" "${url}"
+   )
+}
+
+
+git_set_url()
+{
+   [ -z "$1" -o -z "$2" -o -z "$3" ] && internal_fail "empty parameter"
+
+   local repository="$1"
+   local remote="$2"
+   local url="$3"
+
+   (
+      cd "${repository}" &&
+      git remote set-url "${remote}" "${url}"
+   )
+}
+
+
+git_unset_default_remote()
+{
+   [ -z "$1" ] && internal_fail "empty parameter"
+
+   local repository="$1"
+
+   (
+      cd "${repository}" &&
+      git branch --unset-upstream
+   )
+}
+
+
+git_set_default_remote()
+{
+   [ -z "$1" -o -z "$2" -o -z "$3" ] && internal_fail "empty parameter"
+
+   local repository="$1"
+   local remote="$2"
+   local branch="$3"
+
+   (
+      cd "${repository}" &&
+      git fetch "${remote}" &&
+      git branch --set-upstream-to "${remote}/${branch}"
+   )
+}
+
+
 git_has_branch()
 {
+   [ -z "$1" -o -z "$2" ] && internal_fail "empty parameter"
+
    (
       cd "$1" &&
       git branch | cut -c3- | fgrep -q -s -x "$2" > /dev/null
@@ -77,6 +138,8 @@ git_has_branch()
 
 git_get_branch()
 {
+   [ -z "$1" ] && internal_fail "empty parameter"
+
    (
       cd "$1" &&
       git rev-parse --abbrev-ref HEAD 2> /dev/null
@@ -162,6 +225,7 @@ append_dir_to_gitignore_if_needed()
 fork_and_name_from_url()
 {
    local url="$1"
+
    local name
    local hack
    local fork
@@ -187,6 +251,8 @@ fork_and_name_from_url()
 
 git_is_repository()
 {
+   [ -z "$1" ] && internal_fail "empty parameter"
+
    [ -d "${1}/.git" ] || [ -d  "${1}/refs" -a -f "${1}/HEAD" ]
 }
 

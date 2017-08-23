@@ -155,6 +155,7 @@ additional_repositories
 brews
 embedded_repositories
 repositories
+tarballs
 version
 "
 

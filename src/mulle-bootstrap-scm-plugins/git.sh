@@ -187,8 +187,9 @@ _git_clone()
       log_info "Cloning ${C_MAGENTA}${C_BOLD}${url}${C_INFO} into \"${stashdir}\" ..."
    fi
 
+   local originalurl
    #
-   # "remote urls" go through caches
+   # "remote urls" go through mirror
    # local urls get checked ahead for better error messages
    #
    case "${url}" in
@@ -203,7 +204,9 @@ _git_clone()
       *:*)
          if [ ! -z "${GIT_MIRROR}" ]
          then
+            originalurl="${url}"
             url="`_git_get_mirror_url "${url}"`" || return 1
+            options="`concat "--origin mirror" "${options}"`"
          fi
       ;;
 
@@ -232,11 +235,53 @@ _git_clone()
       return 1
    fi
 
-   if ! exekutor git ${GITFLAGS} clone ${options} ${GITOPTIONS} -- "${url}" "${stashdir}"  >&2
+   if ! exekutor git ${GITFLAGS} "clone" ${options} ${GITOPTIONS} -- "${url}" "${stashdir}"  >&2
    then
       log_error "git clone of \"${url}\" into \"${stashdir}\" failed"
       return 1
    fi
+
+   if [ ! -z "${originalurl}" ]
+   then
+      git_unset_default_remote "${stashdir}"
+      git_add_remote "${stashdir}" "origin" "${originalurl}"
+
+      #
+      # too expensive for me, because it must fetch now to
+      # get the origin branch. Funnily enough it works fine
+      # even without it..
+      #
+      if read_yes_no_config_setting "git_set_default_remote"
+      then
+         git_set_default_remote "${stashdir}" "origin" "${branch}"
+      fi
+   fi
+}
+
+
+_get_fetch_remote()
+{
+   local url="$1"
+   local remote
+
+   remote="origin"
+
+   # "remote urls" going through cache will be refreshed here
+   case "${url}" in
+      file:*|/*|~*|.*)
+      ;;
+
+      *:*)
+         if [ ! -z "${GIT_MIRROR}" ]
+         then
+
+            _git_get_mirror_url "${url}" > /dev/null || return 1
+            remote="mirror"
+         fi
+      ;;
+   esac
+
+   echo "${remote}"
 }
 
 
@@ -324,24 +369,17 @@ git_update_project()
    local scmoptions="$1"; shift
    local stashdir="$1"; shift
 
-   # "remote urls" going through cache will be refreshed here
-   case "${url}" in
-      file:*|/*|~*|.*)
-      ;;
+   local options
+   local remote
 
-      *:*)
-         if [ ! -z "${GIT_MIRROR}" ]
-         then
-            url="`_git_get_mirror_url "${url}"`" || return 1
-         fi
-      ;;
-   esac
+   options="`get_scmoption "${scmoptions}" "update"`"
+   remote="`_get_fetch_remote "${url}"`" || internal_fail "can't figure out remote"
 
    log_info "Fetching ${C_MAGENTA}${C_BOLD}${stashdir}${C_INFO} ..."
 
    (
       exekutor cd "${stashdir}" &&
-      exekutor git ${GITFLAGS} fetch "$@" ${scmoptions} ${GITOPTIONS} >&2
+      exekutor git ${GITFLAGS} fetch "$@" ${options} ${GITOPTIONS} "${remote}" >&2
    ) || fail "git fetch of \"${stashdir}\" failed"
 }
 
@@ -362,24 +400,17 @@ git_upgrade_project()
    local scmoptions="$1"; shift
    local stashdir="$1"; shift
 
-   # "remote urls" going through cache will be refreshed here
-   case "${url}" in
-      file:*|/*|~*|.*)
-      ;;
+   local options
+   local remote
 
-      *:*)
-         if [ ! -z "${GIT_MIRROR}" ]
-         then
-            url="`_git_get_mirror_url "${url}"`" || return 1
-         fi
-      ;;
-   esac
+   options="`get_scmoption "${scmoptions}" "upgrade"`"
+   remote="`_get_fetch_remote "${url}"`" || internal_fail "can't figure out remote"
 
    log_info "Pulling ${C_MAGENTA}${C_BOLD}${stashdir}${C_INFO} ..."
 
    (
       exekutor cd "${stashdir}" &&
-      exekutor git ${GITFLAGS} pull "$@" ${scmoptions} ${GITOPTIONS}  >&2
+      exekutor git ${GITFLAGS} pull "$@" ${scmoptions} ${GITOPTIONS} "${remote}" >&2
    ) || fail "git pull of \"${stashdir}\" failed"
 
    if [ ! -z "${tag}" ]
@@ -490,6 +521,7 @@ git_plugin_initialize()
    log_debug ":git_plugin_initialize:"
 
    [ -z "${MULLE_BOOTSTRAP_SCM_SH}" ] && . mulle-bootstrap-scm.sh
+   [ -z "${MULLE_BOOTSTRAP_GIT_SH}" ] && . mulle-bootstrap-git.sh
 }
 
 
