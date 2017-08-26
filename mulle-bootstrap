@@ -104,7 +104,7 @@ mulle_bootstrap_usage()
 
    cat <<EOF
 Usage:
-   ${MULLE_BOOTSTAP_EXECUTABLE} [flags] [command] [options]
+   ${MULLE_EXECUTABLE} [flags] [command] [options]
 
 Flags:
    -a -y     : default answer to questions (scripts wont be checked)
@@ -503,7 +503,7 @@ bootstrap_main()
          _bootstrap_main "$@"
       ;;
 
-      brews)
+      brew|brews)
          . mulle-bootstrap-settings.sh
 
          setting_brews_main "$@" || exit 1
@@ -545,7 +545,7 @@ bootstrap_main()
          emancipate_main "$@" || exit 1
       ;;
 
-      embedded_repositories)
+      embedded_repository|embedded_repositories)
          . mulle-bootstrap-settings.sh
 
          setting_embedded_repositories_main "$@" || exit 1
@@ -595,7 +595,7 @@ bootstrap_main()
          paths_main "$@" || exit 1
       ;;
 
-      repositories)
+      repository|repositories)
          . mulle-bootstrap-settings.sh
 
          setting_repositories_main "$@" || exit 1
@@ -611,6 +611,12 @@ bootstrap_main()
          . mulle-bootstrap-settings.sh
 
          setting_main "$@" || exit 1
+      ;;
+
+      shared)
+         [ -z "${MULLE_BOOTSTRAP_SHARED_SH}" ] && . mulle-bootstrap-shared.sh
+
+         shared_main "$@" || exit 1
       ;;
 
       show)
@@ -642,7 +648,7 @@ bootstrap_main()
          tag_main "$@" || exit 1
       ;;
 
-      tarballs)
+      tarball|tarballs)
          . mulle-bootstrap-settings.sh
 
          setting_tarballs_main "$@" || exit 1

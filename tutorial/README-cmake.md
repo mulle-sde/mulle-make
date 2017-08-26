@@ -71,7 +71,7 @@ Try to build **b** with `cmake`. It will not work, because the header
 ```console
 cd b
 ( mkdir build ; cd build ; cmake -G "Unix Makefiles" .. ; make )
-``` 
+```
 
 > On Windows with the MingGW bash, use
 >
@@ -109,7 +109,7 @@ should be seeing:
 #
 # Each line consists of four fields, only the URL is necessary.
 #
-# URL;NAME;TAG;SCM
+# URL;NAME;BRANCHTAG;SOURCE
 # ================
 # ex. foo.com/bla.git;mybla;master;git
 # ex. foo.com/bla.svn;;;svn
@@ -146,7 +146,7 @@ Use it ? (y/N)
 ```
 
 So **a** was found, and you have the option to use it,
-which you should do. It will symlink **a** into your project and then mulle-bootstrap will build the library. 
+which you should do. It will symlink **a** into your project and then mulle-bootstrap will build the library.
 
 > On Windows in the MingGW bash, this will not work, because there
 > is no symlink support. You have to place 'a' under **git** control first
@@ -181,7 +181,7 @@ libA.a
 > On Windows in the MingGW bash, the library will be `a.lib`
 
 
-## Building **b** 
+## Building **b**
 
 We need to modify b's `CMakeLists.txt` to use `dependencies/lib` and `dependencies/include` as search paths.
 
@@ -274,7 +274,7 @@ make ;
 > Windows:
 > ```
 > mkdir build 2> /dev/null
-> ( cd build ; 
+> ( cd build ;
 > cmake -G "NMake Makefiles" .. ;
 > nmake ;
 > ./c.exe )

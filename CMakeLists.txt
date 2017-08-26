@@ -55,9 +55,10 @@ src/mulle-bootstrap-mv-force.sh
 src/mulle-bootstrap-paths.sh
 src/mulle-bootstrap-project.sh
 src/mulle-bootstrap-repositories.sh
-src/mulle-bootstrap-scm.sh
+src/mulle-bootstrap-source.sh
 src/mulle-bootstrap-scripts.sh
 src/mulle-bootstrap-settings.sh
+src/mulle-bootstrap-shared.sh
 src/mulle-bootstrap-show.sh
 src/mulle-bootstrap-snip.sh
 src/mulle-bootstrap-status.sh
@@ -77,12 +78,12 @@ src/mulle-bootstrap-build-plugins/xcodebuild.sh
 )
 
 
-set( SCM_PLUGIN_SCRIPTS
-src/mulle-bootstrap-scm-plugins/git.sh
-src/mulle-bootstrap-scm-plugins/svn.sh
-src/mulle-bootstrap-scm-plugins/symlink.sh
-src/mulle-bootstrap-scm-plugins/tar.sh
-src/mulle-bootstrap-scm-plugins/zip.sh
+set( SOURCE_PLUGIN_SCRIPTS
+src/mulle-bootstrap-source-plugins/git.sh
+src/mulle-bootstrap-source-plugins/svn.sh
+src/mulle-bootstrap-source-plugins/symlink.sh
+src/mulle-bootstrap-source-plugins/tar.sh
+src/mulle-bootstrap-source-plugins/zip.sh
 )
 
 
@@ -108,11 +109,11 @@ PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             WORLD_EXECUTE WORLD_READ
 DESTINATION "libexec/mulle-bootstrap/mulle-bootstrap-build-plugins")
 
-INSTALL( FILES ${SCM_PLUGIN_SCRIPTS}
+INSTALL( FILES ${SOURCE_PLUGIN_SCRIPTS}
 PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             GROUP_EXECUTE GROUP_READ
             WORLD_EXECUTE WORLD_READ
-DESTINATION "libexec/mulle-bootstrap/mulle-bootstrap-scm-plugins")
+DESTINATION "libexec/mulle-bootstrap/mulle-bootstrap-source-plugins")
 
 #
 # CPack and project specific stuff

@@ -28,7 +28,7 @@
 #   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
-MULLE_BOOTSTRAP_SCM_SH="included"
+MULLE_BOOTSTRAP_SOURCE_SH="included"
 
 
 append_dir_to_gitignore_if_needed()
@@ -383,13 +383,13 @@ validate_shasum256()
 validate_download()
 {
    local filename="$1"
-   local scmoptions="$2"
+   local sourceoptions="$2"
 
    local checksum
    local expected
 
 
-   expected="`get_scmoption "$scmoptions" "shasum256"`"
+   expected="`get_sourceoption "$sourceoptions" "shasum256"`"
    if [ -z "${expected}" ]
    then
       return
@@ -399,57 +399,42 @@ validate_download()
 }
 
 
-git_enable_mirroring()
-{
-   local allow_refresh="${1:-YES}"
-
-   #
-   # stuff clones get intermediate saved too, default is on
-   # this is only called in main if the option is yes
-   #
-   GIT_MIRROR="`read_config_setting "git_mirror"`"
-   if [ "${allow_refresh}" = "YES" ]
-   then
-      REFRESH_GIT_MIRROR="`read_config_setting "refresh_git_mirror" "YES"`"
-   fi
-}
-
 #
 # prints each key=value on a line so that its greppable
 # TODO: Doesn't do escaping yet
 #
-parse_scmoptions()
+parse_sourceoptions()
 {
-   local scmoptions="$1"
+   local sourceoptions="$1"
 
    local key
    local value
 
-   while [ ! -z "${scmoptions}" ]
+   while [ ! -z "${sourceoptions}" ]
    do
       # ignore single comma
-      case "${scmoptions}" in
+      case "${sourceoptions}" in
          ,*)
-            scmoptions="${scmoptions#,}"
+            sourceoptions="${sourceoptions#,}"
             continue
          ;;
       esac
 
-      key="`sed -n 's/^\([a-zA-Z_][a-zA-Z0-9_]*\)=.*/\1/p' <<< "${scmoptions}"`"
+      key="`sed -n 's/^\([a-zA-Z_][a-zA-Z0-9_]*\)=.*/\1/p' <<< "${sourceoptions}"`"
       if [ -z "${key}" ]
       then
-         fail "Unparsable scmoption \"${scmoptions}\""
+         fail "Unparsable sourceoption \"${sourceoptions}\""
          exit 1
       fi
-      scmoptions="${scmoptions#${key}=}"
+      sourceoptions="${sourceoptions#${key}=}"
 
-      value="`sed -n 's/\([^,]*\),.*/\1/p' <<< "${scmoptions}"`"
+      value="`sed -n 's/\([^,]*\),.*/\1/p' <<< "${sourceoptions}"`"
       if [ -z "${value}" ]
       then
-         value="${scmoptions}"
-         scmoptions=""
+         value="${sourceoptions}"
+         sourceoptions=""
       else
-         scmoptions="${scmoptions#${value},}"
+         sourceoptions="${sourceoptions#${value},}"
       fi
 
       echo "${key}=${value}"
@@ -457,26 +442,26 @@ parse_scmoptions()
 }
 
 
-get_scmoption()
+get_sourceoption()
 {
-   local scmoptions="$1"
+   local sourceoptions="$1"
    local key="$2"
 
-   sed -n "s/^${key}="'\(.*\)/\1/p' <<< "${scmoptions}"
+   sed -n "s/^${key}="'\(.*\)/\1/p' <<< "${sourceoptions}"
 }
 
 
 
-get_scm_function()
+get_source_function()
 {
-   log_entry "get_scm_function" "$@"
+   log_entry "get_source_function" "$@"
 
-   local scm="$1"
+   local source="$1"
    local opname="$2"
 
    local operation
 
-   operation="${scm}_${opname}_project"
+   operation="${source}_${opname}_project"
    if [ "`type -t "${operation}"`" = "function" ]
    then
       echo "${operation}"
@@ -486,9 +471,9 @@ get_scm_function()
 }
 
 
-scm_operation()
+source_operation()
 {
-   log_entry "scm_operation" "$@"
+   log_entry "source_operation" "$@"
 
    local opname="$1" ; shift
 
@@ -497,47 +482,47 @@ scm_operation()
    local url="$3"          # URL of the clone
    local branch="$4"       # branch of the clone
    local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    local operation
 
-   operation="`get_scm_function "${scm}" "${opname}"`"
+   operation="`get_source_function "${source}" "${opname}"`"
    if [ -z "${operation}" ]
    then
       return 111
    fi
 
-   local parsed_scmoptions
+   local parsed_sourceoptions
 
-   parsed_scmoptions="`parse_scmoptions "${scmoptions}"`"
+   parsed_sourceoptions="`parse_sourceoptions "${sourceoptions}"`"
 
    "${operation}" "${reposdir}" \
                   "${name}" \
                   "${url}" \
                   "${branch}" \
                   "${tag}" \
-                  "${scm}" \
-                  "${parsed_scmoptions}" \
+                  "${source}" \
+                  "${parsed_sourceoptions}" \
                   "${stashdir}"
 }
 
 
-load_scm_plugins()
+load_source_plugins()
 {
-   log_entry "load_scm_plugins"
+   log_entry "load_source_plugins"
 
    local upcase
    local plugindefine
    local pluginpath
    local name
 
-   log_fluff "Loading scm plugins..."
+   log_fluff "Loading source plugins..."
 
    IFS="
 "
-   for pluginpath in `ls -1 "${MULLE_BOOTSTRAP_LIBEXEC_PATH}/mulle-bootstrap-scm-plugins/"*.sh`
+   for pluginpath in `ls -1 "${MULLE_BOOTSTRAP_LIBEXEC_PATH}/mulle-bootstrap-source-plugins/"*.sh`
    do
       IFS="${DEFAULT_IFS}"
 
@@ -558,7 +543,7 @@ load_scm_plugins()
       esac
 
       upcase="`tr 'a-z' 'A-Z' <<< "${name}"`"
-      plugindefine="MULLE_BOOTSTRAP_SCM_PLUGIN_${upcase}_SH"
+      plugindefine="MULLE_BOOTSTRAP_SOURCE_PLUGIN_${upcase}_SH"
 
       if [ -z "`eval echo \$\{${plugindefine}\}`" ]
       then
@@ -566,10 +551,10 @@ load_scm_plugins()
 
          if [ "`type -t "${name}_clone_project"`" != "function" ]
          then
-            fail "SCM plugin \"${pluginpath}\" has no \"${name}_clone_project\" function"
+            fail "Source plugin \"${pluginpath}\" has no \"${name}_clone_project\" function"
          fi
 
-         log_fluff "SCM plugin \"${name}\" loaded"
+         log_fluff "Source plugin \"${name}\" loaded"
       fi
    done
 
@@ -577,16 +562,16 @@ load_scm_plugins()
 }
 
 
-scm_initialize()
+source_initialize()
 {
-   log_debug ":scm_initialize:"
+   log_debug ":source_initialize:"
 
    [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ]    && . mulle-bootstrap-functions.sh
    [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
 
-   load_scm_plugins
+   load_source_plugins
 }
 
-scm_initialize
+source_initialize
 
 :

@@ -9,22 +9,22 @@ run_test_1()
    local url
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
    local stashdir
 
    local clone
 
-   clone="url/name;stashdir;branch;tag;scm;scmoptions"
+   clone="url/name;stashdir;branch;tag;source;sourceoptions"
    parse_clone "${clone}"
 
-   [ "${url}"        = "url/name" ]   || fail "wrong name \"${url}\""
-   [ "${name}"       = "name" ]       || fail "wrong name \"${name}\""
-   [ "${stashdir}"   = "stashdir" ]   || fail "wrong stashdir \"${stashdir}\""
-   [ "${branch}"     = "branch" ]     || fail "wrong branch \"${branch}\""
-   [ "${tag}"        = "tag" ]        || fail "wrong tag \"${tag}\""
-   [ "${scm}"        = "scm" ]        || fail "wrong scm \"${scm}\""
-   [ "${scmoptions}" = "scmoptions" ] || fail "wrong scmoptions \"${scmoptions}\""
+   [ "${url}"           = "url/name" ]      || fail "wrong name \"${url}\""
+   [ "${name}"          = "name" ]          || fail "wrong name \"${name}\""
+   [ "${stashdir}"      = "stashdir" ]      || fail "wrong stashdir \"${stashdir}\""
+   [ "${branch}"        = "branch" ]        || fail "wrong branch \"${branch}\""
+   [ "${tag}"           = "tag" ]           || fail "wrong tag \"${tag}\""
+   [ "${source}"        = "source" ]        || fail "wrong source \"${source}\""
+   [ "${sourceoptions}" = "sourceoptions" ] || fail "wrong sourceoptions \"${sourceoptions}\""
 
    remember_stash_of_repository "${clone}" \
                                 ".bootstrap.repos" \
@@ -51,22 +51,22 @@ run_test_2()
    local url
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
    local stashdir
 
    local clone
 
-   clone="a/b/c/name;d/e/f/g;branch;tag;scm;scmoptions"
+   clone="a/b/c/name;d/e/f/g;branch;tag;source;sourceoptions"
    parse_clone "${clone}"
 
-   [ "${url}"        = "a/b/c/name" ] || fail "wrong name \"${url}\""
-   [ "${name}"       = "name" ]       || fail "wrong name \"${name}\""
-   [ "${stashdir}"   = "d/e/f/g" ]    || fail "wrong stashdir \"${stashdir}\""
-   [ "${branch}"     = "branch" ]     || fail "wrong branch \"${branch}\""
-   [ "${tag}"        = "tag" ]        || fail "wrong tag \"${tag}\""
-   [ "${scm}"        = "scm" ]        || fail "wrong scm \"${scm}\""
-   [ "${scmoptions}" = "scmoptions" ] || fail "wrong scmoptions \"${scmoptions}\""
+   [ "${url}"           = "a/b/c/name" ]    || fail "wrong name \"${url}\""
+   [ "${name}"          = "name" ]          || fail "wrong name \"${name}\""
+   [ "${stashdir}"      = "d/e/f/g" ]       || fail "wrong stashdir \"${stashdir}\""
+   [ "${branch}"        = "branch" ]        || fail "wrong branch \"${branch}\""
+   [ "${tag}"           = "tag" ]           || fail "wrong tag \"${tag}\""
+   [ "${source}"        = "source" ]        || fail "wrong source \"${source}\""
+   [ "${sourceoptions}" = "sourceoptions" ] || fail "wrong sourceoptions \"${sourceoptions}\""
 
    remember_stash_of_repository "${clone}" \
                                 ".bootstrap.repos/.embedded" \

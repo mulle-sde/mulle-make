@@ -28,7 +28,7 @@
 #   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
-MULLE_BOOTSTRAP_SCM_PLUGIN_GIT_SH="included"
+MULLE_BOOTSTRAP_SOURCE_PLUGIN_GIT_SH="included"
 
 
 _git_search_local()
@@ -164,8 +164,8 @@ __git_clone()
    local url="$3"
    local branch="$4"
 #   local tag="$5"
-#   local scm="$6"
-   local scmoptions="$7"
+#   local source="$6"
+   local sourceoptions="$7"
    local stashdir="$8"
 
    [ ! -z "${url}" ]      || internal_fail "url is empty"
@@ -177,7 +177,7 @@ __git_clone()
    local dstdir
 
    dstdir="${stashdir}"
-   options="`get_scmoption "${scmoptions}" "fetch"`"
+   options="`get_sourceoption "${sourceoptions}" "fetch"`"
 
    if [ ! -z "${branch}" ]
    then
@@ -270,8 +270,8 @@ _git_clone()
 #   local url="$3"
 #   local branch="$4"
 ##   local tag="$5"
-##   local scm="$6"
-#   local scmoptions="$7"
+##   local source="$6"
+#   local sourceoptions="$7"
 #   local stashdir="$8"
 
    __git_clone "n/a" \
@@ -341,8 +341,8 @@ git_checkout_project()
    local url="$1"; shift
    local branch="$1"; shift
    local tag="$1"; shift
-   local scm="$1"; shift
-   local scmoptions="$1"; shift
+   local source="$1"; shift
+   local sourceoptions="$1"; shift
    local stashdir="$1"; shift
 
    [ -z "${stashdir}" ] && internal_fail "stashdir is empty"
@@ -350,7 +350,7 @@ git_checkout_project()
 
    local options
 
-   options="`get_scmoption "${scmoptions}" "checkout"`"
+   options="`get_sourceoption "${sourceoptions}" "checkout"`"
 
    local branch
 
@@ -390,14 +390,14 @@ git_update_project()
    local url="$1"; shift
    local branch="$1"; shift
    local tag="$1"; shift
-   local scm="$1"; shift
-   local scmoptions="$1"; shift
+   local source="$1"; shift
+   local sourceoptions="$1"; shift
    local stashdir="$1"; shift
 
    local options
    local remote
 
-   options="`get_scmoption "${scmoptions}" "update"`"
+   options="`get_sourceoption "${sourceoptions}" "update"`"
    remote="`_get_fetch_remote "${url}"`" || internal_fail "can't figure out remote"
 
    log_info "Fetching ${C_MAGENTA}${C_BOLD}${stashdir}${C_INFO} ..."
@@ -421,21 +421,21 @@ git_upgrade_project()
    local url="$1"; shift
    local branch="$1"; shift
    local tag="$1"; shift
-   local scm="$1"; shift
-   local scmoptions="$1"; shift
+   local source="$1"; shift
+   local sourceoptions="$1"; shift
    local stashdir="$1"; shift
 
    local options
    local remote
 
-   options="`get_scmoption "${scmoptions}" "upgrade"`"
+   options="`get_sourceoption "${sourceoptions}" "upgrade"`"
    remote="`_get_fetch_remote "${url}"`" || internal_fail "can't figure out remote"
 
    log_info "Pulling ${C_MAGENTA}${C_BOLD}${stashdir}${C_INFO} ..."
 
    (
       exekutor cd "${stashdir}" &&
-      exekutor git ${GITFLAGS} pull "$@" ${scmoptions} ${GITOPTIONS} "${remote}" >&2
+      exekutor git ${GITFLAGS} pull "$@" ${sourceoptions} ${GITOPTIONS} "${remote}" >&2
    ) || fail "git pull of \"${stashdir}\" failed"
 
    if [ ! -z "${tag}" ]
@@ -456,15 +456,15 @@ git_status_project()
    local url="$1"; shift
    local branch="$1"; shift
    local tag="$1"; shift
-   local scm="$1"; shift
-   local scmoptions="$1"; shift
+   local source="$1"; shift
+   local sourceoptions="$1"; shift
    local stashdir="$1"; shift
 
    log_info "Status ${C_MAGENTA}${C_BOLD}${stashdir}${C_INFO} ..."
 
    local options
 
-   options="`get_scmoption "${scmoptions}" "status"`"
+   options="`get_sourceoption "${sourceoptions}" "status"`"
 
    (
       exekutor cd "${stashdir}" &&
@@ -545,7 +545,7 @@ git_plugin_initialize()
 {
    log_debug ":git_plugin_initialize:"
 
-   [ -z "${MULLE_BOOTSTRAP_SCM_SH}" ] && . mulle-bootstrap-scm.sh
+   [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ] && . mulle-bootstrap-source.sh
    [ -z "${MULLE_BOOTSTRAP_GIT_SH}" ] && . mulle-bootstrap-git.sh
 }
 

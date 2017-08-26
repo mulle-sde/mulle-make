@@ -36,11 +36,15 @@ init_usage()
 {
     cat <<EOF >&2
 Usage:
-  ${MULLE_EXECUTABLE} init [options]
+  ${MULLE_EXECUTABLE} init [options] [directory]
+
+  Make a project work with mulle-bootstrap. By default the current directory
+  is assumed. You can also specify a different one. It will be created, if
+  it doesn't exist yet.
 
 Options
-   -d : create default files
-   -n : don't ask for editor
+   -c       : create default files
+   -n       : do not setup a shared buildinfo repository (if none present)
 
 EOF
   exit 1
@@ -62,29 +66,12 @@ EOF
 }
 
 
+# no more large blurbs, since we have `mulle-bootstrap repository` now
+
 _print_repositories()
 {
    cat <<EOF
-#
-# Add repository URLs to this file.
-#
-# mulle-bootstrap [fetch] will download these into ./stashes
-# mulle-bootstrap [build] will build them into ./dependencies
-#
-# Each line consists of six fields, only the URL is necessary.
-# Possible URL forms for repositories:
-#
-# https://www.mulle-kybernetik.com/repositories/MulleScion
-# git@github.com:mulle-nat/MulleScion.git
-# /Volumes/Source/srcM/MulleScion
-#
-# SUBDIR     : should be left empty
-# BRANCH     : the specific branch to fetch.
-# TAG        : can be a git branch or a tag to checkout.
-# SCM        : defaults to git, can be tar, zip, svn
-# SCMOPTIONS : usually left empty
-#
-# URL;SUBDIR;BRANCH;TAG;SCM;SCMOPTIONS
+# URL;UNUSED;BRANCH;TAG;SOURCE;OPTIONS
 EOF
 }
 
@@ -92,119 +79,15 @@ EOF
 _print_embedded_repositories()
 {
    cat <<EOF
-#
-# Add repository URLs to this file. Use SUBDIR to place the directory in
-# your sourcetree
-#
-# mulle-bootstrap [fetch] will download the repostiory into a SUBDIR of your
-# project root
-# mulle-bootstrap [build] will NOT build it
-#
-# Each line consists of six fields, only the URL is necessary.
-# Possible URL forms for repositories:
-#
-# https://www.mulle-kybernetik.com/repositories/MulleScion
-# git@github.com:mulle-nat/MulleScion.git
-# /Volumes/Source/srcM/MulleScion
-#
-# SUBDIR     : specfiy place to clone repository to
-# BRANCH     : the specific branch to fetch.
-# TAG        : can be a git branch or a tag to checkout.
-# SCM        : defaults to git, can be tar, zip, svn
-# SCMOPTIONS : usually left empty
-#
-# URL;SUBDIR;BRANCH;TAG;SCM;SCMOPTIONS
+# URL;SUBDIR;BRANCH;TAG;SOURCE;OPTIONS
 EOF
 }
 
 
-
-
-#
-# this script creates a .bootstrap folder with some
-# demo files.
-#
-init_main()
+create_default_files()
 {
-   local mainfile
-
-   [ -z "${MULLE_BOOTSTRAP_LOCAL_ENVIRONMENT_SH}" ] && . mulle-bootstrap-local-environment.sh
-   [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]          && . mulle-bootstrap-settings.sh
-   [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ]         && . mulle-bootstrap-functions.sh
-
-   local OPTION_CREATE_DEFAULT_FILES
-
-   OPTION_CREATE_DEFAULT_FILES="`read_config_setting "create_default_files" "NO"`"
-
-   while [ $# -ne 0 ]
-   do
-      case "$1" in
-         -h|-help|--help)
-            init_usage
-         ;;
-
-         -n)
-            MULLE_FLAG_ANSWER="NO"
-         ;;
-
-         -d)
-            OPTION_CREATE_DEFAULT_FILES="YES"
-         ;;
-
-         -*)
-            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown init option $1"
-            ${USAGE}
-
-         ;;
-
-         *)
-            break
-         ;;
-      esac
-
-      shift
-   done
-
-   if [ -d "${BOOTSTRAP_DIR}" ]
-   then
-      fail "\"${BOOTSTRAP_DIR}\" already exists"
-   fi
-
-   log_fluff "Create \"${BOOTSTRAP_DIR}\""
-   mkdir_if_missing "${BOOTSTRAP_DIR}"
-
-   redirect_exekutor "${BOOTSTRAP_DIR}/version" cat <<EOF
-# required mulle-bootstrap version
-${MULLE_EXECUTABLE_VERSION_MAJOR}.0.0
-EOF
-
-   if [ "${OPTION_CREATE_DEFAULT_FILES}" = "NO" ]
-   then
-      if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
-      then
-         log_info "${BOOTSTRAP_DIR} has been created. Use
-   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} repositories add <url>${C_INFO}
-to specify dependencies and then install them with
-   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE}${C_INFO}
-E.g.:${C_RESET}${C_FAINT}
-${MULLE_EXECUTABLE} repositories add 'https://github.com/madler/zlib.git'
-${MULLE_EXECUTABLE}${C_INFO}
-"
-      else
-         log_info "${BOOTSTRAP_DIR} has been created. Use
-   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} brews add <name>${C_INFO}
-to specify brew formula to fetch and then install them with
-   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE}${C_INFO}
-E.g.:${C_RESET}${C_FAINT}
-${MULLE_EXECUTABLE} brews add 'ack'
-${MULLE_EXECUTABLE}${C_INFO}
-"
-      fi
-      return
-   fi
 
    log_fluff "Create default files"
-
 
 #cat <<EOF > "${BOOTSTRAP_DIR}/pips"
 # add projects that should be installed by pip
@@ -223,26 +106,168 @@ ${MULLE_EXECUTABLE}${C_INFO}
    else
       mainfile="brews"
    fi
+}
+
+
+blurb_after_init()
+{
+   local dir="$1"
 
    log_verbose "\"${BOOTSTRAP_DIR}\" folder has been set up."
 
-   local open
+   local extraline
 
-   open="`read_config_setting "open_${mainfile}_file" "ASK"`"
-   if [ "${open}" = "ASK" ]
+   if [ ! -z "${dir}" ]
    then
-      user_say_yes "Edit the ${C_MAGENTA}${C_BOLD}${mainfile}${C_WARNING} file now ?"
-      if [ $? -eq 0 ]
+      extraline="
+cd \"${OPTION_DIRECTORY}\""
+   fi
+
+   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   then
+         log_info "Done! Use ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} repositories add <url>${C_INFO}
+to specify dependencies and then install them with
+   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE}${C_INFO}
+E.g.:${C_RESET}${C_FAINT}${extraline}
+${MULLE_EXECUTABLE} repositories add 'https://github.com/madler/zlib.git'
+${MULLE_EXECUTABLE}${C_INFO}
+"
+   else
+      log_info "Done!  Use ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} brews add <name>${C_INFO}
+to specify brew formula to fetch and then install them with
+   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE}${C_INFO}
+E.g.:${C_RESET}${C_FAINT}${extraline}
+${MULLE_EXECUTABLE} brews add 'ack'
+${MULLE_EXECUTABLE}${C_INFO}
+"
+   fi
+}
+
+
+do_init()
+{
+   if [ -d "${BOOTSTRAP_DIR}" ]
+   then
+      fail "\"${BOOTSTRAP_DIR}\" already exists"
+   fi
+
+   log_fluff "Create \"${BOOTSTRAP_DIR}\""
+   mkdir_if_missing "${BOOTSTRAP_DIR}"
+
+   redirect_exekutor "${BOOTSTRAP_DIR}/version" cat <<EOF
+# required mulle-bootstrap version
+${MULLE_EXECUTABLE_VERSION_MAJOR}.0.0
+EOF
+}
+
+
+do_default_config()
+{
+   if [ -z "`_config_read "git_mirror"`" ]
+   then
+      (
+         _config_write "git_mirror" "${DEFAULT_GIT_MIRROR}"
+      ) || return 1
+   fi
+
+   if [ -z "`_config_read "archive_cache"`" ]
+   then
+      (
+         _config_write "archive_cache" "${DEFAULT_ARCHIVE_CACHE}"
+      ) || return 1
+   fi
+}
+
+
+#
+# this script creates a .bootstrap folder with some
+# demo files.
+#
+init_main()
+{
+   local mainfile
+
+   [ -z "${MULLE_BOOTSTRAP_LOCAL_ENVIRONMENT_SH}" ] && . mulle-bootstrap-local-environment.sh
+   [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]          && . mulle-bootstrap-settings.sh
+   [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ]         && . mulle-bootstrap-functions.sh
+
+   local OPTION_CREATE_DEFAULT_FILES
+   local OPTION_DIRECTORY
+   local OPTION_INIT_SHARED="YES"
+   local OPTION_DO_DEFAULT_CONFIG="YES"
+
+   OPTION_DIRECTORY=
+   OPTION_CREATE_DEFAULT_FILES="`read_config_setting "create_default_files" "NO"`"
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -h|-help|--help)
+            init_usage
+         ;;
+
+         -n)
+            OPTION_INIT_SHARED="NO"
+         ;;
+
+         -c|--create-default-files)
+            OPTION_CREATE_DEFAULT_FILES="YES"
+         ;;
+
+         --no-default-config)
+            OPTION_DO_DEFAULT_CONFIG="YES"
+         ;;
+
+         -*)
+            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown init option $1"
+            init_usage
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   if [ $# -eq 1 ]
+   then
+      OPTION_DIRECTORY="$1"
+      shift
+   fi
+
+   [ $# -eq 0 ] || init_usage
+
+   if [ ! -z "${OPTION_DIRECTORY}" ]
+   then
+      mkdir_if_missing "${OPTION_DIRECTORY}" || exit 1
+   fi
+   (
+      if [ ! -z "${OPTION_DIRECTORY}" ]
       then
-          open="YES"
+         cd "${OPTION_DIRECTORY}" || exit 1
       fi
-   fi
 
-   if [ "${open}" = "YES" ]
-   then
-      local editor
+      do_init
 
-      editor="`read_config_setting "editor" "${EDITOR:-vi}"`"
-      exekutor "${editor}" "${BOOTSTRAP_DIR}/${mainfile}"
-   fi
+      if [ "${OPTION_DO_DEFAULT_CONFIG}" = "YES" ]
+      then
+         do_default_config
+      fi
+
+      if [ "${OPTION_CREATE_DEFAULT_FILES}" = "YES" ]
+      then
+         create_default_files
+      fi
+
+      if [ "${OPTION_INIT_SHARED}" = "YES" ]
+      then
+         [ -z "${MULLE_BOOTSTRAP_SHARED_SH}" ] && . mulle-bootstrap-shared.sh
+
+         shared_main "init"
+      fi
+
+      blurb_after_init "${OPTION_DIRECTORY}"
+   ) || exit 1
 }

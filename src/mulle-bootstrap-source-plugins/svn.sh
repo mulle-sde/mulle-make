@@ -28,7 +28,7 @@
 #   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
-MULLE_BOOTSTRAP_SCM_PLUGIN_SVN_SH="included"
+MULLE_BOOTSTRAP_SOURCE_PLUGIN_SVN_SH="included"
 
 
 ###
@@ -44,13 +44,13 @@ svn_clone_project()
    local url="$1"; shift
    local branch="$1"; shift
    local tag="$1"; shift
-   local scm="$1"; shift
-   local scmoptions="$1"; shift
+   local source="$1"; shift
+   local sourceoptions="$1"; shift
    local stashdir="$1"; shift
 
    local options
 
-   options="`get_scmoption "${scmoptions}" "clone"`"
+   options="`get_sourceoption "${sourceoptions}" "clone"`"
 
    if [ ! -z "${branch}" ]
    then
@@ -82,13 +82,13 @@ svn_update_project()
    local url="$1"; shift
    local branch="$1"; shift
    local tag="$1"; shift
-   local scm="$1"; shift
-   local scmoptions="$1"; shift
+   local source="$1"; shift
+   local sourceoptions="$1"; shift
    local stashdir="$1"; shift
 
    local options
 
-   options="`get_scmoption "${scmoptions}" "update"`"
+   options="`get_sourceoption "${sourceoptions}" "update"`"
 
    [ ! -z "${stashdir}" ] || internal_fail "stashdir is empty"
 
@@ -120,18 +120,18 @@ svn_status_project()
    local url="$1"; shift
    local branch="$1"; shift
    local tag="$1"; shift
-   local scm="$1"; shift
-   local scmoptions="$1"; shift
+   local source="$1"; shift
+   local sourceoptions="$1"; shift
    local stashdir="$1"; shift
 
    local options
 
-   options="`get_scmoption "${scmoptions}" "status"`"
+   options="`get_sourceoption "${sourceoptions}" "status"`"
 
    [ ! -z "${stashdir}" ] || internal_fail "stashdir is empty"
 
    (
       exekutor cd "${stashdir}" ;
-      exekutor svn status ${options} ${scmoptions} "$@" ${SVNOPTIONS}  >&2
+      exekutor svn status ${options} ${sourceoptions} "$@" ${SVNOPTIONS}  >&2
    ) || fail "svn update of \"${stashdir}\" failed"
 }

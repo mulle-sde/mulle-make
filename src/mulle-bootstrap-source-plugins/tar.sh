@@ -28,7 +28,7 @@
 #   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
-MULLE_BOOTSTRAP_SCM_PLUGIN_TAR_SH="included"
+MULLE_BOOTSTRAP_SOURCE_PLUGIN_TAR_SH="included"
 
 _archive_test()
 {
@@ -76,7 +76,7 @@ _archive_test()
 _archive_unpack()
 {
    local archive="$1"
-   local scmoptions="$2"
+   local sourceoptions="$2"
 
    log_verbose "Extracting ${C_MAGENTA}${C_BOLD}${archive}${C_INFO} ..."
 
@@ -114,11 +114,78 @@ _archive_unpack()
 
    local options
 
-   options="`get_scmoption "${scmoptions}" "tar"`"
+   options="`get_sourceoption "${sourceoptions}" "tar"`"
 
    exekutor tar ${tarcommand} ${TAROPTIONS} ${options} "${archive}" || return 1
 }
 
+
+archive_cache_grab()
+{
+   local url="$1"
+   local download="$2"
+
+   if [ -z "${ARCHIVE_CACHE}" -o "${ARCHIVE_CACHE}" != "NO" ]
+   then
+      return 2
+   fi
+
+   local archive_cache
+   local cachable_path
+   local cached_archive
+   local filename
+   local directory
+
+   # fix for github
+   case "${url}" in
+      *github.com*/archive/*)
+         directory="`dirname -- "${url}"`" # remove 3.9.2
+         directory="`dirname -- "${directory}"`" # remove archives
+         filename="`basename -- "${directory}"`-${download}"
+      ;;
+
+      *)
+         filename="${download}"
+      ;;
+   esac
+
+   cachable_path="${ARCHIVE_CACHE}/${filename}"
+
+   if [ -f "${cachable_path}" ]
+   then
+      cached_archive="${cachable_path}"
+   fi
+
+   if [ ! -z "${cached_archive}" ]
+   then
+      log_info "Using cached \"${cached_archive}\" for ${C_MAGENTA}${C_BOLD}${url}${C_INFO} ..."
+      # we are in a tmp dir
+      cachable_path=""
+
+      if ! _archive_test "${cached_archive}" || \
+         ! validate_download "${cached_archive}" "${sourceoptions}"
+      then
+         remove_file_if_present "${cached_archive}"
+         cached_archive=""
+      else
+         exekutor ln -s "${cached_archive}" "${download}" || fail "failed to symlink \"${cached_archive}\""
+         return 0
+      fi
+   fi
+
+   echo "${cached_archive}"
+   echo "${cachable_path}"
+   echo "${archive_cache}"
+
+   return 1
+}
+
+
+archive_enable_caching()
+{
+   # abuse "global" variable for now
+   ARCHIVE_CACHE="`read_config_setting "archive_cache"`"
+}
 
 #
 # What we do is
@@ -131,64 +198,33 @@ _tar_download()
 {
    local download="$1"
    local url="$2"
-   local scmoptions="$3"
+   local sourceoptions="$3"
 
    local archive_cache
    local cachable_path
    local cached_archive
    local filename
    local directory
+   local results
 
-   archive_cache="`read_config_setting "archive_cache" "${DEFAULT_ARCHIVE_CACHE}"`"
-
-   if [ ! -z "${archive_cache}" -a "${archive_cache}" != "NO" ]
+   results="`archive_cache_grab "${url}" "${download}"`"
+   if [ $? -eq 0 ]
    then
-      # fix for github
-      case "${url}" in
-         *github.com*/archive/*)
-            directory="`dirname -- "${url}"`" # remove 3.9.2
-            directory="`dirname -- "${directory}"`" # remove archives
-            filename="`basename -- "${directory}"`-${download}"
-         ;;
-
-         *)
-            filename="${download}"
-         ;;
-      esac
-
-      cachable_path="${archive_cache}/${filename}"
-
-      if [ -f "${cachable_path}" ]
-      then
-         cached_archive="${cachable_path}"
-      fi
+      return
    fi
 
-   if [ ! -z "${cached_archive}" ]
-   then
-      log_info "Using cached \"${cached_archive}\" for ${C_MAGENTA}${C_BOLD}${url}${C_INFO} ..."
-      # we are in a tmp dir
-      cachable_path=""
-
-      if ! _archive_test "${cached_archive}" || \
-         ! validate_download "${cached_archive}" "${scmoptions}"
-      then
-         remove_file_if_present "${cached_archive}"
-         cached_archive=""
-      else
-         exekutor ln -s "${cached_archive}" "${download}" || fail "failed to symlink \"${cached_archive}\""
-         return
-      fi
-   fi
+   cached_archive="`echo "${results}" | sed -n '1p'`"
+   cachable_path="`echo "${results}"  | sed -n '2p'`"
+   archive_cache="`echo "${results}"  | sed -n '3p'`"
 
    local options
 
-   options="`get_scmoption "${scmoptions}" "curl"`"
+   options="`get_sourceoption "${sourceoptions}" "curl"`"
 
    if [ -z "${cached_archive}" ]
    then
       exekutor curl -O -L ${options} ${CURLOPTIONS} "${url}" || fail "failed to download \"${url}\""
-      if ! validate_download "${download}" "${scmoptions}"
+      if ! validate_download "${download}" "${sourceoptions}"
       then
          remove_file_if_present "${download}"
          fail "Can't download archive from \"${url}\""
@@ -218,8 +254,8 @@ tar_clone_project()
    local url="$3"          # URL of the clone
    local branch="$4"       # branch of the clone
    local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    local tmpdir
@@ -246,9 +282,9 @@ tar_clone_project()
    (
       exekutor cd "${tmpdir}" || return 1
 
-      _tar_download "${download}" "${url}" "${scmoptions}" || return 1
+      _tar_download "${download}" "${url}" "${sourceoptions}" || return 1
 
-      _archive_unpack "${download}" "${scmoptions}" || return 1
+      _archive_unpack "${download}" "${sourceoptions}" || return 1
       exekutor rm "${download}" || return 1
    ) || return 1
 

@@ -50,7 +50,7 @@ Commands:
 Options:
    --branch     : specify branch to use instead of the default
    --tag        : specify tag to checkout
-   --scm        : specify scm to use instead of git
+   --source        : specify source to use instead of git
 EOF
   exit 1
 }
@@ -75,7 +75,7 @@ Options:
    --destination <dir> : where to checkout the repository too
    --branch            : specify branch to use instead of the default
    --tag               : specify tag to checkout
-   --scm               : specify scm to use instead of git
+   --source               : specify source to use instead of git
 EOF
   exit 1
 }
@@ -1300,6 +1300,9 @@ _setting_subtract()
 
 _setting_delete()
 {
+   local key="$1"
+   local repository="$2"
+
    local bootstrapdir
    local directory
 
@@ -1336,6 +1339,8 @@ _config_list()
 
 _config_read()
 {
+   local key="$1"
+
    read_config_setting "${key}"
 }
 
@@ -1383,7 +1388,6 @@ _config_write()
 _config_delete()
 {
    local key="$1"
-   local value="$2"
 
    local configdir
 
@@ -1428,12 +1432,15 @@ _expansion_read()
 
 _expansion_write()
 {
+   local key="$1"
+   local value="$2"
+
    local bootstrapdir
 
    bootstrapdir="`_chosen_bootstrapdir`"
    mkdir_if_missing "${bootstrapdir}"
 
-   redirect_exekutor "${bootstrapdir}/$1" echo "$2"
+   redirect_exekutor "${bootstrapdir}/${key}" echo "${value}"
    exekutor touch "${bootstrapdir}"
 }
 
@@ -1452,11 +1459,13 @@ _expansion_subtract()
 
 _expansion_delete()
 {
+   local key="$1"
+
    local bootstrapdir
 
    bootstrapdir="`_chosen_bootstrapdir`"
 
-   remove_file_if_present "${bootstrapdir}/$1"
+   remove_file_if_present "${bootstrapdir}/${key}"
    exekutor touch "${bootstrapdir}"
 }
 
@@ -1762,8 +1771,8 @@ _show_setting_header()
       ;;
 
       *)
-         echo "URL;DESTINATION;BRANCH;TAG;SCM;SCMOPTIONS"
-         echo "---;-----------;------;---;---;----------"
+         echo "URL;DESTINATION;BRANCH;TAG;SOURCE;OPTIONS"
+         echo "---;-----------;------;---;------;-------"
       ;;
    esac
 
@@ -1786,8 +1795,8 @@ _known_root_setting_main()
    local destination
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
 
    local USAGE
 
@@ -1806,7 +1815,7 @@ _known_root_setting_main()
             options=""
          ;;
 
-         --destination|--branch|--tag|--scm|--scmoptions)
+         --destination|--branch|--tag|--source|--sourceoptions)
             option="${1:2}"
             [ $# -ne 0 ] || fail "value for ${option} is missing"
             shift
@@ -1857,8 +1866,8 @@ _known_root_setting_main()
 
    # build it from back to avoid useless trailing ';'
 
-   [ ! -z "${scmoptions}" ]                     && value=";${scmoptions}"
-   [ ! -z "${value}" -o ! -z "${scm}" ]         && value=";${scm}${value}"
+   [ ! -z "${sourceoptions}" ]                     && value=";${sourceoptions}"
+   [ ! -z "${value}" -o ! -z "${source}" ]         && value=";${source}${value}"
    [ ! -z "${value}" -o ! -z "${tag}" ]         && value=";${tag}${value}"
    [ ! -z "${value}" -o ! -z "${branch}" ]      && value=";${branch}${value}"
    [ ! -z "${value}" -o ! -z "${destination}" ] && value=";${destination}${value}"
@@ -1907,13 +1916,13 @@ mulle-bootstrap"
 
 setting_repositories_main()
 {
-   _known_root_setting_main "repositories" "url|branch|tag|scm|scmoptions" "" "$@"
+   _known_root_setting_main "repositories" "url|branch|tag|source|sourceoptions" "" "$@"
 }
 
 
 setting_embedded_repositories_main()
 {
-   _known_root_setting_main "embedded_repositories" "url|destination|branch|tag|scm|scmoptions" "" "$@"
+   _known_root_setting_main "embedded_repositories" "url|destination|branch|tag|source|sourceoptions" "" "$@"
 }
 
 

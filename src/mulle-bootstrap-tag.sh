@@ -154,7 +154,7 @@ _ensure_tags_unknown()
    local tag="$1" ; shift
 
    # only tag what looks like a git repo
-   # make it scm_tag sometimes
+   # make it source_tag sometimes
    if [ -d "${i}/.git" -o -d "${i}/refs" ]
    then
       (cd "${i}" ; git_tag_unknown "${i}" "${tag}" ) || exit 1
@@ -339,9 +339,9 @@ tag_main()
       return 0
    fi
 
-   run_root_settings_script "pre-tag"
+#   run_root_settings_script "pre-tag"
 
    tag "${TAG}" "$@"
 
-   run_root_settings_script "post-tag"
+#   run_root_settings_script "post-tag"
 }

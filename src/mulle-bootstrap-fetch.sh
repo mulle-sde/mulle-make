@@ -49,8 +49,8 @@ MULLE_BOOTSTRAP_FETCH_SH="included"
 # url="$3"        # URL of the clone
 # branch="$4"     # branch of the clone
 # tag="$5"        # tag to checkout of the clone
-# scm="$6"        # scm to use for this clone
-# scmoptions="$7" # scmoptions
+# source="$6"        # source to use for this clone
+# sourceoptions="$7" # sourceoptions
 # stashdir="$8"   # stashdir of this clone (absolute or relative to $PWD)
 #
 
@@ -153,8 +153,8 @@ log_action()
    local url="$3"          # URL of the clone
    local branch="$4"       # branch of the clone
    local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    assert_sane_parameters "empty reposdir is ok"
@@ -239,8 +239,8 @@ get_local_item()
    local url="$3"          # URL of the clone
    local branch="$4"       # branch of the clone
    local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    if [ "${OPTION_ALLOW_SEARCH_LOCALS}" = "NO" ]
@@ -251,13 +251,13 @@ get_local_item()
 
    local operation
 
-   operation="`get_scm_function "${scm}" "search_local"`"
+   operation="`get_source_function "${source}" "search_local"`"
 
    if [ ! -z "${operation}" ]
    then
       "${operation}" "${url}" "${name}" "${branch}"
    else
-      log_fluff "Not searching caches because scm \"${scm}\" does not support \"${operation}\""
+      log_fluff "Not searching caches because source \"${source}\" does not support \"${operation}\""
    fi
 }
 
@@ -277,11 +277,11 @@ do_operation()
 #   local url="$3"          # URL of the clone
 #   local branch="$4"       # branch of the clone
 #   local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-#   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+#   local sourceoptions="$7"   # options to use on source
 #   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
-   [ -z "${scm}" ] && internal_fail "scm is empty"
+   [ -z "${source}" ] && internal_fail "source is empty"
 
    script="`find_build_setting_file "${name}" "bin/${opname}.sh"`"
    if [ ! -z "${script}" ]
@@ -290,18 +290,18 @@ do_operation()
       return $?
    fi
 
-   scm_operation "${opname}" "$@"
+   source_operation "${opname}" "$@"
 
    case $? in
       0)
       ;;
 
       111)
-         fail "SCM \"${scm}\" does not support ${opname}"
+         fail "Source \"${source}\" does not support ${opname}"
       ;;
 
       *)
-         fail "SCM \"${scm}\" ${opname} failed for \"${name}\""
+         fail "Source \"${source}\" ${opname} failed for \"${name}\""
       ;;
    esac
 }
@@ -318,8 +318,8 @@ clone_or_symlink()
    local url="$3"          # URL of the clone
    local branch="$4"       # branch of the clone
    local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    assert_sane_parameters "empty reposdir is ok"
@@ -338,7 +338,7 @@ clone_or_symlink()
       /*)
          if can_symlink_it "${directory}"
          then
-            scm="symlink"
+            source="symlink"
          fi
       ;;
 
@@ -357,11 +357,11 @@ clone_or_symlink()
             log_verbose "Using local item \"${found}\""
             url="${found}"
 
-            case "${scm}" in
+            case "${source}" in
                "git")
                   if can_symlink_it "${url}"
                   then
-                     scm="symlink"
+                     source="symlink"
                      log_verbose "Using symlink to local item \"${found}\""
                      url="`symlink_relpath "${url}" "${ROOT_DIR}"`"
                   fi
@@ -380,20 +380,20 @@ clone_or_symlink()
                  "${url}" \
                  "${branch}" \
                  "${tag}" \
-                 "${scm}" \
-                 "${scmoptions}" \
+                 "${source}" \
+                 "${sourceoptions}" \
                  "${stashdir}"
       return $?
    fi
 
-   scm_operation "clone" \
+   source_operation "clone" \
                  "${reposdir}" \
                  "${name}" \
                  "${url}" \
                  "${branch}" \
                  "${tag}" \
-                 "${scm}" \
-                 "${scmoptions}" \
+                 "${source}" \
+                 "${sourceoptions}" \
                  "${stashdir}"
 
    rval="$?"
@@ -402,7 +402,7 @@ clone_or_symlink()
       ;;
 
       111)
-         log_fail "SCM \"${scm}\" is unknown"
+         log_fail "Source \"${source}\" is unknown"
       ;;
 
       *)
@@ -410,20 +410,28 @@ clone_or_symlink()
       ;;
    esac
 
-   if [ "${DONT_WARN_SCRIPTS}" != "YES" ]
+   if [ -d "${stashdir}/.bootstrap.local" ]
+   then
+      log_warning "${name} came with it's own .bootstrap.local folder. It will be ignored."
+   fi
+
+   if [ "${source}" = "symlink" ]
+   then
+      log_debug "Symlink successful"
+      return 2
+   fi
+
+   #
+   # don't warn for symlinks
+   #
+   if [ "${COPY_INHERITED_SCRIPTS}" = "YES" -a "${DONT_WARN_SCRIPTS}" = "NO" ]
    then
       [ -z "${MULLE_BOOTSTRAP_WARN_SCRIPTS_SH}" ] && . mulle-bootstrap-warn-scripts.sh
 
       warn_scripts_main "${stashdir}/.bootstrap" "${stashdir}" || fail "Ok, aborted"  #sic
    fi
 
-   if [ "${scm}" = "symlink" ]
-   then
-      log_debug "Symlink successful"
-      return 2
-   fi
-
-   log_debug "SCM \"${scm}\" clone was successful"
+   log_debug "Source \"${source}\" clone was successful"
    return 0
 }
 
@@ -437,8 +445,8 @@ clone_repository()
    local url="$3"          # URL of the clone
    local branch="$4"       # branch of the clone
    local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    [ $# -eq 8 ] || internal_fail "fail"
@@ -626,10 +634,10 @@ upgrade_deep_embedded_repositories()
 
 default_action_for_clone()
 {
-   local scm="$1"
+   local source="$1"
    local stashdir="$2"
 
-   if [ "${scm}" = "minion" ]
+   if [ "${source}" = "minion" ]
    then
       log_fluff "Not removing \"${stashdir}\" because it's a minion"
    else
@@ -654,8 +662,8 @@ required_action_for_clone()
    local newurl="$3"         # URL of the clone
    local newbranch="$4"      # branch of the clone
    local newtag="$5"         # tag to checkout of the clone
-   local newscm="$6"         # scm to use for this clone
-#   local newscmoptions="$7"  # scm to use for this clone
+   local newsource="$6"         # source to use for this clone
+#   local newsourceoptions="$7"  # source to use for this clone
    local newstashdir="$8"    # stashdir of this clone (absolute or relative to $PWD)
 
    local clone
@@ -689,8 +697,8 @@ required_action_for_clone()
    local url
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
    local stashdir
 
    parse_clone "${clone}"
@@ -698,13 +706,13 @@ required_action_for_clone()
    log_debug "Change: \"${clone}\" -> \"${newclone}\""
 
    #
-   # SCM change is big (except if old is symlink and new is git)
+   # Source change is big (except if old is symlink and new is git)
    #
-   if [ "${scm}" != "${newscm}" ]
+   if [ "${source}" != "${newsource}" ]
    then
-      if ! [ "${scm}" = "symlink" -a "${newscm}" = "git" ]
+      if ! [ "${source}" = "symlink" -a "${newsource}" = "git" ]
       then
-         default_action_for_clone "${scm}" "${stashdir}"
+         default_action_for_clone "${source}" "${stashdir}"
          return
       fi
    fi
@@ -744,13 +752,13 @@ required_action_for_clone()
    fi
 
    #
-   # Check that the scm can actually do the supported operation
+   # Check that the source can actually do the supported operation
    #
    local have_set_url
    local have_checkout
    local have_upgrade
 
-   case "${scm}" in
+   case "${source}" in
       symlink)
          if [ -e "${newstashdir}" ]
          then
@@ -760,7 +768,7 @@ required_action_for_clone()
       ;;
    esac
 
-   have_upgrade="`get_scm_function "${scm}" "upgrade"`"
+   have_upgrade="`get_source_function "${source}" "upgrade"`"
    if [ "${branch}" != "${newbranch}" ]
    then
       log_fluff "Branch has changed from \"${branch}\" to \"${newbranch}\", need to fetch"
@@ -768,12 +776,12 @@ required_action_for_clone()
       then
          echo "upgrade"
       else
-         default_action_for_clone "${scm}" "${stashdir}"
+         default_action_for_clone "${source}" "${stashdir}"
          return
       fi
    fi
 
-   have_checkout="`get_scm_function "${scm}" "checkout"`"
+   have_checkout="`get_source_function "${source}" "checkout"`"
    if [ "${tag}" != "${newtag}" ]
    then
       log_fluff "Tag has changed from \"${tag}\" to \"${newtag}\", need to check-out"
@@ -781,12 +789,12 @@ required_action_for_clone()
       then
          echo "checkout"
       else
-         default_action_for_clone "${scm}" "${stashdir}"
+         default_action_for_clone "${source}" "${stashdir}"
          return
       fi
    fi
 
-   have_set_url="`get_scm_function "${scm}" "set_url"`"
+   have_set_url="`get_source_function "${source}" "set_url"`"
    if [ "${url}" != "${newurl}" ]
    then
       log_fluff "URL has changed from \"${url}\" to \"${newurl}\", need to set remote url and fetch"
@@ -795,7 +803,7 @@ required_action_for_clone()
          echo "set-remote"
          echo "upgrade"
       else
-         default_action_for_clone "${scm}" "${stashdir}"
+         default_action_for_clone "${source}" "${stashdir}"
          return
       fi
    fi
@@ -893,22 +901,26 @@ work_clones()
    local url
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local source
+   local sourceoptions
    local stashdir
    local dstdir
 
    local actionitems
    local remember
+   local prettyrepotype
    local repotype
    local oldstashdir
 
    case "${reposdir}" in
       *embedded)
+        prettyrepotype="embedded-"
         repotype="embedded "
       ;;
 
       *)
+        prettyrepotype=""
         repotype=""
       ;;
    esac
@@ -971,8 +983,8 @@ work_clones()
                                                  "${url}" \
                                                  "${branch}" \
                                                  "${tag}" \
-                                                 "${scm}" \
-                                                 "${scmoptions}" \
+                                                 "${source}" \
+                                                 "${sourceoptions}" \
                                                  "${stashdir}"`" || exit 1
 
          log_debug "${C_INFO}Actions for \"${name}\": ${actionitems:-none}"
@@ -984,6 +996,7 @@ work_clones()
             IFS="${DEFAULT_IFS}"
 
             remember="YES"
+            runpostscript="NO"
 
             case "${item}" in
                "checkout")
@@ -992,12 +1005,13 @@ work_clones()
                                            "${url}" \
                                            "${branch}" \
                                            "${tag}" \
-                                           "${scm}" \
-                                           "${scmoptions}" \
+                                           "${source}" \
+                                           "${sourceoptions}" \
                                            "${stashdir}"
                   then
                      fail "Failed to checkout"
                   fi
+                  runpostscript="YES"
                ;;
 
                "clone")
@@ -1006,17 +1020,18 @@ work_clones()
                                    "${url}" \
                                    "${branch}" \
                                    "${tag}" \
-                                   "${scm}" \
-                                   "${scmoptions}" \
+                                   "${source}" \
+                                   "${sourceoptions}" \
                                    "${stashdir}"
 
                   case "$?" in
                      0)
+                        runpostscript="YES"
                      ;;
 
                      2)
                         # if we used a symlink, we want to memorize that
-                        scm="symlink"
+                        source="symlink"
                      ;;
 
                      *)
@@ -1060,14 +1075,18 @@ work_clones()
                ;;
 
                "upgrade")
-                  upgrade_repository "${reposdir}" \
-                                     "${name}" \
-                                     "${url}" \
-                                     "${branch}" \
-                                     "${tag}" \
-                                     "${scm}" \
-                                     "${scmoptions}" \
-                                     "${stashdir}"
+                  if ! upgrade_repository "${reposdir}" \
+                                          "${name}" \
+                                          "${url}" \
+                                          "${branch}" \
+                                          "${tag}" \
+                                          "${source}" \
+                                          "${sourceoptions}" \
+                                          "${stashdir}"
+                  then
+                     fail "Failed to checkout"
+                  fi
+                  runpostscript="YES"
                ;;
 
                remove*)
@@ -1099,13 +1118,33 @@ work_clones()
             esac
          done
 
+         if [ "${source}" != "symlink" -a "${runpostscript}" = "YES" ]
+         then
+            script="`find_build_setting_file "${name}" "bin/post-${prettyrepotype}checkout.sh"`"
+            if [ ! -z "${script}" ]
+            then
+               if ! run_script "${script}" \
+                               "${reposdir}" \
+                               "${name}" \
+                               "${url}" \
+                               "${branch}" \
+                               "${tag}" \
+                               "${source}" \
+                               "${sourceoptions}" \
+                               "${stashdir}"
+               then
+                  fail  "script \"${failed}\" failed"
+               fi
+            fi
+         fi
+
          if [ "${autoupdate}" = "YES" ]
          then
             bootstrap_auto_update "${name}" "${stashdir}"
          fi
 
          # create clone as it is now
-         clone="`echo "${url};${dstdir};${branch};${tag};${scm};${scmoptions}" | sed 's/;*$//'`"
+         clone="`echo "${url};${dstdir};${branch};${tag};${source};${sourceoptions}" | sed 's/;*$//'`"
       fi
 
       if [ "${skip}" = "YES" ]
@@ -1131,6 +1170,8 @@ work_clones()
          log_debug "Don't need to remember it (should be unchanged)"
       fi
       mark_stash_as_alive "${reposdir}" "${name}"
+
+
    done
 
    IFS="${DEFAULT_IFS}"
@@ -1227,8 +1268,8 @@ _fetch_once_deep_embedded_repository()
    local url="$3"          # URL of the clone
    local branch="$4"       # branch of the clone
    local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    local autodir
@@ -1481,6 +1522,7 @@ _common_main()
    local OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS="NO"
    local OPTION_ALLOW_SEARCH_LOCALS="YES"
    local OPTION_ALLOW_GIT_MIRROR="YES"
+   local OPTION_ALLOW_ARCHIVE_CACHE="YES"
    local OPTION_ALLOW_REFRESH_GIT_MIRROR="YES"
    local OPTION_EMBEDDED_ONLY="NO"
    local OVERRIDE_BRANCH
@@ -1554,7 +1596,11 @@ _common_main()
             OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS="YES"
          ;;
 
-         --no-git-mirror)
+         --no-archive-cache)
+            OPTION_ALLOW_ARCHIVE_CACHE="NO"
+         ;;
+
+          --no-git-mirror)
             OPTION_ALLOW_GIT_MIRROR="NO"
          ;;
 
@@ -1562,7 +1608,11 @@ _common_main()
             OPTION_ALLOW_REFRESH_GIT_MIRROR="NO"
          ;;
 
-         --no-caches|--no-locals)
+         --no-caches)
+            fail "--no-caches doesn't exist anymore, use --no-locals"
+         ;;
+
+         --no-locals)
             OPTION_ALLOW_SEARCH_LOCALS="NO"
          ;;
 
@@ -1614,7 +1664,8 @@ _common_main()
 
    [ -z "${MULLE_BOOTSTRAP_AUTO_UPDATE_SH}" ]     && . mulle-bootstrap-auto-update.sh
    [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
-   [ -z "${MULLE_BOOTSTRAP_SCM_SH}" ]             && . mulle-bootstrap-scm.sh
+   [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ]             && . mulle-bootstrap-source.sh
+   [ -z "${MULLE_BOOTSTRAP_GIT_SH}" ]             && . mulle-bootstrap-git.sh
    [ -z "${MULLE_BOOTSTRAP_SCRIPTS_SH}" ]         && . mulle-bootstrap-scripts.sh
    [ -z "${MULLE_BOOTSTRAP_ZOMBIFY_SH}" ]         && . mulle-bootstrap-zombify.sh
 
@@ -1630,6 +1681,11 @@ _common_main()
    if [ "${OPTION_ALLOW_GIT_MIRROR}" = "YES" ]
    then
       git_enable_mirroring "${OPTION_ALLOW_REFRESH_GIT_MIRROR}"
+   fi
+
+   if [ "${OPTION_ALLOW_ARCHIVE_CACHE}" = "YES" ]
+   then
+      archive_enable_caching
    fi
 
    #

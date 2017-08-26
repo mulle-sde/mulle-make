@@ -28,7 +28,7 @@
 #   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
-MULLE_BOOTSTRAP_SCM_PLUGIN_ZIP_SH="included"
+MULLE_BOOTSTRAP_SOURCE_PLUGIN_ZIP_SH="included"
 
 
 zip_clone_project()
@@ -40,8 +40,8 @@ zip_clone_project()
    local url="$3"          # URL of the clone
    local branch="$4"       # branch of the clone
    local tag="$5"          # tag to checkout of the clone
-   local scm="$6"          # scm to use for this clone
-   local scmoptions="$7"   # options to use on scm
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    local tmpdir
@@ -59,7 +59,7 @@ zip_clone_project()
       log_info "Downloading ${C_MAGENTA}${C_BOLD}${url}${C_INFO} ..."
 
       exekutor curl -O -L ${CURLOPTIONS} "${url}" || return 1
-      validate_download "${download}" "${scmoptions}" || return 1
+      validate_download "${download}" "${sourceoptions}" || return 1
 
       log_verbose "Extracting ${C_MAGENTA}${C_BOLD}${download}${C_INFO} ..."
 

@@ -9,7 +9,7 @@ Change     | Action               | Description
 -----------|----------------------|----------------------------------
 `url`      | **set-remote**       | If `name` stays the same, `git remote set url`
 `name`     | **fetch**            | new name repository
-`scm`      | **remove**,**fetch** | the repository is invalid and needs to be replaced
+`source`      | **remove**,**fetch** | the repository is invalid and needs to be replaced
 `stashdir` | **move**             | the repository
 `branch`   | **fetch**            | with new branch and check out (with tag)
 `tag`      | **checkout**         | check out with tag

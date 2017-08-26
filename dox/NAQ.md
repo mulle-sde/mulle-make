@@ -74,7 +74,7 @@ Q: *I have no idea what it does, and how it does it. But I already have a proble
 
 A: Actually `mulle-bootstrap` can deal with svn. It can also deal with tar and
 zip archives. If you have some format that `mulle-bootstrap` doesn't support
-you can "easily" write a script to clone it (or even write a scm-plugin for mulle-bootstrap).
+you can "easily" write a script to clone it (or even write a source-plugin for mulle-bootstrap).
 
 
 Q: *I see myself hitting the next wall pretty soon. But OK. So the svn repository doesn't even use* **make** *it's using*  **autoconf**. *What now ?*

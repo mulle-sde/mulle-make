@@ -943,14 +943,21 @@ local_environment_initialize()
    esac
 
    #
-   # default archive
+   # default paths for various caches
    #
    case "${UNAME}" in
       darwin)
+         DEFAULT_GIT_MIRROR="${HOME}/Library/Caches/mulle-bootstrap/git_mirror"
          DEFAULT_ARCHIVE_CACHE="${HOME}/Library/Caches/mulle-bootstrap/archives"
+         DEFAULT_SHARED_BUILDINFO_PATH="${HOME}/Library/mulle-bootstrap/shared"
+      ;;
+
+      *)
+         DEFAULT_GIT_MIRROR="${HOME}/.cache/mulle-bootstrap/git_mirror"
+         DEFAULT_ARCHIVE_CACHE="${HOME}/.cache/mulle-bootstrap/archives"
+         DEFAULT_SHARED_BUILDINFO_PATH="${HOME}/.config/mulle-bootstrap/shared"
       ;;
    esac
-
 }
 
 

@@ -71,6 +71,7 @@ _bootstrap_auto_copy()
    # this first stage folds platform specific files
    #
    tmpdir="`mktemp -d /tmp/mulle-bootstrap.XXXXXXXX`"
+
    inherit_files "${tmpdir}" "${src}"
    inherit_scripts "${tmpdir}" "${src}"
 
@@ -95,18 +96,28 @@ _bootstrap_auto_copy()
             # stays in local
          ;;
 
-         *.build|settings|overrides)
+         *.build)
             if [ -d "${filepath}" ]
             then
                exekutor cp -Ran ${COPYMOVEFLAGS} "${filepath}" "${dstfilepath}" >&2
             fi
          ;;
 
-         bin)
-            if [ -d "${filepath}" ]
+
+         settings|overrides)
+            if [ "${is_local}" = "YES" ]
             then
-               exekutor cp -Ran ${COPYMOVEFLAGS} "${filepath}" "${dstfilepath}" >&2
+               if [ -d "${filepath}" ]
+               then
+                  exekutor cp -Ran ${COPYMOVEFLAGS} "${filepath}" "${dstfilepath}" >&2
+               fi
+            else
+               log_warning "settings and overrides can only reside in .${BOOTSTRAP_DIR}.local"
             fi
+         ;;
+
+         bin)
+            log_warning "root scripts are no longer supported"
          ;;
 
          repositories)
@@ -218,9 +229,12 @@ _bootstrap_auto_create()
    #
    # Copy over .local with config
    #
-   if dir_has_files "${src}.local"
+   if "${USE_BOOTSTRAP_LOCAL}"
    then
-      _bootstrap_auto_copy "${dst}" "${src}.local" "YES"
+      if dir_has_files "${src}.local"
+      then
+         _bootstrap_auto_copy "${dst}" "${src}.local" "YES"
+      fi
    fi
 
    #
@@ -439,6 +453,71 @@ bootstrap_auto_update()
 ##
 ## bootstrap_auto_final
 ##
+_bootstrap_copy_build_folder()
+{
+   local name="$1"
+   local has_settings="$2"
+   local has_overrides="$3"
+   local copyscripts="$4"
+   local revclonenames="$5"
+
+   local dstdir
+
+   dstdir="${BOOTSTRAP_DIR}.auto/${name}.build"
+   if [ "${has_settings}" -eq 0 ]
+   then
+      inherit_files "${dstdir}" "${BOOTSTRAP_DIR}.auto/settings"
+      if [ "${copyscripts}" = "YES" ]
+      then
+         inherit_scripts "${dstdir}" "${BOOTSTRAP_DIR}.auto/settings"
+      fi
+   fi
+
+   if [ "`read_build_setting "${name}" "final" "NO"`" = "YES" ]
+   then
+      return
+   fi
+
+   IFS="
+"
+   for revname in ${revclonenames}
+   do
+      IFS="${DEFAULT_IFS}"
+
+      srcdir="`stash_of_repository "${reposdir}" "${revname}"`/.bootstrap/${name}.build"
+
+      if [ -d "${srcdir}" ]
+      then
+         inherit_files "${dstdir}" "${srcdir}"
+         if [ "${copyscripts}" = "YES" ]
+         then
+            inherit_scripts "${dstdir}" "${srcdir}"
+         fi
+
+         if [ "`read_build_setting "${name}" "final" "NO"`" = "YES" ]
+         then
+            break
+         fi
+      fi
+
+      if [ "${revname}" = "${name}" ]
+      then
+         break
+      fi
+   done
+   IFS="${DEFAULT_IFS}"
+
+   if [ "${has_overrides}" -eq 0 ]
+   then
+      override_files "${dstdir}" "${BOOTSTRAP_DIR}.auto/overrides"
+      if [ "${copyscripts}" = "YES" ]
+      then
+         override_scripts "${dstdir}" "${BOOTSTRAP_DIR}.auto/overrides"
+      fi
+   fi
+}
+
+
 _bootstrap_create_build_folders()
 {
    local clonenames="$1"
@@ -498,49 +577,94 @@ _bootstrap_create_build_folders()
    do
       IFS="${DEFAULT_IFS}"
 
-      dstdir="${BOOTSTRAP_DIR}.auto/${name}.build"
-      if [ ${has_settings} -eq 0 ]
-      then
-         inherit_files "${dstdir}" "${BOOTSTRAP_DIR}.auto/settings"
-         inherit_scripts "${dstdir}" "${BOOTSTRAP_DIR}.auto/settings"
-      fi
-
-      if [ "`read_build_setting "${name}" "final" "NO"`" = "YES" ]
-      then
-         break
-      fi
-
-      IFS="
-"
-      for revname in ${revclonenames}
-      do
-         IFS="${DEFAULT_IFS}"
-
-         srcdir="`stash_of_repository "${reposdir}" "${revname}"`/.bootstrap/${name}.build"
-
-         if [ -d "${srcdir}" ]
-         then
-            inherit_files "${dstdir}" "${srcdir}"
-            inherit_scripts "${dstdir}" "${srcdir}"
-            if [ "`read_build_setting "${name}" "final" "NO"`" = "YES" ]
-            then
-               break
-            fi
-         fi
-
-         if [ "${revname}" = "${name}" ]
-         then
-            break
-         fi
-      done
-
-      if [ ${has_overrides} -eq 0 ]
-      then
-         override_files "${dstdir}" "${BOOTSTRAP_DIR}.auto/overrides"
-         override_scripts "${dstdir}" "${BOOTSTRAP_DIR}.auto/overrides"
-      fi
+      _bootstrap_copy_build_folder "${name}" \
+                                   "${has_settings}" \
+                                   "${has_overrides}" \
+                                   "${COPY_INHERITED_SCRIPTS}"
+                                   "${revclonenames}"
    done
 
+   IFS="${DEFAULT_IFS}"
+}
+
+
+update_shared_buildinfos()
+{
+   if read_yes_no_config_setting "shared_buildinfo_update" "YES"
+   then
+      [ -z "${MULLE_BOOTSTRAP_GIT_SH}" ] && . mulle-bootstrap-git.sh
+
+      if git_is_repository "${BUILD_INFO_REPO}"
+      then
+         (
+            exekutor cd "${BUILD_INFO_REPO}" &&
+            exekutor git ${GITFLAGS} pull ${GITOPTIONS} --all --recurse-submodules >&2
+         ) || log_warning "Could not update shared build info \
+repository \"${BUILD_INFO_REPO}\""
+      fi
+   fi
+}
+
+
+auto_augment_with_shared_buildinfos()
+{
+   local clonenames="$1"
+
+   [ -z "${SHARED_BUILDINFO_PATH}" ] && internal_fail "SHARED_BUILDINFO_PATH empty"
+
+   local buildinfopath
+   local name
+   local have_updated="NO"
+
+   IFS="
+"
+   for name in ${clonenames}
+   do
+      IFS="${DEFAULT_IFS}"
+
+      buildinfopath="`find_nearest_matching_pattern "${SHARED_BUILDINFO_PATH}" \
+                                                    "${name}.build" \
+                                                    "${name}.build"`"
+      if [ ! -d "${buildinfopath}" ]
+      then
+         log_fluff "No shared build info available for ${name}. Assume default works fine."
+         continue
+      fi
+
+      if [ -d "${BOOTSTRAP_DIR}.auto/${name}.build" ]
+      then
+         if [ "${OVERWRITE_INHERITED_BUILDINFO}" = "NO" ]
+         then
+            log_fluff "${name} already has build info, so ignoring shared build info"
+            continue
+         fi
+         log_fluff "${name} already has inherited build info, removing it"
+
+         rmdir_safer "${BOOTSTRAP_DIR}.auto/${name}.build"
+      fi
+
+      log_info "Found shared build info for ${C_MAGENTA}${C_BOLD}${name}${C_INFO}"
+
+      if [ "${have_updated}" = "NO" ]
+      then
+         update_shared_buildinfos
+         have_updated="YES"
+      fi
+
+      local has_settings
+      local has_overrides
+
+      [ -d "${BOOTSTRAP_DIR}.auto/settings" ]
+      has_settings=$?
+
+      [ -d "${BOOTSTRAP_DIR}.auto/overrides" ]
+      has_overrides=$?
+
+      _bootstrap_copy_build_folder "${name}" \
+                                   "${has_settings}" \
+                                   "${has_overrides}" \
+                                   "YES"
+   done
    IFS="${DEFAULT_IFS}"
 }
 
@@ -567,8 +691,8 @@ bootstrap_auto_final()
    local url
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
    local stashdir
 
    local clone
@@ -612,7 +736,15 @@ bootstrap_auto_final()
    local clonenames
 
    clonenames="`read_root_setting "build_order"`"
-   _bootstrap_create_build_folders "${clonenames}" "${REPOS_DIR}"
+   if [ "${IGNORE_INHERITED_BUILDINFO}" = "NO" ]
+   then
+      _bootstrap_create_build_folders "${clonenames}" "${REPOS_DIR}"
+   fi
+
+   if [ -z "${SHARED_BUILDINFO_PATH}" ]
+   then
+      auto_augment_with_shared_buildinfos "${clonenames}"
+   fi
 
    log_debug ":bootstrap_auto_final end:"
 }
@@ -624,13 +756,50 @@ auto_update_initialize()
 
    log_debug ":auto_update_initialize:"
 
+   [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ] && . mulle-bootstrap-functions.sh
+   [ -z "${MULLE_BOOTSTRAP_COPY_SH}" ]      && . mulle-bootstrap-copy.sh
+
+
    MERGABLE_SETTINGS='brews
 tarballs
 repositories
 '
 
-   [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ] && . mulle-bootstrap-functions.sh
-   [ -z "${MULLE_BOOTSTRAP_COPY_SH}" ] && . mulle-bootstrap-copy.sh
+   #
+   # Ok the paranoid setting
+   #
+   COPY_INHERITED_SCRIPTS="NO"
+   if ! read_yes_no_config_setting "copy_inherited_scripts" "${COPY_INHERITED_SCRIPTS}"
+   then
+      COPY_INHERITED_SCRIPTS="YES"
+   fi
+
+   SHARED_BUILDINFO_PATH="`read_config_setting "shared_buildinfo_path"`"
+   if [ ! -z "${SHARED_BUILDINFO_PATH}" ]
+   then
+      if [ ! -d "${SHARED_BUILDINFO_PATH}" ]
+      then
+         fail "Directory \"${SHARED_BUILDINFO_PATH}\" for config \
+variable \"shared_buildinfo_path\" not found."
+      fi
+
+      #
+      # Assume shared buildinfo is newer or more complete than builtin
+      #
+      OVERWRITE_INHERITED_BUILDINFO="YES"
+      if ! read_yes_no_config_setting "overwrite_inherited_buildinfo"\
+                                    "${OVERWRITE_INHERITED_BUILDINFO}"
+      then
+         OVERWRITE_INHERITED_BUILDINFO="NO"
+      fi
+   fi
+
+   USE_BOOTSTRAP_LOCAL="YES"
+   if ! read_yes_no_config_setting "use_bootstrap_local" "YES"
+   then
+      USE_BOOTSTRAP_LOCAL="NO"
+   fi
+
    :
 }
 

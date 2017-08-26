@@ -63,18 +63,22 @@ run_script()
 }
 
 
-run_root_settings_script()
-{
-   local scriptname="$1" ; shift
-
-   local script
-
-   script="`find_root_setting_file "bin/${scriptname}.sh"`"
-   if [ ! -z "${script}" ]
-   then
-      run_script "${script}" "$@"
-   fi
-}
+#
+# this is dead for simplification purposes
+# there are no more root setting scripts
+#
+# run_root_settings_script()
+# {
+#    local scriptname="$1" ; shift
+#
+#    local script
+#
+#    script="`find_root_setting_file "bin/${scriptname}.sh"`"
+#    if [ ! -z "${script}" ]
+#    then
+#       run_script "${script}" "$@"
+#    fi
+# }
 
 
 run_build_settings_script()
@@ -100,6 +104,7 @@ run_build_settings_script()
 scripts_initialize()
 {
    log_debug ":scripts_initialize:"
+
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]        && . mulle-bootstrap-settings.sh
    [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
    :

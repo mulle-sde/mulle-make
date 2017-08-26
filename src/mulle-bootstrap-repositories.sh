@@ -329,8 +329,8 @@ _walk_minions()
    local url
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
    local stashdir
 
    permissions="`add_line "${permissions}" "minions"`"
@@ -357,8 +357,8 @@ _walk_minions()
                   "${url}" \
                   "${branch}" \
                   "${tag}" \
-                  "${scm}" \
-                  "${scmoptions}" \
+                  "${source}" \
+                  "${sourceoptions}" \
                   "${stashdir}" \
                   "$@"
    done
@@ -381,8 +381,8 @@ _walk_repositories()
    local url
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
    local stashdir
 
    IFS="
@@ -405,8 +405,8 @@ _walk_repositories()
                   "${url}" \
                   "${branch}" \
                   "${tag}" \
-                  "${scm}" \
-                  "${scmoptions}" \
+                  "${source}" \
+                  "${sourceoptions}" \
                   "${stashdir}" \
                   "$@"
    done
@@ -425,8 +425,8 @@ _deep_walk_repos_trampoline()
    local url="$1"; shift          # URL of the clone
    local branch="$1"; shift       # branch of the clone
    local tag="$1"; shift          # tag to checkout of the clone
-   local scm="$1"; shift          # scm to use for this clone
-   local scmoptions="$1"; shift   # options to use on scm
+   local source="$1"; shift          # source to use for this clone
+   local sourceoptions="$1"; shift   # options to use on source
    local stashdir="$1"; shift     # stashdir of this clone (absolute or relative to $PWD)
 
    local callback="$1"; shift
@@ -465,8 +465,8 @@ _deep_walk_auto_trampoline()
    local url="$1"; shift          # URL of the clone
    local branch="$1"; shift       # branch of the clone
    local tag="$1"; shift          # tag to checkout of the clone
-   local scm="$1"; shift          # scm to use for this clone
-   local scmoptions="$1"; shift   # options to use on scm
+   local source="$1"; shift          # source to use for this clone
+   local sourceoptions="$1"; shift   # options to use on source
    local stashdir="$1"; shift     # stashdir of this clone (absolute or relative to $PWD)
 
    local callback="$1"; shift
@@ -653,8 +653,8 @@ walk_raw_clones()
    local dstdir
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
 
    log_debug "Walking raw \"${clones}\" with \"${callback}\""
 
@@ -672,8 +672,8 @@ walk_raw_clones()
                     "${dstdir}" \
                     "${branch}" \
                     "${tag}" \
-                    "${scm}" \
-                    "${scmoptions}" \
+                    "${source}" \
+                    "${sourceoptions}" \
                     "$@"
    done
 
@@ -769,7 +769,7 @@ _branch_part_from_clone()
 }
 
 
-_scm_part_from_clone()
+_source_part_from_clone()
 {
    echo "$@" | cut -s '-d;' -f 4
 }
@@ -840,8 +840,8 @@ computed_stashdir()
 #   local dstdir
 #   local branch
 #   local tag
-#   local scm
-#   local scmoptions
+#   local source
+#   local sourceoptions
 #
 parse_raw_clone()
 {
@@ -849,7 +849,7 @@ parse_raw_clone()
 
    [ -z "${clone}" ] && internal_fail "parse_raw_clone: clone is empty"
 
-   IFS=";" read -r url dstdir branch tag scm scmoptions <<< "${clone}"
+   IFS=";" read -r url dstdir branch tag source sourceoptions <<< "${clone}"
 }
 
 
@@ -875,8 +875,8 @@ process_raw_clone()
 #   local url
 #   local branch
 #   local tag
-#   local scm
-#   local scmoptions
+#   local source
+#   local sourceoptions
 #   local stashdir
 #
 # expansion is now done during .auto creation
@@ -899,8 +899,8 @@ parse_clone()
       log_trace2 "NAME:       \"${name}\""
       log_trace2 "BRANCH:     \"${branch}\""
       log_trace2 "TAG:        \"${tag}\""
-      log_trace2 "SCM:        \"${scm}\""
-      log_trace2 "SCMOPTIONS: \"${scmoptions}\""
+      log_trace2 "SOURCE:     \"${source}\""
+      log_trace2 "OPTIONS:    \"${sourceoptions}\""
       log_trace2 "STASHDIR:   \"${stashdir}\""
    fi
 
@@ -929,8 +929,8 @@ names_from_repository_file()
    local name
    local branch
    local tag
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
 
    clones="`read_setting "${filename}"`"
 
@@ -972,8 +972,8 @@ read_repository_file()
    local url        # url of clone
    local dstdir
    local branch
-   local scm
-   local scmoptions
+   local source
+   local sourceoptions
    local tag
    local name
 
@@ -992,7 +992,7 @@ read_repository_file()
          ;;
       esac
 
-      case "${scm}" in
+      case "${source}" in
          symlink*)
             fail "You can't specify symlink in the repositories file yourself. Use -y flag"
          ;;
@@ -1007,14 +1007,14 @@ read_repository_file()
       fi
 
       dstdir="`computed_stashdir "${name}" "${dstdir}"`"
-      scm="${scm:-git}"
+      source="${source:-git}"
 
       if [ "${MULLE_FLAG_LOG_MERGE}" = "YES" ]
       then
-         log_trace "${url};${dstdir};${branch};${tag};${scm};${scmoptions}"
+         log_trace "${url};${dstdir};${branch};${tag};${source};${sourceoptions}"
       fi
 
-      echo "${url};${dstdir};${branch};${tag};${scm};${scmoptions}"
+      echo "${url};${dstdir};${branch};${tag};${source};${sourceoptions}"
    done
 
    IFS="${DEFAULT_IFS}"
@@ -1264,8 +1264,8 @@ ${clone}"
       local branch
       local stashdir
       local name
-      local scm
-      local scmoptions
+      local source
+      local sourceoptions
       local tag
       local url
       local clone

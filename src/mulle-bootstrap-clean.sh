@@ -94,8 +94,8 @@ _collect_stashdir()
    # local url="$3"          # URL of the clone
    # local branch="$4"       # branch of the clone
    # local tag="$5"          # tag to checkout of the clone
-   # local scm="$6"          # scm to use for this clone
-   # local scmoptions="$7"   # options to use on scm
+   # local source="$6"          # source to use for this clone
+   # local sourceoptions="$7"   # options to use on source
 
    local stashdir="$8"  # stashdir of this clone (absolute or relative to $PWD)
 
@@ -164,8 +164,8 @@ _collect_embedded_stashdir()
 #   local url="$3"          # URL of the clone
 #   local branch="$4"       # branch of the clone
 #   local tag="$5"          # tag to checkout of the clone
-#   local scm="$6"          # scm to use for this clone
-#   local scmoptions="$7"   # options to use on scm
+#   local source="$6"          # source to use for this clone
+#   local sourceoptions="$7"   # options to use on source
    local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
 
    stashparentdir="`dirname -- "${stashdir}"`"

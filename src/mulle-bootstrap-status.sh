@@ -53,7 +53,7 @@ _status_repository()
    local name="$2"      # name of the clone
    local url="$3"       # URL of the clone
    local branch="$4"    # branch of the clone
-   local scm="$5"       # scm to use for this clone
+   local source="$5"       # source to use for this clone
    local tag="$6"       # tag to checkout of the clone
    local stashdir="$7"  # stashdir of this clone (absolute or relative to $PWD)
 
@@ -65,25 +65,12 @@ _status_repository()
       echo "${stashdir}"
    fi
 
-   if [ "${STATUS_SCM}" = "YES" ]
+   if [ "${STATUS_SOURCE}" = "YES" ]
    then
-      case "${scm}" in
-      git*)
-         git_status "$@" >&2
-      ;;
-
-      svn*)
-         svn_status "$@" >&2
-      ;;
-
-      zip*|tar*)
-         log_verbose "No status for ${scm}"
-      ;;
-
-      *)
-         fail "Unknown scm system ${scm}"
-      ;;
-      esac
+      if [ "`type -t "${source}_status"`" = "function" ]
+      then
+         "${source}_status" >&2
+      fi
    fi
 
    if [ "${STATUS_FETCH}" = "YES" ]
@@ -219,13 +206,13 @@ status_main()
    local SKIP_EMBEDDED="YES"
    local STATUS_BREWS="YES"
    local STATUS_CONDENSED="NO"
-   local STATUS_SCM="NO"
+   local STATUS_SOURCE="NO"
    local STATUS_FETCH="YES"
    local STATUS_LIST="NO"
 
    [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
    [ -z "${MULLE_BOOTSTRAP_FETCH_SH}" ]        && . mulle-bootstrap-fetch.sh
-   [ -z "${MULLE_BOOTSTRAP_SCM_SH}" ]          && . mulle-bootstrap-scm.sh
+   [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ]          && . mulle-bootstrap-source.sh
    [ -z "${MULLE_BOOTSTRAP_BREW_SH}" ]         && . mulle-bootstrap-brew.sh
 
    if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
@@ -269,8 +256,8 @@ status_main()
             MULLE_FLAG_FOLLOW_SYMLINKS="NO"
          ;;
 
-         -s|--scm)
-            STATUS_SCM="YES"
+         -s|--source)
+            STATUS_SOURCE="YES"
          ;;
 
          -*)

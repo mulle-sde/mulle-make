@@ -305,6 +305,8 @@ run_git()
       _run_git_on_stash "$i" "$@"
    done
 
+   IFS="
+"
    for i in `all_embedded_repository_stashes`
    do
       IFS="${DEFAULT_IFS}"
@@ -312,6 +314,8 @@ run_git()
       _run_git_on_stash "$i" "$@"
    done
 
+   IFS="
+"
    for i in `all_deep_embedded_repository_stashes`
    do
       IFS="${DEFAULT_IFS}"
@@ -323,7 +327,6 @@ run_git()
 }
 
 
-
 git_enable_mirroring()
 {
    local allow_refresh="${1:-YES}"
@@ -333,6 +336,12 @@ git_enable_mirroring()
    # this is only called in main if the option is yes
    #
    GIT_MIRROR="`read_config_setting "git_mirror"`"
+   if [ "${GIT_MIRROR}" = "NO" ]
+   then
+      GIT_MIRROR=""
+      return 1
+   fi
+
    if [ "${allow_refresh}" = "YES" ]
    then
       REFRESH_GIT_MIRROR="`read_config_setting "refresh_git_mirror" "YES"`"
@@ -373,7 +382,7 @@ git_initialize()
 {
    log_debug ":git_initialize:"
 
-   [ -z "${MULLE_BOOTSTRAP_SCM_SH}" ] && . mulle-bootstrap-scm.sh
+   [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ] && . mulle-bootstrap-source.sh
 
    # this is an actual GIT variable
    GIT_TERMINAL_PROMPT="`read_config_setting "git_terminal_prompt" "0"`"

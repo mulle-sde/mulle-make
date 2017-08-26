@@ -23,7 +23,7 @@ src/mulle-bootstrap-mv-force.sh \
 src/mulle-bootstrap-paths.sh \
 src/mulle-bootstrap-project.sh \
 src/mulle-bootstrap-repositories.sh \
-src/mulle-bootstrap-scm.sh \
+src/mulle-bootstrap-source.sh \
 src/mulle-bootstrap-scripts.sh \
 src/mulle-bootstrap-settings.sh \
 src/mulle-bootstrap-show.sh \
@@ -39,11 +39,11 @@ src/mulle-bootstrap-build-plugins/cmake.sh \
 src/mulle-bootstrap-build-plugins/configure.sh \
 src/mulle-bootstrap-build-plugins/script.sh \
 src/mulle-bootstrap-build-plugins/xcodebuild.sh \
-src/mulle-bootstrap-scm-plugins/git.sh \
-src/mulle-bootstrap-scm-plugins/svn.sh \
-src/mulle-bootstrap-scm-plugins/symlink.sh \
-src/mulle-bootstrap-scm-plugins/tar.sh \
-src/mulle-bootstrap-scm-plugins/zip.sh
+src/mulle-bootstrap-source-plugins/git.sh \
+src/mulle-bootstrap-source-plugins/svn.sh \
+src/mulle-bootstrap-source-plugins/symlink.sh \
+src/mulle-bootstrap-source-plugins/tar.sh \
+src/mulle-bootstrap-source-plugins/zip.sh
 
 CHECKSTAMPS=$(SCRIPTS:.sh=.chk)
 
@@ -72,7 +72,7 @@ install:
 clean:
 	@- rm src/*.chk
 	@- rm src/mulle-bootstrap-build-plugins/*.chk
-	@- rm src/mulle-bootstrap-scm-plugins/*.chk
+	@- rm src/mulle-bootstrap-source-plugins/*.chk
 
 shellcheck_check:
 	which shellcheck || brew install shellcheck

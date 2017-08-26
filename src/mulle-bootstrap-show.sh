@@ -48,7 +48,7 @@ EOF
    -d : show deeply embedded repositories
    -r : show raw repository content
    -u : show URL
-   -s : show scm, branch, tag info
+   -s : show source, branch, tag info
 
 EOF
    fi
@@ -120,8 +120,8 @@ show_repository()
    local url="$3"        # URL of the clone
    local branch="$4"     # branch of the clone
    local tag="$5"        # tag to checkout of the clone
-   local scm="$6"        # scm to use for this clone
-   local scmoptions="$7" # scm to use for this clone
+   local source="$6"        # source to use for this clone
+   local sourceoptions="$7" # source to use for this clone
    local stashdir="$8"   # stashdir of this clone (absolute or relative to $PWD)
 
    printf "%b"  "${SHOW_PREFIX}${C_MAGENTA}"
@@ -145,9 +145,9 @@ show_repository()
    printf ": "
    show_path "${stashdir}"
 
-   if [ "${SHOW_SCM}" = "YES" ]
+   if [ "${SHOW_SOURCE}" = "YES" ]
    then
-      printf "%b"  "  [${scm} ${scmoptions}"
+      printf "%b"  "  [${source} ${sourceoptions}"
 
       if [ ! -z "${tag}" -o ! -z "${branch}" ]
       then
@@ -169,10 +169,10 @@ show_raw_repository()
 {
    local url="$1"       # URL of the clone
    local dstdir="$2"    # branch of the clone
-   local branch="$3"       # scm to use for this clone
+   local branch="$3"       # source to use for this clone
    local tag="$4"       # tag to checkout of the clone
-   local scm="$5"       # scm to use for this clone
-   local scmoptions="$6"       # scm to use for this clone
+   local source="$5"       # source to use for this clone
+   local sourceoptions="$6"       # source to use for this clone
 
    local name
    local stashdir
@@ -185,8 +185,8 @@ show_raw_repository()
       printf "%b" ";${dstdir}"
       printf "%b" ";${branch}"
       printf "%b" ";${tag}"
-      printf "%b" ";${scm}"
-      printf "%b" ";${scmoptions}"
+      printf "%b" ";${source}"
+      printf "%b" ";${sourceoptions}"
       printf "\n"
    ) | sed 's/;*$//'
 
@@ -390,7 +390,7 @@ _common_show()
       log_info "${SHOW_PREFIX}Repositories:"
       if [ "${SHOW_RAW}" = "YES" ]
       then
-         log_info "${SHOW_PREFIX}   ${C_FAINT}URL;DSTDIR;BRANCH;SCM;TAG"
+         log_info "${SHOW_PREFIX}   ${C_FAINT}URL;DSTDIR;BRANCH;TAG;SOURCE;OPTIONS"
          show_raw_repositories
       else
          show_repositories
@@ -432,7 +432,7 @@ _show_main()
 
    ROOT_DIR="`pwd -P`"
 
-   local SHOW_SCM="NO"
+   local SHOW_SOURCE="NO"
    local SHOW_URL="NO"
    local SHOW_BREWS="YES"
    local SHOW_RAW="NO"
@@ -442,7 +442,7 @@ _show_main()
 
    [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
    [ -z "${MULLE_BOOTSTRAP_FETCH_SH}" ]        && . mulle-bootstrap-fetch.sh
-   [ -z "${MULLE_BOOTSTRAP_SCM_SH}" ]          && . mulle-bootstrap-scm.sh
+   [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ]          && . mulle-bootstrap-source.sh
    [ -z "${MULLE_BOOTSTRAP_BREW_SH}" ]         && . mulle-bootstrap-brew.sh
 
    if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
@@ -469,8 +469,8 @@ _show_main()
             SHOW_RAW="YES"
          ;;
 
-         -s|--scm)
-            SHOW_SCM="YES"
+         -s|--source)
+            SHOW_SOURCE="YES"
          ;;
 
          -u|--url)

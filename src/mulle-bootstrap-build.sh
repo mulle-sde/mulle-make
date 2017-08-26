@@ -49,7 +49,7 @@ build_usage()
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_BOOTSTAP_EXECUTABLE} build [options] [repos]*
+   ${MULLE_EXECUTABLE} build [options] [repos]*
 EOF
 
    cat <<EOF >&2
@@ -956,7 +956,7 @@ build_stashes()
    done
    IFS="${DEFAULT_IFS}"
 
-   run_root_settings_script "pre-build"
+#   run_root_settings_script "pre-build"
 
    #
    # build_order is created by refresh
@@ -1034,7 +1034,7 @@ build_stashes()
 
    IFS="${DEFAULT_IFS}"
 
-   run_root_settings_script "post-build"
+#   run_root_settings_script "post-build"
 }
 
 

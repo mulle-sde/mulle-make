@@ -6,7 +6,7 @@
 
 ... for C, C++, Objective-C
 
-... certainly not a "minimal" or "lightweight" project with ca. 30000 lines of
+... certainly not a "minimal" or "lightweight" project with ca. 20000 lines of
   shell script code
 
 
@@ -32,7 +32,7 @@ tickle your fancy
 > ```
 > Other platforms see [How to install](dox/INSTALL.md) for install
 > instructions.
->
+> 
 
 ## A first use
 
@@ -47,7 +47,7 @@ mulle-bootstrap
 
 **mulle-bootstrap** will clone both into a common directory `stashes`.
 
-After cloning **mulle-bootstrap** looks for a `.bootstrap` folder in the freshly checked out repositories. They could have dependencies too. (If they
+After cloning **mulle-bootstrap** looks for a `.bootstrap` folder in the freshly checked out repositories. They could have dependencies too. (If they 
 did, those dependencies would be now also added and fetched).
 
 Everything is now inplace so **mulle-bootstrap** can build both libraries. It will place the installable headers and the libraries into the `dependencies/lib` and `dependencies/include` folders.

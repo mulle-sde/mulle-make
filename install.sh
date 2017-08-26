@@ -209,8 +209,8 @@ main()
       install -v -m "${mode}" "${i}" "${PLUGIN_DIR}" || exit 1
    done
 
-   PLUGIN_DIR="${libexec}/mulle-bootstrap-scm-plugins"
-   for i in src/mulle-bootstrap-scm-plugins/*.sh
+   PLUGIN_DIR="${libexec}/mulle-bootstrap-source-plugins"
+   for i in src/mulle-bootstrap-source-plugins/*.sh
    do
       mkdir -p "${PLUGIN_DIR}" 2> /dev/null
       install -v -m "${mode}" "${i}" "${PLUGIN_DIR}" || exit 1
