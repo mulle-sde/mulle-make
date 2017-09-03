@@ -1184,7 +1184,7 @@ remove_file_if_present()
 #
 find_nearest_matching_pattern()
 {
-   log_entry "_find_nearest_matching_pattern" "$@"
+   log_entry "find_nearest_matching_pattern" "$@"
 
    local directory="$1"
    local pattern="$2"
@@ -1204,7 +1204,8 @@ find_nearest_matching_pattern()
 
    #     IFS='\0'
 
-   local match
+   local match1
+   local match2
    local new_depth
 
    #
@@ -1212,14 +1213,23 @@ find_nearest_matching_pattern()
    #
    IFS="
 "
-   for i in `find "${directory}" -maxdepth 2 -name "${pattern}" -print`
+   for i in `find -L "${directory}" -maxdepth 2 -name "${pattern}" -print`
    do
       IFS="${DEFAULT_IFS}"
 
-      match=`basename -- "$i"`
-      if [ "${match}" = "${expectation}" ]
+      if [ "${i}" = "${expectation}" ]
       then
          echo "$i"
+         log_fluff "\"${i}\" found as complete match"
+         return 0
+      fi
+
+      match1=`basename -- "$i"`
+      match2=`basename -- "${expectation}"`
+      if [ "${match1}" = "${match2}" ]
+      then
+         echo "$i"
+         log_fluff "\"${i}\" found as filename match"
          return 0
       fi
 
@@ -1235,6 +1245,7 @@ find_nearest_matching_pattern()
    if [ ! -z "${found}" ]
    then
       found="`sed 's|^\./||g' <<< "${found}"`"
+      log_fluff "\"${found}\" found as nearest match"
       echo "${found}"
       return 0
    fi

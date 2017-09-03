@@ -33,6 +33,81 @@
 MULLE_BOOTSTRAP_REPOSITORIES_SH="included"
 
 
+repositories_usage()
+{
+    cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE} repositories <add|remove> [options] <url>
+   ${MULLE_EXECUTABLE} repositories list [--raw]
+
+   Repositories can be git/svn repositories or tar/zip archives.
+   They will be placed into "${STASHES_DEFAULT_DIR}" and they will be built
+   by mulle-bootstrap.
+
+Commands:
+   add  <ulr>   : add a repository with the given URL
+   remove <ulr> : remove a repository with the given URL
+   list         : show current repositories
+
+Options:
+   --branch <value>  : specify branch to use instead of the default
+   --raw             : list unprocessed settings only
+   --source <value>  : specify source to use instead of git
+   --options <value> : specify options for the source
+   --tag <value>     : specify tag to checkout
+EOF
+  exit 1
+}
+
+
+embedded_repositories_usage()
+{
+    cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE} embedded_repositories <add|remove> [options] <url>
+   ${MULLE_EXECUTABLE} embedded_repositories list [--raw]
+
+   Embedded repositories can be placed anywhere in your project
+   file structure. They will not be build by mulle-bootstrap.
+
+Commands:
+   add <ulr>    : add a repository with the given URL
+   remove <ulr> : remove a repository with the given URL
+   show         : show current repositories
+
+Options:
+   --destination <dir> : place of the repository relative to project root
+   --branch <value>    : specify branch to use instead of the default
+   --raw               : list unprocessed settings only
+   --source <value>    : specify source to use instead of git
+   --options <value>   : specify options for the source
+   --tag <value>       : specify tag to checkout
+EOF
+  exit 1
+}
+
+
+minions_usage()
+{
+    cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE} minions <add|remove> <name>
+   ${MULLE_EXECUTABLE} minions list
+
+   Minions are projects that share their dependencies.
+   A master is needed to orchestrate the minions. Minions provide dependencies
+   via their .bootstrap folders, but they themselves are not built by
+   mulle-bootstrap.
+
+Commands:
+   add  <name>   : add a project with the given name
+   remove <name> : remove a project with the given name
+   list          : list current minions
+EOF
+  exit 1
+}
+
+
 
 # ####################################################################
 #                       repository file
@@ -992,11 +1067,11 @@ read_repository_file()
          ;;
       esac
 
-      case "${source}" in
-         symlink*)
-            fail "You can't specify symlink in the repositories file yourself. Use -y flag"
-         ;;
-      esac
+#      case "${source}" in
+#         symlink*)
+#            fail "You can't specify symlink in the repositories file yourself. Use -y flag"
+#         ;;
+#      esac
 
       branch="${OVERRIDE_BRANCH:-${branch}}"
       branch="${branch:-master}"
@@ -1333,19 +1408,91 @@ ${clone}"
 }
 
 
+# it's here because I always click here...
+
+setting_repositories_main()
+{
+   _known_root_setting_main "repositories" \
+                            "url|branch|tag|source|options" \
+                            "" \
+                            "YES" \
+                            "$@"
+}
+
+
+setting_embedded_repositories_main()
+{
+   _known_root_setting_main "embedded_repositories" \
+                            "url|destination|branch|tag|source|options" \
+                            "" \
+                            "YES" \
+                            "$@"
+}
+
+
+setting_minions_main()
+{
+   local cmd="$1"
+
+   case "${cmd}" in
+      add|remove)
+         [ -z "$2" ] && minions_usage
+
+         # get to project root (but OK if missing (for add))
+         bootstrap_cd_projectpath
+
+         # basically get into the masterpath "for free" here, if it exists
+
+         bootstrap_should_defer_to_master "minions"
+
+         [ -d "$2" ] || fail "Could not find minion \"$2\" in \"$PWD\""
+         cd "$2" || exit 1
+
+         # just let defer or emancipate do it's thing
+         if [ "${cmd}" = "add" ]
+         then
+            mulle-bootstrap defer
+         else
+            mulle-bootstrap emancipate
+         fi
+         return $?
+      ;;
+
+      *)
+         if ! bootstrap_cd_projectpath
+         then
+            fail "There is no ${BOOTSTRAP_DIR} or ${BOOTSTRAP_DIR}.local folder here ($orgpwd), can't continue"
+         fi
+
+         bootstrap_should_defer_to_master "minions"
+
+         if ! is_master_bootstrap_project "."
+         then
+            fail "This is not a master project, can not continue"
+         fi
+      ;;
+    esac
+
+   _known_root_setting_main "minions" \
+                            "url" \
+                            "NAME" \
+                            "YES" \
+                            "$@"
+}
+
+
+
 mulle_repositories_initialize()
 {
-   [ -z "${MULLE_BOOTSTRAP_LOGGING_SH}" ]         && . mulle-bootstrap-logging.sh
+   [ -z "${MULLE_BOOTSTRAP_LOGGING_SH}" ]            && . mulle-bootstrap-logging.sh
 
    log_debug ":mulle_repositories_initialize:"
 
    [ -z "${MULLE_BOOTSTRAP_LOCAL_ENVIRONMENT_SH}" ]  && . mulle-bootstrap-local-environment.sh
-   [ -z "${MULLE_BOOTSTRAP_ARRAY_SH}" ]           && . mulle-bootstrap-array.sh
-   [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]        && . mulle-bootstrap-settings.sh
-   [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ]       && . mulle-bootstrap-functions.sh
-   [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
-
-   assert_mulle_bootstrap_version
+   [ -z "${MULLE_BOOTSTRAP_ARRAY_SH}" ]              && . mulle-bootstrap-array.sh
+   [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]           && . mulle-bootstrap-settings.sh
+   [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ]          && . mulle-bootstrap-functions.sh
+   [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ]    && . mulle-bootstrap-common-settings.sh
 
    :
 }

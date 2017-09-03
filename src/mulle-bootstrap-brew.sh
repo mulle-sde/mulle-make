@@ -110,6 +110,7 @@ fetch_brew_if_needed()
 
    if :
    then
+      "${BREW}" analytics off
       "${BREW}" update
    fi
 

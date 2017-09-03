@@ -135,3 +135,15 @@ svn_status_project()
       exekutor svn status ${options} ${sourceoptions} "$@" ${SVNOPTIONS}  >&2
    ) || fail "svn update of \"${stashdir}\" failed"
 }
+
+
+svn_search_local_project()
+{
+   log_entry "git_search_local_project [${LOCAL_PATH}]" "$@"
+
+   local url="$1"
+   local name="$2"
+   local branch="$3"
+
+   source_search_local_path "${name}" "${branch}" ".svn" "YES"
+}

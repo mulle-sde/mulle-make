@@ -292,7 +292,7 @@ ${SEARCH_PATH}"
          ;;
 
          -*)
-            echo "mulle-mingw-dumpdef.sh: Unknown option $1" >&2
+            echo "mulle-mingw-dumpdef.sh: Unknown option \"$1\"" >&2
             usage
          ;;
 

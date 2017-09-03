@@ -248,6 +248,12 @@ show_raw_minions()
 }
 
 
+have_minions()
+{
+   [ ! -z "`read_root_setting "minions"`" ]
+}
+
+
 show_minions()
 {
    (
@@ -255,6 +261,12 @@ show_minions()
       walk_root_setting "minions"  \
                         "show_minion"
    )
+}
+
+
+have_repositories()
+{
+   [ ! -z "`read_root_setting "repositories"`" ]
 }
 
 
@@ -276,6 +288,12 @@ minion"
                              "${permissions}" \
                              "${REPOS_DIR}"
    )
+}
+
+
+have_embedded_repositories()
+{
+   [ ! -z "`read_root_setting "embedded_repositories"`" ]
 }
 
 
@@ -378,40 +396,50 @@ _common_show()
 
    if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
    then
-      log_info "${SHOW_PREFIX}Minions:"
-      if [ "${SHOW_RAW}" = "YES" ]
+      if have_minions
       then
-         show_raw_minions
-      else
-         show_minions
-      fi
-      log_info ""
-
-      log_info "${SHOW_PREFIX}Repositories:"
-      if [ "${SHOW_RAW}" = "YES" ]
-      then
-         log_info "${SHOW_PREFIX}   ${C_FAINT}URL;DSTDIR;BRANCH;TAG;SOURCE;OPTIONS"
-         show_raw_repositories
-      else
-         show_repositories
-      fi
-
-      log_info ""
-      log_info "${SHOW_PREFIX}Embedded Repositories:"
-      if [ "${SHOW_RAW}" = "YES" ]
-      then
-         show_raw_embedded_repositories
-      else
-         show_embedded_repositories
-      fi
-
-      if [ "${SHOW_RAW}" = "NO" -a "${SHOW_DEEP}" = "YES" ]
-      then
+         log_info "${SHOW_PREFIX}Minions:"
+         if [ "${SHOW_RAW}" = "YES" ]
+         then
+            show_raw_minions
+         else
+            show_minions
+         fi
          log_info ""
-         log_info "${SHOW_PREFIX}Deeply Embedded Repositories:"
-         show_deep_embedded_repositories
       fi
-      log_info ""
+
+      if have_repositories
+      then
+         log_info "${SHOW_PREFIX}Repositories:"
+         if [ "${SHOW_RAW}" = "YES" ]
+         then
+            log_info "${SHOW_PREFIX}   ${C_FAINT}URL;DSTDIR;BRANCH;TAG;SOURCE;OPTIONS"
+            show_raw_repositories
+         else
+            show_repositories
+         fi
+
+         log_info ""
+      fi
+
+      if have_embedded_repositories
+      then
+         log_info "${SHOW_PREFIX}Embedded Repositories:"
+         if [ "${SHOW_RAW}" = "YES" ]
+         then
+            show_raw_embedded_repositories
+         else
+            show_embedded_repositories
+         fi
+
+         if [ "${SHOW_RAW}" = "NO" -a "${SHOW_DEEP}" = "YES" ]
+         then
+            log_info ""
+            log_info "${SHOW_PREFIX}Deeply Embedded Repositories:"
+            show_deep_embedded_repositories
+         fi
+         log_info ""
+      fi
    fi
 
    if [ "${SHOW_BREWS}" = "YES" ]
@@ -506,7 +534,7 @@ _show_main()
       if [ ! -f "${REPOS_DIR}/.fetch_done" ]
       then
           log_warning "${MULLE_EXECUTABLE} has not run fetch completely.
-Results may be incomplete or missing.
+Results may be stale or absent.
 Maybe use --raw option or run ${MULLE_EXECUTABLE} again ?"
       fi
    fi

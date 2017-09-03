@@ -181,7 +181,7 @@ can_symlink_it()
 
    local directory="$1"
 
-   if [ "${OPTION_ALLOW_CREATING_SYMLINKS}" != "YES" ]
+   if [ "${MULLE_FLAG_CREATE_SYMLINKS}" != "YES" ]
    then
       log_fluff "Not allowed to symlink it. (Use --symlinks to allow)"
       return 1
@@ -257,7 +257,7 @@ get_local_item()
    then
       "${operation}" "${url}" "${name}" "${branch}"
    else
-      log_fluff "Not searching caches because source \"${source}\" does not support \"${operation}\""
+      log_fluff "Not searching locals because source \"${source}\" does not support \"${operation}\""
    fi
 }
 
@@ -336,7 +336,7 @@ clone_or_symlink()
 
    case "${url}" in
       /*)
-         if can_symlink_it "${directory}"
+         if can_symlink_it "${url}"
          then
             source="symlink"
          fi
@@ -550,7 +550,7 @@ _update_operation_walk_embedded_repositories()
    (
       STASHES_ROOT_DIR=""
       STASHES_DEFAULT_DIR=""
-      OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
+      MULLE_FLAG_CREATE_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
 
       walk_auto_repositories "embedded_repositories"  \
                              "${operation}" \
@@ -569,7 +569,7 @@ _update_operation_walk_deep_embedded_auto_repositories()
    permissions="minion"
 
    (
-      OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
+      MULLE_FLAG_CREATE_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
 
       walk_deep_embedded_auto_repositories "${operation}" \
                                            "${permissions}"
@@ -1186,7 +1186,7 @@ fetch_once_embedded_repositories()
 
    local STASHES_DEFAULT_DIR=""
    local STASHES_ROOT_DIR=""
-   local OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
+   local MULLE_FLAG_CREATE_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
 
    local clones
    local required_clones
@@ -1242,7 +1242,7 @@ fetch_once_minions_embedded_repositories()
 
       local STASHES_DEFAULT_DIR=""
       local STASHES_ROOT_DIR=""
-      local OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
+      local MULLE_FLAG_CREATE_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
 
       local clones
       local required_clones
@@ -1286,7 +1286,7 @@ _fetch_once_deep_embedded_repository()
 
    local STASHES_DEFAULT_DIR=""
    local STASHES_ROOT_DIR="${stashdir}"  # hackish
-   local OPTION_ALLOW_CREATING_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
+   local MULLE_FLAG_CREATE_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}"
    local PARENT_REPOSITORY_NAME="${name}"
    local PARENT_CLONE="${clone}"
 
@@ -1517,8 +1517,6 @@ _common_main()
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]          && . mulle-bootstrap-settings.sh
 
    local OPTION_CHECK_USR_LOCAL_INCLUDE="NO"
-   local MULLE_FLAG_FOLLOW_SYMLINKS="NO"
-   local OPTION_ALLOW_CREATING_SYMLINKS="NO"
    local OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS="NO"
    local OPTION_ALLOW_SEARCH_LOCALS="YES"
    local OPTION_ALLOW_GIT_MIRROR="YES"
@@ -1552,7 +1550,10 @@ _common_main()
       ;;
 
       *)
-         OPTION_ALLOW_CREATING_SYMLINKS="`read_config_setting "symlinks" "${MULLE_FLAG_ANSWER}"`"
+         if [ -z "${MULLE_FLAG_CREATE_SYMLINKS}" ]
+         then
+            MULLE_FLAG_CREATE_SYMLINKS="`read_config_setting "symlinks" "NO"`"
+         fi
          OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS="`read_config_setting "embedded_symlinks" "NO"`"
       ;;
    esac
@@ -1583,7 +1584,7 @@ _common_main()
 
          # allow creating symlinks instead of clones for repositories
          -l|--symlink-creation|--symlinks)
-            OPTION_ALLOW_CREATING_SYMLINKS="YES"
+            MULLE_FLAG_CREATE_SYMLINKS="YES"
          ;;
 
          #
@@ -1618,7 +1619,7 @@ _common_main()
 
          --no-symlink-creation|--no-symlinks)
             MULLE_FLAG_FOLLOW_SYMLINKS="NO"
-            OPTION_ALLOW_CREATING_SYMLINKS="NO"
+            MULLE_FLAG_CREATE_SYMLINKS="NO"
             OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS="NO"
          ;;
 
@@ -1770,8 +1771,13 @@ _common_main()
 
    #
    # only say we are done if a build_order was created
+   # (or no repositories exist)
    #
-   if [ -f "${BOOTSTRAP_DIR}.auto/build_order" ]
+   local clones
+
+   clones="`read_root_setting "repositories"`"
+
+   if [ -z "${clones}" -o -f "${BOOTSTRAP_DIR}.auto/build_order" ]
    then
       create_file_if_missing "${REPOS_DIR}/.fetch_done"
    fi

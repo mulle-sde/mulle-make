@@ -31,58 +31,6 @@
 MULLE_BOOTSTRAP_SOURCE_PLUGIN_GIT_SH="included"
 
 
-_git_search_local()
-{
-   log_entry "_git_search_local" "$@"
-
-   local directory="$1"
-   local name="$2"
-   local branch="$3"
-
-   [ $# -ne 3 ] && internal_fail "fail"
-
-   local found
-
-   if [ "${MULLE_FLAG_LOG_LOCALS}" = "YES" ]
-   then
-      log_trace "Checking local path \"${directory}\""
-   fi
-
-   if [ ! -z "${branch}" ]
-   then
-      found="${directory}/${name}.${branch}"
-      log_fluff "Looking for \"${found}\""
-
-      if [ -d "${found}" ]
-      then
-         log_fluff "Found \"${name}.${branch}\" in \"${directory}\""
-
-         echo "${found}"
-         return
-      fi
-   fi
-
-   found="${directory}/${name}.git"
-   log_fluff "Looking for \"${found}\""
-   if [ -d "${found}" ]
-   then
-      log_fluff "Found \"${name}.git\" in \"${directory}\""
-
-      echo "${found}"
-      return
-   fi
-
-   found="${directory}/${name}"
-   log_fluff "Looking for \"${found}\""
-   if [ -d "${found}" ]
-   then
-      log_fluff "Found \"${name}\" in \"${directory}\""
-
-      echo "${found}"
-      return
-   fi
-}
-
 
 # global variable __GIT_MIRROR_URLS__ used to avoid refetching
 # repos in one setting
@@ -153,6 +101,24 @@ _git_get_mirror_url()
 }
 
 
+__git_check_file_url()
+{
+   local url="$1"
+
+   if ! git_is_repository "${url}"
+   then
+      if [ -d "${url}" ]
+      then
+         log_error "\"${url}\" is not a git repository ($PWD).
+Use option --symlinks to symlink it."
+      else
+         log_error "\"${url}\" does not exist ($PWD)"
+      fi
+      return 1
+   fi
+}
+
+
 __git_clone()
 {
    log_entry "__git_clone" "$@"
@@ -194,9 +160,8 @@ __git_clone()
    #
    case "${url}" in
       file:*)
-         if ! git_is_repository "${url}"
+         if ! __git_check_file_url "${url}"
          then
-            log_error "\"${url}\" is not a git repository ($PWD)"
             return 1
          fi
       ;;
@@ -211,9 +176,8 @@ __git_clone()
       ;;
 
       *)
-         if ! git_is_repository "${url}"
+         if ! __git_check_file_url "${url}"
          then
-            log_error "\"${url}\" is not a git repository ($PWD)"
             return 1
          fi
       ;;
@@ -497,47 +461,7 @@ git_search_local_project()
    local name="$2"
    local branch="$3"
 
-   local found
-   local directory
-   local realdir
-   local curdir
-
-   if [ "${MULLE_FLAG_LOG_LOCAL}" = "YES" -a -z "${LOCAL_PATH}" ]
-   then
-      log_trace "LOCAL_PATH is empty"
-   fi
-
-   curdir="`pwd -P`"
-   IFS=":"
-   for directory in ${LOCAL_PATH}
-   do
-      IFS="${DEFAULT_IFS}"
-
-      if [ ! -d "${directory}" ]
-      then
-         if [ "${MULLE_FLAG_LOG_LOCALS}" = "YES" ]
-         then
-            log_trace2 "Local path \"${realdir}\" does not exist"
-         fi
-         continue
-      fi
-
-      realdir="`realpath "${directory}"`"
-      if [ "${realdir}" = "${curdir}" ]
-      then
-         fail "Config setting \"search_path\" mistakenly contains \"${directory}\", which is the current directory"
-      fi
-
-      found="`_git_search_local "${realdir}" "${name}" "${branch}"`" || exit 1
-      if [ ! -z "${found}" ]
-      then
-         echo "${found}"
-         return
-      fi
-   done
-
-   IFS="${DEFAULT_IFS}"
-   return 1
+   source_search_local_path "${name}" "${branch}" ".git" "NO"
 }
 
 

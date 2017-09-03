@@ -7,8 +7,7 @@ differerences:
 ```console
 cd b
 mulle-bootstrap init
-mkdir -p .bootstrap.local/settings
-echo "xcodebuild" >> .bootstrap.local/settings/build_preferences
+mulle-bootstrap setting build_preferences xcodebuild
 ```
 
 
@@ -42,8 +41,7 @@ is done on a per-repository basis in `.bootstrap/settings`.
 
 
 ```console
-mkdir -p .bootstrap/settings/a
-echo "/include/a" > .bootstrap/settings/a/dispense_headers_path
+mulle-bootstrap setting -b a dispense_headers_path "/include/a"
 ```
 
 Now build it again with **mulle-bootstrap**, the header should appear as

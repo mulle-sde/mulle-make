@@ -127,12 +127,12 @@ core_technical_flags()
 
       -t|--trace)
          MULLE_TRACE="1848"
-         ps4string='${BASH_SOURCE[1]##*/}:${LINENO}'
+         ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
       ;;
 
       -tfpwd|--trace-full-pwd)
          [ "${MULLE_TRACE}" = "1848" ] || fail "option \"$1\" must be specified after -t"
-         ps4string='${BASH_SOURCE[1]##*/}:${LINENO} \"\w\"'
+         ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
       ;;
 
       -tp|--trace-profile)

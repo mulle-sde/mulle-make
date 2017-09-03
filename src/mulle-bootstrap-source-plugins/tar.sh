@@ -39,6 +39,7 @@ _archive_test()
    case "${archive}" in
       *.zip)
          redirect_exekutor /dev/null unzip -t "${archive}" || return 1
+         return 0   # can't test more easily here
       ;;
    esac
 
@@ -83,6 +84,7 @@ _archive_unpack()
    case "${archive}" in
       *.zip)
          exekutor unzip "${archive}" || return 1
+         archive="${archive%.*}"
       ;;
    esac
 

@@ -229,7 +229,7 @@ _bootstrap_auto_create()
    #
    # Copy over .local with config
    #
-   if "${USE_BOOTSTRAP_LOCAL}"
+   if [ "${USE_BOOTSTRAP_LOCAL}" = "YES" ]
    then
       if dir_has_files "${src}.local"
       then
@@ -610,7 +610,7 @@ auto_augment_with_shared_buildinfos()
 {
    local clonenames="$1"
 
-   [ -z "${SHARED_BUILDINFO_PATH}" ] && internal_fail "SHARED_BUILDINFO_PATH empty"
+   [ -z "${SHARED_BUILDINFO_PATH}" ] && internal_fail "SHARED_BUILDINFO_PATH is empty"
 
    local buildinfopath
    local name
@@ -741,7 +741,7 @@ bootstrap_auto_final()
       _bootstrap_create_build_folders "${clonenames}" "${REPOS_DIR}"
    fi
 
-   if [ -z "${SHARED_BUILDINFO_PATH}" ]
+   if [ ! -z "${SHARED_BUILDINFO_PATH}" ]
    then
       auto_augment_with_shared_buildinfos "${clonenames}"
    fi

@@ -313,26 +313,27 @@ bootstrap_init()
 }
 
 #
-# global variables used (sick)
+# global variable used (sick)
 #  orgpwd
-#  cmd
+#
 bootstrap_cd_projectpath()
 {
+   local cmd="$1"
+
    orgpwd="$PWD"
+
+   local old
 
    while ! is_bootstrap_project
    do
-      local old
-
       old="$PWD"
       cd ..
 
       if [ "$PWD" = "${old}" ]
       then
-         if [ "${cmd}" = "setting" ]
+         cd "${orgpwd}"
+         if [ "${cmd}" != "setting" ]
          then
-            cd "${orgpwd}"
-         else
             return 1
          fi
       fi
@@ -350,6 +351,7 @@ bootstrap_main()
    # technical flags
    local MULLE_FLAG_DONT_DEFER="NO"
    local MULLE_FLAG_EXEKUTOR_DRY_RUN="NO"
+   local MULLE_FLAG_CREATE_SYMLINKS  # default empty
    local MULLE_FLAG_FOLLOW_SYMLINKS="YES"
    local MULLE_FLAG_LOG_LOCAL="NO"
    local MULLE_FLAG_LOG_DEBUG="NO"
@@ -386,6 +388,11 @@ bootstrap_main()
 
          --no-defer)
             MULLE_FLAG_DONT_DEFER="YES"
+         ;;
+
+         # short cut for fetch
+         --symlinks)
+            MULLE_FLAG_CREATE_SYMLINKS="YES"
          ;;
 
          # used persistently throughout so it's global
@@ -450,7 +457,7 @@ bootstrap_main()
    cmd="${1:-bootstrap}"
 
    case "${cmd}" in
-      help|init|uname)
+      help|init|uname|minion|minions)
       ;;
 
       project-path)
@@ -463,7 +470,7 @@ bootstrap_main()
       ;;
 
       *)
-         if ! bootstrap_cd_projectpath
+         if ! bootstrap_cd_projectpath "${cmd}"
          then
             fail "There is no ${BOOTSTRAP_DIR} or ${BOOTSTRAP_DIR}.local folder here ($orgpwd), can't continue"
          fi
@@ -546,7 +553,7 @@ bootstrap_main()
       ;;
 
       embedded_repository|embedded_repositories)
-         . mulle-bootstrap-settings.sh
+         . mulle-bootstrap-repositories.sh
 
          setting_embedded_repositories_main "$@" || exit 1
       ;;
@@ -589,6 +596,12 @@ bootstrap_main()
          return 0
       ;;
 
+      minion|minions)
+         . mulle-bootstrap-repositories.sh
+
+         setting_minions_main "$@" || exit 1
+      ;;
+
       path|paths)
          . mulle-bootstrap-paths.sh
 
@@ -596,7 +609,7 @@ bootstrap_main()
       ;;
 
       repository|repositories)
-         . mulle-bootstrap-settings.sh
+         . mulle-bootstrap-repositories.sh
 
          setting_repositories_main "$@" || exit 1
       ;;

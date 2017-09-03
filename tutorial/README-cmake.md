@@ -8,85 +8,28 @@ This directory contains a simple test with 3 folders `a`, `b`,  `c`. Each folder
 contains a minimal C-language project of the same name.  Project **c** depends
 on **b**. And project **b** depends on **a**.
 
-`a.h`:
-
-```
-extern int a( void);
-```
-
-`a.c`:
-
-```
-int a( void)
-{
-   return( 1848);
-}
-```
-
-**b** requires **a** to be present:
-
-
-`b.h`:
-
-```
-extern int b( void);
-```
-
-`b.c`:
-
-```
-#include <a/a.h>
-
-int b( void)
-{
-   return( a() == 1848  ? 1 : 0);
-}
-```
-
-**c** is a little executable, that links with **a** and **b**
-
-
-`main.c`:
-
-```
-#include <b/b.h>
-#include <stdio.h>
-
-
-int main( int  arcg, char *argv[])
-{
-   printf( "version: %d\n",  b() ? 1848 : 1849);
-   return( 0);
-}
-
-```
-
-## First try without mulle-bootstrap
+## First failing try without mulle-bootstrap
 
 Initially none of the folders contain a `.bootstrap` folder.
 
-Try to build **b** with `cmake`. It will not work, because the header
-`<a/a.h>` will not be found.  So first run **cmake**, it will produce the Makefile and then run **make**.
+Try to build **b** with `cmake`. The first run of **cmake** will produce the
+Makefile which you can then **make**.
 
 ```console
 cd b
 ( mkdir build ; cd build ; cmake -G "Unix Makefiles" .. ; make )
 ```
 
-> On Windows with the MingGW bash, use
+> On Windows with the MingGW bash, use "NMake Makefiles" and nmake instead
 >
 > ```console
 > cd b
 > ( mkdir build ; cd build ; `cmake -G "NMake Makefiles" .. ; nmake`)
 > ```
 
+ It will not work, because the header
+`<a/a.h>` will not be found.
 
-
-It will produce an error like this:
-
-```
-/tutorial/b/src/b.c:1:10: fatal error: 'a/a.h' file not found
-```
 
 ## mulle-bootstrap to the rescue
 
@@ -96,68 +39,32 @@ While being still in **b**:
 mulle-bootstrap init -n
 ```
 
-This will create a `.bootstrap` for you with some default
-content. View `b/.bootstrap/repositories` in an editor and you
-should be seeing:
-
-```shell
-#
-# Add repository URLs to this file.
-#
-# mulle-bootstrap [fetch] will download these into ".repos"
-# mulle-bootstrap [build] will then build them into "dependencies"
-#
-# Each line consists of four fields, only the URL is necessary.
-#
-# URL;NAME;BRANCHTAG;SOURCE
-# ================
-# ex. foo.com/bla.git;mybla;master;git
-# ex. foo.com/bla.svn;;;svn
-#
-# Possible URLS for repositories:
-#
-# https://www.mulle-kybernetik.com/repositories/MulleScion
-# git@github.com:mulle-nat/MulleScion.git
-# ../MulleScion
-# /Volumes/Source/srcM/MulleScion
-#
-```
-
-Lines starting with a '#' are comments, these are fluff that can be
-deleted. Lets overwrite the contents with our dependency **a**:
+Now add a repository. You can use an absolute path:
 
 ```
-echo "a" > .bootstrap/repositories
+mulle-bootstrap repository add "${PWD}/../a"
 ```
 
 Alright, ready to bootstrap.
 
 
 ```console
-mulle-bootstrap
+mulle-bootstrap --symlinks
 ```
 
-will produce the following question:
-
-``` shell
-There is a ../a folder in the parent
-directory of this project.
-Use it ? (y/N)
-```
-
-So **a** was found, and you have the option to use it,
-which you should do. It will symlink **a** into your project and then mulle-bootstrap will build the library.
 
 > On Windows in the MingGW bash, this will not work, because there
 > is no symlink support. You have to place 'a' under **git** control first
 >
 > ```
-> ( cd ../a;
+> (
+>   cd ../a;
 >   git init ;
 >   git add . ;
 >   git commit -m "Mercyful Release"
 > )
->
+> mulle-bootstrap
+> ```
 
 
 Check out the contents of the `b/dependencies` folder.
@@ -183,7 +90,8 @@ libA.a
 
 ## Building **b**
 
-We need to modify b's `CMakeLists.txt` to use `dependencies/lib` and `dependencies/include` as search paths.
+We need to modify b's `CMakeLists.txt` to use `dependencies/lib` and
+`dependencies/include` as search paths.
 
 
 Put these lines into the `CMakeLists.txt` file to add the proper search paths:
@@ -252,14 +160,17 @@ Now let's do the same for `c`:
 > git commit -m "Mercyful Release"
 > ```
 
+This time just to be different, lets use a relative path and update the
+`search_path`:
+
 ```console
 mulle-bootstrap init -n
-echo "b" > .bootstrap/repositories
-mulle-bootstrap
+mulle-bootstrap repository add b
+mulle-bootstrap config -a --simplify search_path "${PWD}/..:`mulle-bootstrap config search_path`"
 ```
 
-mulle-bootstrap will have used the dependency information from **b**, to automatically also
-build **a** for you in the proper order.
+mulle-bootstrap will have used the dependency information from **b**, to
+automatically also build **a** for you in the proper order.
 
 Since the `CMakeLists.txt` file of **c** is already setup properly, you can now just build and run **c**:
 

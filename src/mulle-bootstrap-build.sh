@@ -723,8 +723,8 @@ build()
          darwin)
             preferences="`read_config_setting "build_preferences" "script
 cmake
-configure
 autoconf
+configure
 xcodebuild"`"
          ;;
 
@@ -732,8 +732,8 @@ xcodebuild"`"
          *)
             preferences="`read_config_setting "build_preferences" "script
 cmake
-configure
-autoconf"`"
+autoconf
+configure"`"
          ;;
       esac
    fi

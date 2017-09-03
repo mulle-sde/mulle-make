@@ -397,7 +397,7 @@ user_say_yes()
       esac
 
       printf "${C_WARNING}%b${C_RESET} (y/${C_GREEN}N${C_RESET}) > " "$*" >&2
-      read -r x
+      read x
 
       if [ -z "${x}" ]
       then

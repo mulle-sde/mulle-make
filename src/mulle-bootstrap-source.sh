@@ -451,7 +451,6 @@ get_sourceoption()
 }
 
 
-
 get_source_function()
 {
    log_entry "get_source_function" "$@"
@@ -469,6 +468,116 @@ get_source_function()
       log_fluff "Plugin function \"${operation}\" is not available"
    fi
 }
+
+
+source_search_local()
+{
+   log_entry "source_search_local" "$@"
+
+   local name="$1"
+   local branch="$2"
+   local extension="$3"
+   local need_extension="$4"
+   local directory="$5"
+
+   local found
+
+   if [ "${MULLE_FLAG_LOG_LOCALS}" = "YES" ]
+   then
+      log_trace "Checking local path \"${directory}\""
+   fi
+
+   if [ ! -z "${branch}" ]
+   then
+      found="${directory}/${name}.${branch}${extension}"
+      log_fluff "Looking for \"${found}\""
+
+      if [ -d "${found}" ]
+      then
+         log_fluff "Found \"${name}.${branch}${extension}\" in \"${directory}\""
+
+         echo "${found}"
+         return
+      fi
+   fi
+
+   found="${directory}/${name}${extension}"
+   log_fluff "Looking for \"${found}\""
+   if [ -d "${found}" ]
+   then
+      log_fluff "Found \"${name}${extension}\" in \"${directory}\""
+
+      echo "${found}"
+      return
+   fi
+
+   if [ "${need_extension}" != "YES" ]
+   then
+      found="${directory}/${name}"
+      log_fluff "Looking for \"${found}\""
+      if [ -d "${found}" ]
+      then
+         log_fluff "Found \"${name}\" in \"${directory}\""
+
+         echo "${found}"
+         return
+      fi
+   fi
+}
+
+
+source_search_local_path()
+{
+   log_entry "source_search_local_path [${LOCAL_PATH}]" "$@"
+
+   local name="$1"
+   local branch="$2"
+   local extension="$3"
+   local required="$4"
+
+   local found
+   local directory
+   local realdir
+   local curdir
+
+   if [ "${MULLE_FLAG_LOG_LOCAL}" = "YES" -a -z "${LOCAL_PATH}" ]
+   then
+      log_trace "LOCAL_PATH is empty"
+   fi
+
+   curdir="`pwd -P`"
+   IFS=":"
+   for directory in ${LOCAL_PATH}
+   do
+      IFS="${DEFAULT_IFS}"
+
+      if [ ! -d "${directory}" ]
+      then
+         if [ "${MULLE_FLAG_LOG_LOCALS}" = "YES" ]
+         then
+            log_trace2 "Local path \"${realdir}\" does not exist"
+         fi
+         continue
+      fi
+
+      realdir="`realpath "${directory}"`"
+      if [ "${realdir}" = "${curdir}" ]
+      then
+         fail "Config setting \"search_path\" mistakenly contains \"${directory}\", which is the current directory"
+      fi
+
+      found="`source_search_local "$@" "${realdir}"`"
+      if [ ! -z "${found}" ]
+      then
+         echo "${found}"
+         return
+      fi
+   done
+
+   IFS="${DEFAULT_IFS}"
+   return 1
+}
+
 
 
 source_operation()

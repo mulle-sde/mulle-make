@@ -32,55 +32,6 @@
 MULLE_BOOTSTRAP_SETTINGS_SH="included"
 
 
-repositories_usage()
-{
-    cat <<EOF >&2
-Usage:
-   ${MULLE_EXECUTABLE} repositories <add|remove> [options] <url>
-   ${MULLE_EXECUTABLE} repositories show
-
-   Repositories will be placed into "${STASHES_DEFAULT_DIR}" and
-   they will be build.
-
-Commands:
-   add  <ulr>   : add a repository with the given URL
-   remove <ulr> : remove a repository with the given URL
-   show         : show current repositories
-
-Options:
-   --branch     : specify branch to use instead of the default
-   --tag        : specify tag to checkout
-   --source        : specify source to use instead of git
-EOF
-  exit 1
-}
-
-
-embedded_repositories_usage()
-{
-    cat <<EOF >&2
-Usage:
-   ${MULLE_EXECUTABLE} embedded_repositories <add|remove> [options] <url>
-   ${MULLE_EXECUTABLE} embedded_repositories list
-
-   Embedded repositories can be placed anywhere in your project
-   file structures. They will not be build though.
-
-Commands:
-   add  <ulr>   : add a repository with the given URL
-   remove <ulr> : remove a repository with the given URL
-   show         : show current repositories
-
-Options:
-   --destination <dir> : where to checkout the repository too
-   --branch            : specify branch to use instead of the default
-   --tag               : specify tag to checkout
-   --source               : specify source to use instead of git
-EOF
-  exit 1
-}
-
-
 brews_usage()
 {
     cat <<EOF >&2
@@ -94,7 +45,7 @@ Usage:
 Commands:
    add <name>    : add a brew with the given name
    remove <name> : remove a brew with the given name
-   show          : show current brews
+   list          : show current brews
 EOF
   exit 1
 }
@@ -241,6 +192,7 @@ KNOWN_ROOT_SETTING_KEYS="\
 additional_repositories
 brews
 embedded_repositories
+minions
 repositories
 tarballs
 version
@@ -571,22 +523,16 @@ list_build_directories()
    local filename
    local name
 
-   log_info "$PWD"
    IFS="
 "
-   for filename in `ls -1 "${directory}"`
+   for path in `ls -1 "${directory}/"*.build 2> /dev/null`
    do
-      path="${directory}/${filename}"
+      IFS="${DEFAULT_IFS}"
+
       if [ -d "${path}" ]
       then
-         case "${path}" in
-            *.build)
-               IFS="${DEFAULT_IFS}"
-
-               name="`basename -- "${path}" ".build"`"
-               echo "# ${MULLE_EXECUTABLE} setting ${flags} -b '${name}' -l"
-            ;;
-         esac
+         name="`basename -- "${path}" ".build"`"
+         echo "# ${MULLE_EXECUTABLE} setting ${flags} -b '${name}' -l"
       fi
    done
 
@@ -771,7 +717,10 @@ read_root_setting()
       value="${default}"
    fi
 
-   echo "$value"
+   if [ ! -z "${value}" ]
+   then
+      echo "$value"
+   fi
 
    if [ "${MULLE_TRACE_SETTINGS_FLIP_X}" = "YES" ]
    then
@@ -1024,16 +973,10 @@ _chosen_bootstrapdir()
 
 _chosen_setting_directory()
 {
-   local repository="$1"
+   local bootstrapdir="$1"
+   local repository="$2"
 
-   local bootstrapdir
-
-   if [ "${OPTION_GLOBAL}" = "YES" ]
-   then
-      bootstrapdir="${BOOTSTRAP_DIR}"
-   else
-      bootstrapdir="${BOOTSTRAP_DIR}.local"
-   fi
+   [ -z "${bootstrapdir}" ] && internal_fail "bootstrapdir is empty"
 
    if [ ! -z "${repository}" ]
    then
@@ -1078,21 +1021,38 @@ _setting_list()
 
    if [ -z "${repository}" ]
    then
-      log_info ".bootstrap.local ($PWD):"
+      local lines1
+      local lines2
 
-      list_dir_settings "${BOOTSTRAP_DIR}.local" "${SETTING_KEY_REGEXP}" | \
+      lines1="`list_dir_settings "${BOOTSTRAP_DIR}.local" "${SETTING_KEY_REGEXP}" | \
                         sed "s/^/mulle-bootstrap setting -r /" | \
-                        _unescape_linefeeds
+                        _unescape_linefeeds`"
+      if [ ! -z "${lines1}" ]
+      then
+         log_info ".bootstrap.local ($PWD):"
 
-      log_info ".bootstrap ($PWD):"
-      list_dir_settings "${BOOTSTRAP_DIR}" "${SETTING_KEY_REGEXP}" | \
+         echo "${lines1}"
+      fi
+
+      lines1="`list_dir_settings "${BOOTSTRAP_DIR}" "${SETTING_KEY_REGEXP}" | \
                         sed "s/^/mulle-bootstrap setting -r -g /" | \
-                        _unescape_linefeeds
+                        _unescape_linefeeds`"
+      if [ ! -z "${lines1}" ]
+      then
+       log_info ".bootstrap ($PWD):"
 
-      log_info "Available repository settings:"
-      list_build_directories "${BOOTSTRAP_DIR}.local" ""
-      list_build_directories "${BOOTSTRAP_DIR}" "-g"
+         echo "${lines1}"
+      fi
 
+      lines1="`list_build_directories "${BOOTSTRAP_DIR}.local" ""`"
+      lines2="`list_build_directories "${BOOTSTRAP_DIR}" "-g"`"
+
+      if [ ! -z "${lines1}" -a ! -z "${lines2}" ]
+      then
+         log_info "Available repository settings:"
+         echo "${lines1}
+${lines2}" | sort | sort -u | sed 's/^$/d'
+      fi
       return
    fi
 
@@ -1101,20 +1061,23 @@ _setting_list()
    (
       local OPTION_OVERRIDES
       local OPTION_GLOBAL
+      local bootstrapdir
+
+      bootstrapdir="`_chosen_bootstrapdir`"
 
       #
       # emit overrides
       #
       OPTION_OVERRIDES="YES"
       OPTION_GLOBAL="NO"
-      directory="`_chosen_setting_directory`"
+      directory="`_chosen_setting_directory "${bootstrapdir}"`"
       log_info "${directory} ($PWD):"
       list_dir_settings "${directory}" "${SETTING_KEY_REGEXP}" | \
                         sed "s/^/mulle-bootstrap setting -o /" | \
                         _unescape_linefeeds
 
       OPTION_GLOBAL="YES"
-      directory="`_chosen_setting_directory`"
+      directory="`_chosen_setting_directory "${bootstrapdir}"`"
       log_info "${directory} ($PWD):"
       list_dir_settings "${directory}" "${SETTING_KEY_REGEXP}" | \
                         sed "s/^/mulle-bootstrap setting -g -o /" | \
@@ -1125,14 +1088,14 @@ _setting_list()
       #
       OPTION_OVERRIDES="NO"
       OPTION_GLOBAL="NO"
-      directory="`_chosen_setting_directory "${repository}"`"
+      directory="`_chosen_setting_directory "${bootstrapdir}" "${repository}"`"
       log_info "${directory} ($PWD):"
       list_dir_settings "${directory}" "${SETTING_KEY_REGEXP}" | \
                         sed "s/^/mulle-bootstrap setting -b '${repository}' /" | \
                         _unescape_linefeeds
 
       OPTION_GLOBAL="YES"
-      directory="`_chosen_setting_directory "${repository}"`"
+      directory="`_chosen_setting_directory "${bootstrapdir}" "${repository}"`"
       log_info "${directory} ($PWD):"
       list_dir_settings "${directory}" "${SETTING_KEY_REGEXP}" | \
                         sed "s/^/mulle-bootstrap setting -g -b '${repository}' /" | \
@@ -1145,14 +1108,14 @@ _setting_list()
       # emit overrides
       #
       OPTION_GLOBAL="NO"
-      directory="`_chosen_setting_directory`"
+      directory="`_chosen_setting_directory "${bootstrapdir}"`"
       log_info "${directory} ($PWD):"
       list_dir_settings "${directory}" "${SETTING_KEY_REGEXP}" | \
                         sed "s/^/mulle-bootstrap setting /" | \
                         _unescape_linefeeds
 
       OPTION_GLOBAL="YES"
-      directory="`_chosen_setting_directory`"
+      directory="`_chosen_setting_directory "${bootstrapdir}"`"
       log_info "${directory} ($PWD):"
       list_dir_settings "${directory}" "${SETTING_KEY_REGEXP}" | \
                         sed "s/^/mulle-bootstrap setting -g /" | \
@@ -1166,21 +1129,23 @@ _setting_read()
    local key="$1"
    local repository="$2"
 
+   if [ "${OPTION_PROCESSED_READ}" = "YES" ]
+   then
+      if [ -z "${repository}" ]
+      then
+         read_root_setting "${key}"
+      else
+         read_build_setting "${repository}" "{key}"
+      fi
+      return $?
+   fi
+
    local directory
+   local bootstrapdir
 
-   if [ "${OPTION_PROCESSED_READ}" = "NO" ]
-   then
-      directory="`_chosen_setting_directory "${repository}"`"
-      _read_setting "${directory}/${key}"
-      return
-   fi
-
-   if [ -z "${repository}" ]
-   then
-      read_root_setting "$1"
-   else
-      read_build_setting "${repository}" "{key}"
-   fi
+   bootstrapdir="`_chosen_bootstrapdir`"
+   directory="`_chosen_setting_directory "${bootstrapdir}" "${repository}"`"
+   _read_setting "${directory}/${key}"
 }
 
 
@@ -1194,7 +1159,7 @@ _setting_write()
    local directory
 
    bootstrapdir="`_chosen_bootstrapdir`"
-   directory="`_chosen_setting_directory "${repository}"`"
+   directory="`_chosen_setting_directory "${bootstrapdir}" "${repository}"`"
 
    mkdir_if_missing "${directory}"
 
@@ -1221,7 +1186,7 @@ _setting_append()
    local directory
 
    bootstrapdir="`_chosen_bootstrapdir`"
-   directory="`_chosen_setting_directory "${repository}"`"
+   directory="`_chosen_setting_directory "${bootstrapdir}" "${repository}"`"
 
    mkdir_if_missing "${directory}"
 
@@ -1265,7 +1230,7 @@ _setting_subtract()
    local directory
 
    bootstrapdir="`_chosen_bootstrapdir`"
-   directory="`_chosen_setting_directory "${repository}"`"
+   directory="`_chosen_setting_directory "${bootstrapdir}" "${repository}"`"
 
    mkdir_if_missing "${directory}"
 
@@ -1307,7 +1272,7 @@ _setting_delete()
    local directory
 
    bootstrapdir="`_chosen_bootstrapdir`"
-   directory="`_chosen_setting_directory "${repository}"`"
+   directory="`_chosen_setting_directory "${bootstrapdir}" "${repository}"`"
 
    local filename
 
@@ -1505,6 +1470,7 @@ _generic_main()
    local OPTION_APPEND="NO"
    local OPTION_SUBTRACT="NO"
    local OPTION_GLOBAL="NO"
+   local OPTION_SIMPLIFY="NO"
    local OPTION_OVERRIDES="NO"
    local OPTION_PROCESSED_READ="NO"
    local OPTION_ROOT="NO"
@@ -1618,8 +1584,11 @@ _generic_main()
             value="YES"
          ;;
 
+         --simplify)
+            OPTION_SIMPLIFY="YES"
+         ;;
          -*)
-            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown option $1"
+            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown option \"$1\""
             "${USAGE}"
          ;;
 
@@ -1630,6 +1599,14 @@ _generic_main()
 
       shift
    done
+
+   if [ "${OPTION_PROCESSED_READ}" = "YES" ]
+   then
+      if [ "${OPTION_GLOBAL}" = "YES" -o "${OPTION_ROOT}" = "YES" ]
+      then
+         log_warning "the -g and -r options are ignored, when -p is given"
+      fi
+   fi
 
    case "${command}" in
       read|write|delete)
@@ -1664,7 +1641,7 @@ _generic_main()
                match="`echo "${known_keys_2}" | fgrep -s -x "${keypart}"`"
                if [ -z "${match}" ]
                then
-                  log_warning "${keypart} is not a known key. Maybe OK, maybe not."
+                  log_warning "\"${keypart}\" is not a known key. Maybe OK, maybe not."
                fi
             fi
          fi
@@ -1719,6 +1696,11 @@ _generic_main()
       ;;
 
       write)
+         if [ ! -z "${value}" -a "${OPTION_SIMPLIFY}" = "YES" ]
+         then
+            value="`simplified_path "${value}"`"
+         fi
+
          if [ "${OPTION_APPEND}" = "YES" ]
          then
             "_${type}_append" "${key}" "${value}" "${repository}"
@@ -1753,31 +1735,122 @@ setting_main()
 }
 
 
-_show_setting_header()
+_remove_same_lines()
 {
-   local setting="$1"
-   local subtypes="$2"
-   local header="$3"
-   local options="$4"
+   local found
 
-   local value
+   IFS="
+"
+   for linea in $1
+   do
+      found="NO"
+      for lineb in $2
+      do
+         if [ "${linea}" = "${lineb}" ]
+         then
+            found="YES"
+            break
+         fi
+      done
 
-   value="`setting_main ${options} -r "${setting}"`" || return 1
+      if [ "${found}" = "NO" ]
+      then
+         echo "${linea}"
+      fi
+   done
+}
+
+
+_print_setting_header()
+{
+   local subtypes="$1"
+   local header="$2"
 
    case "${subtypes}" in
       "url")
-         echo "${header}"
-         echo "----"
+         printf "%b\n" "${header}"
+         printf "%b\n" "----"
       ;;
 
       *)
-         echo "URL;DESTINATION;BRANCH;TAG;SOURCE;OPTIONS"
-         echo "---;-----------;------;---;------;-------"
+         printf "%b\n" "URL;DESTINATION;BRANCH;TAG;SOURCE;OPTIONS"
+         printf "%b\n" "---;-----------;------;---;------;-------"
       ;;
    esac
-
-   echo "${value}" | sed 's/;;/; ;/g'
 }
+
+
+maybe_sort()
+{
+   local sortit="$1"
+
+   if [ "${sortit}" = "YES" ]
+   then
+      sort -f
+   else
+      cat
+   fi
+}
+
+
+_show_setting_header()
+{
+   log_entry "_show_setting_header" "$@"
+
+   local setting="$1"
+   local subtypes="$2"
+   local header="$3"
+   local sortit="$4"
+   local options="$5"
+
+   local globals
+   local locals
+   local defined
+
+   if [ "${OPTION_RAW_ONLY}" = "NO" ]
+   then
+      defined="`setting_main ${options} -p "${setting}"`"
+   fi
+
+   if [ ! -z "${defined}" ]
+   then
+      _print_setting_header "${subtypes}" "${header}"
+
+      defined="`sed 's/;;/; ;/g' <<< "${defined}"`"
+      printf "%b\n" "${defined}" | maybe_sort "${sortit}"
+   else
+      if ! is_master_bootstrap_project
+      then
+         globals="`setting_main ${options} -g -r "${setting}"`"
+      fi
+
+      locals="`setting_main ${options} -r "${setting}"`"
+
+      globals="`_remove_same_lines "${globals}" "${locals}"`"
+
+      if [ ! -z "${globals}" -o ! -z "${locals}" ]
+      then
+         _print_setting_header "${subtypes}" "${header}"
+
+         (
+            if [ ! -z "${globals}" ]
+            then
+               globals="`sed 's/;;/; ;/g' <<< "${globals}"`"
+               printf "%b\n" "${globals}"
+            fi
+
+            if [ ! -z "${locals}" ]
+            then
+               locals="`sed 's/;;/; ;/g' <<< "${locals}"`"
+               printf "%b\n" "${locals}"
+            fi
+         ) | maybe_sort "${sortit}"
+      else
+         log_verbose "There is nothing to show for \"${setting}\"."
+      fi
+   fi
+}
+
 
 
 _known_root_setting_main()
@@ -1787,9 +1860,8 @@ _known_root_setting_main()
    local setting="$1" ; shift
    local subtypes="$1" ; shift
    local header="$1" ; shift
+   local sortit="$1" ; shift
    local cmd="$1" ; shift
-
-   local options="-g"
 
    local url
    local destination
@@ -1797,8 +1869,9 @@ _known_root_setting_main()
    local tag
    local source
    local sourceoptions
-
+   local options
    local USAGE
+   local OPTION_RAW_ONLY="NO"
 
    USAGE="${setting}_usage"
 
@@ -1811,11 +1884,7 @@ _known_root_setting_main()
             "${USAGE}"
          ;;
 
-         -l|--local)
-            options=""
-         ;;
-
-         --destination|--branch|--tag|--source|--sourceoptions)
+         --destination|--branch|--tag|--source|--options)
             option="${1:2}"
             [ $# -ne 0 ] || fail "value for ${option} is missing"
             shift
@@ -1825,10 +1894,27 @@ _known_root_setting_main()
                fail "Can't use $1 with ${setting}"
             fi
 
+            # rename option to sourceoptions internally
+            if [ "${option}" = "options" ]
+            then
+               option="sourceoptions"
+            fi
+
             eval "$option='$1'"
 
             shift
             continue
+         ;;
+
+         --raw)
+            OPTION_RAW_ONLY="YES"
+            shift
+            continue
+         ;;
+
+         -*)
+            log_warning "Unknown option \"$1\""
+            "${USAGE}"
          ;;
       esac
 
@@ -1841,6 +1927,11 @@ _known_root_setting_main()
          url="$1"
 
          [ -z "${url}" ] && "${USAGE}"
+
+         if is_master_bootstrap_project
+         then
+            fail "You can not add or remove \"${setting}\" in the master."
+         fi
       ;;
 
       show|list)
@@ -1848,16 +1939,53 @@ _known_root_setting_main()
 
          if [ ! -z "`command -v column`" ]
          then
-            _show_setting_header "${setting}" "${subtypes}" "${header}" "${options}" | column -t -s ';'
+            _show_setting_header "${setting}" \
+                                 "${subtypes}" \
+                                 "${header}" \
+                                 "${sortit}" \
+                                 "" | column -t -s ';'
          else
-            _show_setting_header "${setting}" "${subtypes}"  "${header}" ""
+            _show_setting_header "${setting}" \
+                                 "${subtypes}" \
+                                 "${header}" \
+                                 "${sortit}" \
+                                 ""
          fi
          return $?
       ;;
 
-      *)
-         log_error "Unkown command \"$1\""
+      -h|--help|"")
          "${USAGE}"
+      ;;
+
+      -*)
+         log_error "Place options like \"${cmd}\" after command"
+         "${USAGE}"
+      ;;
+
+      *)
+         log_error "Unkown command \"${cmd}\""
+         "${USAGE}"
+      ;;
+   esac
+
+   prettyurl="${url}"
+   case "${cmd}" in
+      add)
+         case "${prettyurl}" in
+            "file:"*)
+               prettyurl="${prettyurl:5}"
+            ;;
+         esac
+
+         case "${prettyurl}" in
+            *:*)
+            ;;
+
+            *)
+               prettyurl="`simplified_path "${prettyurl}"`"
+            ;;
+         esac
       ;;
    esac
 
@@ -1866,12 +1994,12 @@ _known_root_setting_main()
 
    # build it from back to avoid useless trailing ';'
 
-   [ ! -z "${sourceoptions}" ]                     && value=";${sourceoptions}"
-   [ ! -z "${value}" -o ! -z "${source}" ]         && value=";${source}${value}"
+   [ ! -z "${sourceoptions}" ]                  && value=";${sourceoptions}"
+   [ ! -z "${value}" -o ! -z "${source}" ]      && value=";${source}${value}"
    [ ! -z "${value}" -o ! -z "${tag}" ]         && value=";${tag}${value}"
    [ ! -z "${value}" -o ! -z "${branch}" ]      && value=";${branch}${value}"
    [ ! -z "${value}" -o ! -z "${destination}" ] && value=";${destination}${value}"
-   value="${url}${value}"
+   value="${prettyurl}${value}"
 
    [ -z "${value}" ] && internal_fail "should not be empty here"
 
@@ -1914,27 +2042,15 @@ mulle-bootstrap"
 }
 
 
-setting_repositories_main()
-{
-   _known_root_setting_main "repositories" "url|branch|tag|source|sourceoptions" "" "$@"
-}
-
-
-setting_embedded_repositories_main()
-{
-   _known_root_setting_main "embedded_repositories" "url|destination|branch|tag|source|sourceoptions" "" "$@"
-}
-
-
 setting_brews_main()
 {
-   _known_root_setting_main "brews" "url" "NAME" "$@"
+   _known_root_setting_main "brews" "url" "NAME" "YES" "$@"
 }
 
 
 setting_tarballs_main()
 {
-   _known_root_setting_main "tarballs" "url" "PATH" "$@"
+   _known_root_setting_main "tarballs" "url" "PATH" "YES" "$@"
 }
 
 

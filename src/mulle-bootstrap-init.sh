@@ -265,6 +265,7 @@ init_main()
       then
          [ -z "${MULLE_BOOTSTRAP_SHARED_SH}" ] && . mulle-bootstrap-shared.sh
 
+         log_info "Setting up shared build info..."
          shared_main "init"
       fi
 

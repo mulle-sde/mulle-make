@@ -74,3 +74,14 @@ If you want to checkout this ${branchlabel} do:
    fi
 }
 
+
+symlink_search_local_project()
+{
+   log_entry "symlink_search_local_project [${LOCAL_PATH}]" "$@"
+
+   local url="$1"
+   local name="$2"
+   local branch="$3"
+
+   source_search_local_path "${name}" "${branch}" "" "YES"
+}
