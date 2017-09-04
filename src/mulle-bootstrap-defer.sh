@@ -36,9 +36,9 @@ emancipate_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} emancipate
+   ${MULLE_EXECUTABLE_NAME} emancipate
 
-   Emancipate from master. ${MULLE_EXECUTABLE} will make local dependencies
+   Emancipate from master. ${MULLE_EXECUTABLE_NAME} will make local dependencies
    again.
 
 EOF
@@ -50,10 +50,10 @@ defer_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} defer
+   ${MULLE_EXECUTABLE_NAME} defer
 
    Share and defer builds to master. The master will be used
-   to fetch dependencies and build them. Use ${MULLE_EXECUTABLE} paths
+   to fetch dependencies and build them. Use ${MULLE_EXECUTABLE_NAME} paths
    to get paths to addictions and dependencies.
 
 EOF

@@ -44,7 +44,7 @@ refresh_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} <command>
+   ${MULLE_EXECUTABLE_NAME} <command>
 
 Commands:
    refresh      : update settings, remove unused repositories (default)

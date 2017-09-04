@@ -35,7 +35,7 @@ paths_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} paths [options] <types>
+   ${MULLE_EXECUTABLE_NAME} paths [options] <types>
 
 Output paths for various tool types. You can specify multiple types.
 
@@ -59,7 +59,7 @@ Types:
    make           : output PATH, CPPFLAGS, LDFLAGS
 EOF
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
        cat <<EOF >&2
    dependencies   : output "dependencies" path
@@ -619,7 +619,7 @@ run_main()
    # use mulle-bootstrap this way to get properly deferred
    # paths
    #
-   commandline="`${MULLE_EXECUTABLE} -s paths -1 -q "'" run`"
+   commandline="`${MULLE_EXECUTABLE_NAME} -s paths -1 -q "'" run`"
    while [ $# -ne 0 ]
    do
       value="$1"
@@ -678,7 +678,7 @@ paths_main()
       ;;
    esac
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       OPTION_WITH_DEPENDENCIES="YES"
    fi

@@ -904,7 +904,7 @@ ${i}"
       return
    fi
 
-   printf "%s" "${result}" | tr -d '|' | tr '\012' '/'
+   printf "%s" "${result}" | "${TR:-tr}" -d '|' | "${TR:-tr}" '\012' '/'
    echo
 }
 

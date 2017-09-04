@@ -36,7 +36,7 @@ _brew_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE}  ${COMMAND} [options] [repositories]
+   ${MULLE_EXECUTABLE_NAME} ${COMMAND} [options] [repositories]
 
    You can specify the names of the formulae to ${COMMAND}.
 

@@ -161,12 +161,12 @@ build_cmake()
    local frameworklines
    local dependenciesdir
 
-   cppflags="`echo "${flaglines}"        | sed -n '1p'`"
-   ldflags="`echo "${flaglines}"         | sed -n '2p'`"
-   includelines="`echo "${flaglines}"    | sed -n '6p'`"
-   librarylines="`echo "${flaglines}"    | sed -n '7p'`"
-   frameworklines="`echo "${flaglines}"  | sed -n '8p'`"
-   dependenciesdir="`echo "${flaglines}" | sed -n '9p'`"
+   cppflags="`echo "${flaglines}"        | "${SED}" -n '1p'`"
+   ldflags="`echo "${flaglines}"         | "${SED}" -n '2p'`"
+   includelines="`echo "${flaglines}"    | "${SED}" -n '6p'`"
+   librarylines="`echo "${flaglines}"    | "${SED}" -n '7p'`"
+   frameworklines="`echo "${flaglines}"  | "${SED}" -n '8p'`"
+   dependenciesdir="`echo "${flaglines}" | "${SED}" -n '9p'`"
 
    local addictionsdir
    local binpath
@@ -302,7 +302,7 @@ build_cmake()
       relative_projectdir="`relative_path_between "${owd}/${projectdir}" "${PWD}"`"
       case "${UNAME}" in
          mingw)
-            relative_projectdir="`echo "${relative_projectdir}" | tr '/' '\\'  2> /dev/null`"
+            relative_projectdir="`echo "${relative_projectdir}" | "${TR}" '/' '\\'  2> /dev/null`"
       esac
 
       logging_redirect_eval_exekutor "${logfile1}" "'${CMAKE}'" \

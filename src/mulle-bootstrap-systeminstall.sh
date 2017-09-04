@@ -38,7 +38,7 @@ systeminstall_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} systeminstall [libraryprefix] [frameworkprefix]
+   ${MULLE_EXECUTABLE_NAME} systeminstall [libraryprefix] [frameworkprefix]
 
    You may need to run this as sudo.
    The default libraryprefix is "${DEFAULT_PREFIX}
@@ -354,7 +354,7 @@ systeminstall_main()
 
       fail "No dependencies have been created yet.
 Suggested fix:
-   ${MULLE_EXECUTABLE} build"
+   ${MULLE_EXECUTABLE_NAME} build"
    fi
 
    local symlink

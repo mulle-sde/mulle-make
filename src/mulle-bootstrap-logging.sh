@@ -291,7 +291,7 @@ logging_initialize()
 
       exedir="`dirname "${BASH_SOURCE}"`"
       exedirpath="`( cd "${exedir}" ; pwd -P )`" || fail "failed to get pwd"
-      echo "${MULLE_EXECUTABLE} libexec: ${exedirpath}" >&2
+      echo "${MULLE_EXECUTABLE_NAME} libexec: ${exedirpath}" >&2
    fi
 }
 

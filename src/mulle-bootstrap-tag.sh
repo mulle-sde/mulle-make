@@ -41,7 +41,7 @@ tag_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} tag [options] <tag>
+   ${MULLE_EXECUTABLE_NAME} tag [options] <tag>
 
    Give a tag for your fetched repositories.
 

@@ -58,7 +58,7 @@ fetch_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} ${COMMAND} [options] [repositories]
+   ${MULLE_EXECUTABLE_NAME} ${COMMAND} [options] [repositories]
 
    You can specify the names of the repositories to update.
 
@@ -468,7 +468,7 @@ clone_repository()
             is_minion_bootstrap_project "${stashdir}" || fail "\"${stashdir}\" \
 should be a minion but it isn't.
 Suggested fix:
-   ${C_RESET}${C_BOLD}cd \"${stashdir}\" ; ${MULLE_EXECUTABLE} defer \"\
+   ${C_RESET}${C_BOLD}cd \"${stashdir}\" ; ${MULLE_EXECUTABLE_NAME} defer \"\
 `symlink_relpath "${PWD}" "${stashdir}"`\
 \""
             log_info "${C_MAGENTA}${C_BOLD}${name}${C_INFO} is a minion, so cloning is skipped"

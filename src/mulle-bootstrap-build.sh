@@ -49,7 +49,7 @@ build_usage()
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} build [options] [repos]*
+   ${MULLE_EXECUTABLE_NAME} build [options] [repos]*
 EOF
 
    cat <<EOF >&2
@@ -159,6 +159,11 @@ tools_environment_common()
    # no problem if those are empty
    C_COMPILER="`find_compiler "${name}" "${srcdir}" CC`"
    CXX_COMPILER="`find_compiler "${name}" "${srcdir}" CXX`"
+   TR="`verify_binary "tr" "tr" "tr"`"
+   SED="`verify_binary "sed" "sed" "sed"`"
+
+   [ -z "${TR}" ]   && fail "can't locate tr"
+   [ -z "${SED}" ]  && fail "can't locate sed"
 }
 
 
@@ -221,7 +226,7 @@ determine_build_subdir()
    [ -z "$configuration" ] && internal_fail "configuration must not be empty"
    [ -z "$sdk" ]           && internal_fail "sdk must not be empty"
 
-   sdk=`echo "${sdk}" | sed 's/^\([a-zA-Z]*\).*$/\1/g'`
+   sdk=`echo "${sdk}" | "${SED:-sed}" 's/^\([a-zA-Z]*\).*$/\1/g'`
 
    if [ "${sdk}" = "Default" ]
    then
@@ -247,7 +252,7 @@ determine_dependencies_subdir()
    [ -z "$sdk" ]           && internal_fail "sdk must not be empty"
    [ -z "$BUILD_SDKS" ]    && internal_fail "BUILD_SDKS must not be empty"
 
-   sdk=`echo "${sdk}" | sed 's/^\([a-zA-Z]*\).*$/\1/g'`
+   sdk=`echo "${sdk}" | "${SED}" 's/^\([a-zA-Z]*\).*$/\1/g'`
 
    if [ "${style}" = "auto" ]
    then

@@ -36,12 +36,12 @@ show_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} show [options]
+   ${MULLE_EXECUTABLE_NAME} show [options]
 
 Options:
 EOF
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       cat <<EOF >&2
    -b : show brews
@@ -394,7 +394,7 @@ _common_show()
       return
    fi
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       if have_minions
       then
@@ -473,7 +473,7 @@ _show_main()
    [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ]          && . mulle-bootstrap-source.sh
    [ -z "${MULLE_BOOTSTRAP_BREW_SH}" ]         && . mulle-bootstrap-brew.sh
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       SHOW_BREWS="NO"
    fi
@@ -529,13 +529,13 @@ _show_main()
    [ $# -ne 0 ] && show_usage
    _common_show "${header_only}" "$@"
 
-   if [ "${SHOW_RAW}" != "YES" -a "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${SHOW_RAW}" != "YES" -a "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       if [ ! -f "${REPOS_DIR}/.fetch_done" ]
       then
-          log_warning "${MULLE_EXECUTABLE} has not run fetch completely.
+          log_warning "${MULLE_EXECUTABLE_NAME} has not run fetch completely.
 Results may be stale or absent.
-Maybe use --raw option or run ${MULLE_EXECUTABLE} again ?"
+Maybe use --raw option or run ${MULLE_EXECUTABLE_NAME} again ?"
       fi
    fi
 }

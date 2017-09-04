@@ -36,11 +36,11 @@ shared_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} shared init [options]
-   ${MULLE_EXECUTABLE} shared add [options] <url>
-   ${MULLE_EXECUTABLE} shared remove [options] <name>
-   ${MULLE_EXECUTABLE} shared uninit [options]
-   ${MULLE_EXECUTABLE} shared list [options]
+   ${MULLE_EXECUTABLE_NAME} shared init [options]
+   ${MULLE_EXECUTABLE_NAME} shared add [options] <url>
+   ${MULLE_EXECUTABLE_NAME} shared remove [options] <name>
+   ${MULLE_EXECUTABLE_NAME} shared uninit [options]
+   ${MULLE_EXECUTABLE_NAME} shared list [options]
 
 Commands:
    init           : Initialize a shared build info repository ($OPTION_DIRECTORY)
@@ -48,7 +48,7 @@ Commands:
    remove <name>  : Remove build info repository (git) from URL
    uninit         : Completely remove shared build info repositories
    list           : List current build info repositories available. Use
-                    \'${MULLE_EXECUTABLE} -v shared list\' to see contents.
+                    \'${MULLE_EXECUTABLE_NAME} -v shared list\' to see contents.
 
 Options:
    -d <dir>       : specify build info directory to use
@@ -199,7 +199,7 @@ shared_list()
 
    git_is_repository "${repodir}" || fail "The shared build info repository
 ${C_RESET_BOLD}${repodir}${C_ERROR} does not exist (or is no git repo).
-Create one with: ${C_RESET_BOLD}${MULLE_EXECUTABLE} shared init${C_ERROR}"
+Create one with: ${C_RESET_BOLD}${MULLE_EXECUTABLE_NAME} shared init${C_ERROR}"
 
    (
       exekutor cd "${repodir}" &&

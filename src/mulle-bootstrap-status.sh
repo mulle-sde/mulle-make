@@ -36,7 +36,7 @@ status_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} status [options]
+   ${MULLE_EXECUTABLE_NAME} status [options]
 
 Options:
    -e   : embedded directories
@@ -162,7 +162,7 @@ _quick_status()
 
 _common_status()
 {
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       local MULLE_BOOTSTRAP_SETTINGS_NO_AUTO
 
@@ -215,7 +215,7 @@ status_main()
    [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ]          && . mulle-bootstrap-source.sh
    [ -z "${MULLE_BOOTSTRAP_BREW_SH}" ]         && . mulle-bootstrap-brew.sh
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       STATUS_BREWS="NO"
    fi

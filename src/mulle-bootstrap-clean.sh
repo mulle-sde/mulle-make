@@ -38,7 +38,7 @@ clean_usage()
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} clean [options] [command]
+   ${MULLE_EXECUTABLE_NAME} clean [options] [command]
 
    Default clean command is "full".
 
@@ -603,7 +603,7 @@ uninit_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} uninit
+   ${MULLE_EXECUTABLE_NAME} uninit
 
    Completely remove all mulle-bootstrap files from project.
 EOF

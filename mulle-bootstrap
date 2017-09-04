@@ -104,7 +104,7 @@ mulle_bootstrap_usage()
 
    cat <<EOF
 Usage:
-   ${MULLE_EXECUTABLE} [flags] [command] [options]
+   ${MULLE_EXECUTABLE_NAME} [flags] [command] [options]
 
 Flags:
    -a -y     : default answer to questions (scripts wont be checked)
@@ -254,6 +254,15 @@ bootstrap_libexec_path()
       libexecpath="${exedirpath}/src"
    fi
 
+   case "$libexecpath" in
+      /*|~*)
+      ;;
+
+      *)
+         libexecpath="$PWD/$libexecpath"
+      ;;
+   esac
+
    if [ -x "${libexecpath}/mulle-bootstrap-functions.sh" ]
    then
       echo "${libexecpath}"
@@ -267,7 +276,7 @@ bootstrap_init()
 
    if [ -z "${MULLE_BOOTSTRAP_LIBEXEC_PATH}" ]
    then
-      echo "Fatal Error: Could not find libexec for ${MULLE_EXECUTABLE} ($PWD)" >&2
+      echo "Fatal Error: Could not find libexec for ${MULLE_EXECUTABLE_NAME} ($PWD)" >&2
       exit 1
    fi
 
@@ -500,7 +509,7 @@ bootstrap_main()
       ;;
    esac
 
-   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE} ${cmd}"
+   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME} ${cmd}"
    [ $# -eq 0 ] || shift
 
    MULLE_EXECUTABLE_OPTIONS="$@"
@@ -727,15 +736,26 @@ bootstrap_main()
 
 
 #
-# service both names
+# service both names (mulle-bootstrap and mulle-brew)
 #
-MULLE_EXECUTABLE="`basename -- "$0"`"
-MULLE_ARGUMENTS="$*"
-MULLE_EXECUTABLE_ENV_PATH="$PATH"
-MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE}"
+MULLE_EXECUTABLE="$0"
+MULLE_EXECUTABLE_NAME="`basename -- "$0"`"
+MULLE_EXECUTABLE_PATH="$0"
+case "$MULLE_EXECUTABLE" in
+   /*|~*)
+      MULLE_EXECUTABLE_PATH="$MULLE_EXECUTABLE"
+   ;;
+
+   *)
+      MULLE_EXECUTABLE_PATH="$PWD/$MULLE_EXECUTABLE"
+   ;;
+esac
+MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
 MULLE_EXECUTABLE_PID="$$"
+MULLE_EXECUTABLE_ENV_PATH="$PATH"
 export MULLE_EXECUTABLE_PID
 
+MULLE_ARGUMENTS="$*"
 
 bootstrap_init "$@" # needs params
 

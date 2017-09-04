@@ -36,8 +36,8 @@ brews_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} brews <add|remove> <name>
-   ${MULLE_EXECUTABLE} brews list
+   ${MULLE_EXECUTABLE_NAME} brews <add|remove> <name>
+   ${MULLE_EXECUTABLE_NAME} brews list
 
    brews are installed into your addictions. Brews are available
    on macos and linux.
@@ -55,8 +55,8 @@ tarballs_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} tarballs <add|remove> <path>
-   ${MULLE_EXECUTABLE} tarballs list
+   ${MULLE_EXECUTABLE_NAME} tarballs <add|remove> <path>
+   ${MULLE_EXECUTABLE_NAME} tarballs list
 
    tarballs are installed into your dependencies before an actual
    build begins.
@@ -74,10 +74,10 @@ config_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} config [options] [key][=][value]
+   ${MULLE_EXECUTABLE_NAME} config [options] [key][=][value]
 
-   Use ${MULLE_EXECUTABLE} config <key> to read
-   and ${MULLE_EXECUTABLE} config <key> <value> to write
+   Use ${MULLE_EXECUTABLE_NAME} config <key> to read
+   and ${MULLE_EXECUTABLE_NAME} config <key> <value> to write
 
 Options:
    -d   : delete config setting
@@ -93,10 +93,10 @@ expansion_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} expansion [options] [key][=][value]
+   ${MULLE_EXECUTABLE_NAME} expansion [options] [key][=][value]
 
-   Use ${MULLE_EXECUTABLE} expansion <key> to read
-   and ${MULLE_EXECUTABLE} expansion <key> <value> to write
+   Use ${MULLE_EXECUTABLE_NAME} expansion <key> to read
+   and ${MULLE_EXECUTABLE_NAME} expansion <key> <value> to write
 
 Options:
    -d   : delete setting
@@ -112,10 +112,10 @@ setting_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} setting [options] [key][=][value]
+   ${MULLE_EXECUTABLE_NAME} setting [options] [key][=][value]
 
-   Use ${MULLE_EXECUTABLE} setting <key> to read settings
-   and ${MULLE_EXECUTABLE} setting <key> <value> to write settings
+   Use ${MULLE_EXECUTABLE_NAME} setting <key> to read settings
+   and ${MULLE_EXECUTABLE_NAME} setting <key> <value> to write settings
 
 Options:
    -a              : append value to setting
@@ -532,7 +532,7 @@ list_build_directories()
       if [ -d "${path}" ]
       then
          name="`basename -- "${path}" ".build"`"
-         echo "# ${MULLE_EXECUTABLE} setting ${flags} -b '${name}' -l"
+         echo "# ${MULLE_EXECUTABLE_NAME} setting ${flags} -b '${name}' -l"
       fi
    done
 

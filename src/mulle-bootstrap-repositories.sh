@@ -37,8 +37,8 @@ repositories_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} repositories <add|remove> [options] <url>
-   ${MULLE_EXECUTABLE} repositories list [--raw]
+   ${MULLE_EXECUTABLE_NAME} repositories <add|remove> [options] <url>
+   ${MULLE_EXECUTABLE_NAME} repositories list [--raw]
 
    Repositories can be git/svn repositories or tar/zip archives.
    They will be placed into "${STASHES_DEFAULT_DIR}" and they will be built
@@ -64,8 +64,8 @@ embedded_repositories_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} embedded_repositories <add|remove> [options] <url>
-   ${MULLE_EXECUTABLE} embedded_repositories list [--raw]
+   ${MULLE_EXECUTABLE_NAME} embedded_repositories <add|remove> [options] <url>
+   ${MULLE_EXECUTABLE_NAME} embedded_repositories list [--raw]
 
    Embedded repositories can be placed anywhere in your project
    file structure. They will not be build by mulle-bootstrap.
@@ -91,8 +91,8 @@ minions_usage()
 {
     cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} minions <add|remove> <name>
-   ${MULLE_EXECUTABLE} minions list
+   ${MULLE_EXECUTABLE_NAME} minions <add|remove> <name>
+   ${MULLE_EXECUTABLE_NAME} minions list
 
    Minions are projects that share their dependencies.
    A master is needed to orchestrate the minions. Minions provide dependencies

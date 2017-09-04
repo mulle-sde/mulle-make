@@ -92,9 +92,9 @@ build_configure()
    local ldflags
    local dependenciesdir
 
-   cppflags="`echo "${flaglines}" | sed -n '1p'`"
-   ldflags="`echo "${flaglines}"  | sed -n '2p'`"
-   dependenciesdir="`echo "${flaglines}"  | sed -n '9p'`"
+   cppflags="`echo "${flaglines}"         | "${SED}" -n '1p'`"
+   ldflags="`echo "${flaglines}"          | "${SED}" -n '2p'`"
+   dependenciesdir="`echo "${flaglines}"  | "${SED}" -n '9p'`"
 
    local addictionsdir
    local binpath
@@ -118,7 +118,7 @@ build_configure()
    local sdkpath
 
    sdkpath="`gcc_sdk_parameter "${sdk}"`"
-   sdkpath="`echo "${sdkpath}" | sed -e 's/ /\\ /g'`"
+   sdkpath="`echo "${sdkpath}" | "${SED}" -e 's/ /\\ /g'`"
 
    if [ ! -z "${sdkpath}" ]
    then

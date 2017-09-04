@@ -36,7 +36,7 @@ init_usage()
 {
     cat <<EOF >&2
 Usage:
-  ${MULLE_EXECUTABLE} init [options] [directory]
+  ${MULLE_EXECUTABLE_NAME} init [options] [directory]
 
   Make a project work with mulle-bootstrap. By default the current directory
   is assumed. You can also specify a different one. It will be created, if
@@ -97,7 +97,7 @@ create_default_files()
 
    init_add_brews
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       mainfile="repositories"
 
@@ -123,22 +123,22 @@ blurb_after_init()
 cd \"${OPTION_DIRECTORY}\""
    fi
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
-         log_info "Done! Use ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} repositories add <url>${C_INFO}
+         log_info "Done! Use ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE_NAME} repositories add <url>${C_INFO}
 to specify dependencies and then install them with
-   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE}${C_INFO}
+   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE_NAME}${C_INFO}
 E.g.:${C_RESET}${C_FAINT}${extraline}
-${MULLE_EXECUTABLE} repositories add 'https://github.com/madler/zlib.git'
-${MULLE_EXECUTABLE}${C_INFO}
+${MULLE_EXECUTABLE_NAME} repositories add 'https://github.com/madler/zlib.git'
+${MULLE_EXECUTABLE_NAME}${C_INFO}
 "
    else
-      log_info "Done!  Use ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE} brews add <name>${C_INFO}
+      log_info "Done!  Use ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE_NAME} brews add <name>${C_INFO}
 to specify brew formula to fetch and then install them with
-   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE}${C_INFO}
+   ${C_RESET}${C_BOLD}${MULLE_EXECUTABLE_NAME}${C_INFO}
 E.g.:${C_RESET}${C_FAINT}${extraline}
-${MULLE_EXECUTABLE} brews add 'ack'
-${MULLE_EXECUTABLE}${C_INFO}
+${MULLE_EXECUTABLE_NAME} brews add 'ack'
+${MULLE_EXECUTABLE_NAME}${C_INFO}
 "
    fi
 }

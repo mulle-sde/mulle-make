@@ -240,7 +240,7 @@ bootstrap_define_expansion()
 
    keyvalue="$1"
 
-   is_bootstrap_project "." || fail "This is not a ${MULLE_EXECUTABLE} project"
+   is_bootstrap_project "." || fail "This is not a ${MULLE_EXECUTABLE_NAME} project"
 
    if [ -z "${keyvalue}" ]
    then
@@ -277,11 +277,11 @@ bootstrap_ensure_consistency()
    then
       log_error "A previous fetch or update was incomplete.
 Suggested resolution (in $PWD):
-    ${C_RESET_BOLD}${MULLE_EXECUTABLE} clean dist${C_ERROR}
-    ${C_RESET_BOLD}${MULLE_EXECUTABLE}${C_ERROR}
+    ${C_RESET_BOLD}${MULLE_EXECUTABLE_NAME} clean dist${C_ERROR}
+    ${C_RESET_BOLD}${MULLE_EXECUTABLE_NAME}${C_ERROR}
 
 Or do you feel lucky ? Then try again with
-   ${C_RESET_BOLD}${MULLE_EXECUTABLE} -f ${MULLE_ARGUMENTS}${C_ERROR}
+   ${C_RESET_BOLD}${MULLE_EXECUTABLE_NAME} -f ${MULLE_ARGUMENTS}${C_ERROR}
 But you've gotta ask yourself one question: Do I feel lucky ?
 Well, do ya, punk?"
       exit 1
@@ -349,7 +349,7 @@ bootstrap_should_defer_to_master()
 
       refer|dist-clean)
          fail "This is a minion bootstrap project.\n \
-${MULLE_EXECUTABLE} ${command}t is not possible."
+${MULLE_EXECUTABLE_NAME} ${command}t is not possible."
       ;;
 
       *)
@@ -597,7 +597,7 @@ fetch_needed()
    local creator
 
    creator="`cat "${BOOTSTRAP_DIR}.auto/.creator" 2> /dev/null`"
-   if [ ! -z "${creator}" -a "${creator}" != "${MULLE_EXECUTABLE}" ]
+   if [ ! -z "${creator}" -a "${creator}" != "${MULLE_EXECUTABLE_NAME}" ]
    then
       if [ -d "${BOOTSTRAP_DIR}.auto" ]
       then
@@ -694,8 +694,8 @@ assert_mulle_bootstrap_version()
    fail "\
 This mulle-bootstrap project at
 ${C_RESET}${C_RED}$PWD${C_ERROR}
-is compatible with ${MULLE_EXECUTABLE} version ${version}.
-${C_INFO}This is ${MULLE_EXECUTABLE} version ${MULLE_EXECUTABLE_VERSION}.
+is compatible with ${MULLE_EXECUTABLE_NAME} version ${version}.
+${C_INFO}This is ${MULLE_EXECUTABLE_NAME} version ${MULLE_EXECUTABLE_VERSION}.
 Consult ${C_RESET_BOLD}https://github.com/mulle-nat/mulle-bootstrap${C_INFO} for information on how to
 upgrade your executable or .bootstrap files."
 }

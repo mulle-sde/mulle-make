@@ -38,7 +38,7 @@ xcode_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE} xcode <command> [xcodeproj]
+   ${MULLE_EXECUTABLE_NAME} xcode <command> [xcodeproj]
 
 Commands:
    add      : add settings to Xcode project (default)
@@ -239,7 +239,7 @@ Release"
    then
       flag="add"
 
-      if [ $terse -ne 0 -a "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+      if [ $terse -ne 0 -a "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
       then
          #         012345678901234567890123456789012345678901234567890123456789
          log_info "Settings will be added to ${C_MAGENTA}${projectname}${C_RESET}."
@@ -266,8 +266,8 @@ Release"
    local framework_search_paths
 
    # grab values from master if needed
-   DEPENDENCIES_DIR="`${MULLE_EXECUTABLE} paths dependencies`"
-   ADDICTIONS_DIR="`${MULLE_EXECUTABLE} paths addictions`"
+   DEPENDENCIES_DIR="`${MULLE_EXECUTABLE_NAME} paths dependencies`"
+   ADDICTIONS_DIR="`${MULLE_EXECUTABLE_NAME} paths addictions`"
 
    relpath="`symlink_relpath "${DEPENDENCIES_DIR}" "${projectdir}"`"
    dependencies_dir='$(PROJECT_DIR)'/"${relpath}"
@@ -276,7 +276,7 @@ Release"
    addictions_dir='$(PROJECT_DIR)'/"${relpath}"
 
    header_search_paths=""
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       header_search_paths="`concat "${header_search_paths}" '$(DEPENDENCIES_DIR)/'"${HEADER_DIR_NAME}"`"
    fi
@@ -288,7 +288,7 @@ Release"
    default=`echo "${configurations}" | tail -1 | sed 's/^[ \t]*//;s/[ \t]*$//'`
 
    library_search_paths=""
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       library_search_paths="`concat "${library_search_paths}" '$(DEPENDENCIES_DIR)/$(LIBRARY_CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/'"${LIBRARY_DIR_NAME}"`"
       library_search_paths="`concat "${library_search_paths}" '$(DEPENDENCIES_DIR)/$(LIBRARY_CONFIGURATION)/'"${LIBRARY_DIR_NAME}"`"
@@ -299,7 +299,7 @@ Release"
    library_search_paths="`concat "${library_search_paths}" '$(inherited)'`"
 
    framework_search_paths=""
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       framework_search_paths="`concat "${framework_search_paths}" '$(DEPENDENCIES_DIR)/$(LIBRARY_CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/'"${FRAMEWORK_DIR_NAME}"`"
       framework_search_paths="`concat "${framework_search_paths}" '$(DEPENDENCIES_DIR)/$(LIBRARY_CONFIGURATION)/'"${FRAMEWORK_DIR_NAME}"`"
@@ -313,7 +313,7 @@ Release"
 
    if [ "$COMMAND" = "add" ]
    then
-      if [ $terse -ne 0 -a "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+      if [ $terse -ne 0 -a "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
       then
          local mapped
          local i
@@ -325,7 +325,7 @@ Release"
          printf "${C_RESET_BOLD}Common.xcconfig:${C_RESET}\n"
          printf "${C_RESET_BOLD}-----------------------------------------------------------\n${C_RESET}" >&2
          echo "ADDICTIONS_DIR=${addictions_dir}"
-         if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+         if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
          then
             echo "DEPENDENCIES_DIR=${dependencies_dir}"
          fi
@@ -361,7 +361,7 @@ Release"
    user_say_yes "$query"
    [ $? -eq 0 ] || exit 1
 
-   if [ "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+   if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
    then
       patch_library_configurations "${xcode_configurations}" "${configurations}" "${project}" "${default}" "${flag}"
    fi
@@ -375,7 +375,7 @@ Release"
 
    if [ "$COMMAND" = "add" ]
    then
-      if [ $terse -ne 0 -a "${MULLE_EXECUTABLE}" = "mulle-bootstrap" ]
+      if [ $terse -ne 0 -a "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]
       then
          #     012345678901234567890123456789012345678901234567890123456789
          printf "${C_RESET_BOLD}${C_CYAN}\n" >&2
@@ -383,7 +383,7 @@ Release"
          echo "If you add a configuration to your project, remember to" >&2
          echo "edit the ${C_RESET_BOLD}LIBRARY_CONFIGURATION${C_CYAN} setting for that" >&2
          echo "configuration." >&2
-         echo "You can rerun \"${MULLE_EXECUTABLE} xcode add\" at later times" >&2
+         echo "You can rerun \"${MULLE_EXECUTABLE_NAME} xcode add\" at later times" >&2
          echo "and it should not unduly duplicate setting contents." >&2
          printf "\n${C_RESET}" >&2
       fi
