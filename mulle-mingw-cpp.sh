@@ -35,7 +35,7 @@ export PATH
 
 [ -z "${MULLE_BOOTSTRAP_MINGW_SH}" ] && . mulle-bootstrap-mingw.sh
 
-
+#
 # fake up a cpp exe for configure scripts in MINGW
 #
 compiler="`find_msvc_executable "cl.exe" "compiler"`"

@@ -915,6 +915,7 @@ local_environment_initialize()
    # used by embedded repositories to change location
    STASHES_ROOT_DIR=""
 
+   # future: rename this to CFS and use it throughout
    COMPONENT_SEPARATOR="/"
 
    log_fluff "${UNAME} detected"

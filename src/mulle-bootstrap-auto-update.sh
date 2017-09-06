@@ -82,7 +82,25 @@ _bootstrap_auto_copy()
    do
       IFS="${DEFAULT_IFS}"
 
+      #
+      # os specific overrides present, skip dis
+      #
+      if [ -f "${name}.${UNAME}" ]
+      then
+         continue
+      fi
+
       filepath="${tmpdir}/${name}"
+
+      #
+      # cut off os specific for general name
+      #
+      case "${name}" in
+         *".${UNAME}")
+            name="${name%.*}"
+         ;;
+      esac
+
       dstfilepath="${dst}/${name}"
 
       # only inherit, don't override

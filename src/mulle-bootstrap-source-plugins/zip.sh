@@ -33,6 +33,8 @@ MULLE_BOOTSTRAP_SOURCE_PLUGIN_ZIP_SH="included"
 
 zip_clone_project()
 {
+   log_entry "zip_clone_project" "$@"
+
    [ $# -lt 8 ] && internal_fail "parameters missing"
 
    local reposdir="$1"     # ususally .bootstrap.repos
@@ -73,5 +75,7 @@ zip_clone_project()
 
 zip_search_local_project()
 {
+   log_entry "zip_clone_project" "$@"
+
    archive_search_local "$@"
 }

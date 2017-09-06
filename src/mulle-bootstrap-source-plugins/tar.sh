@@ -32,6 +32,8 @@ MULLE_BOOTSTRAP_SOURCE_PLUGIN_TAR_SH="included"
 
 _archive_test()
 {
+   log_entry "_archive_test" "$@"
+
    local archive="$1"
 
    log_fluff "Testing ${C_MAGENTA}${C_BOLD}${archive}${C_INFO} ..."
@@ -76,6 +78,8 @@ _archive_test()
 
 _archive_unpack()
 {
+   log_entry "_archive_unpack" "$@"
+
    local archive="$1"
    local sourceoptions="$2"
 
@@ -124,6 +128,8 @@ _archive_unpack()
 
 archive_cache_grab()
 {
+   log_entry "archive_cache_grab" "$@"
+
    local url="$1"
    local download="$2"
 
@@ -198,6 +204,8 @@ archive_enable_caching()
 #
 _tar_download()
 {
+   log_entry "_tar_download" "$@"
+
    local download="$1"
    local url="$2"
    local sourceoptions="$3"
@@ -249,6 +257,8 @@ _tar_download()
 
 tar_clone_project()
 {
+   log_entry "tar_clone_project" "$@"
+
    [ $# -lt 8 ] && internal_fail "parameters missing"
 
    local reposdir="$1"     # ususally .bootstrap.repos
@@ -296,5 +306,7 @@ tar_clone_project()
 
 tar_search_local_project()
 {
+   log_entry "tar_search_local_project" "$@"
+
    archive_search_local "$@"
 }
