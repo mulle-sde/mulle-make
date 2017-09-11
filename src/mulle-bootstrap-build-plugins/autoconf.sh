@@ -110,7 +110,7 @@ build_autoconf()
    mkdir_if_missing "${BUILDLOGS_DIR}"
 
    logfile1="`build_log_name "autoreconf" "${name}" "${configuration}" "${sdk}"`"
-   logfile1="`build_log_name "autoconf" "${name}" "${configuration}" "${sdk}"`"
+   logfile2="`build_log_name "autoconf" "${name}" "${configuration}" "${sdk}"`"
 
    (
       local owd
@@ -196,10 +196,12 @@ build_autoconf()
    [ -z "${PROJECTFILE}" ] && internal_fail "test_configure did not set PROJECTFILE"
          #statements
 
-   log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
-${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
-${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
-${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir}\" ..."
+   # memorize that we did the reconf step
+   mkdir_if_missing "${REPOS_DIR}/.autoconf"
+   exekutor touch "${REPOS_DIR}/.autoconf/${name}"
+
+   log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a reconf of \
+${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${builddir}\" ..."
 
    build_configure "${PROJECTFILE}" "${configuration}" "${srcdir}" "${builddir}" "${name}" "${sdk}"
    if [ $? -ne 0 ]
@@ -231,13 +233,20 @@ test_autoconf()
          return 1
       fi
    fi
+
+   if [ "${REPOS_DIR}/.autoconf/${name}" -nt "${projectfile}" ]
+   then
+      log_verbose "Autoconf has already run once, skipping..."
+      return 1
+   fi
+
    projectdir="`dirname -- "${projectfile}"`"
 
    tools_environment_autoconf "${name}" "${projectdir}"
 
    if [ -z "${AUTOCONF}" ]
    then
-      log_warning "Found a `basename -- "${projectfile}"`, but ${C_RESET}${C_BOLD}autconf${C_WARNING} is not installed"
+      log_warning "Found a `basename -- "${projectfile}"`, but ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
       return 1
    fi
 

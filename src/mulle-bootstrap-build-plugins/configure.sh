@@ -82,6 +82,10 @@ build_configure()
    other_cppflags="`gcc_cppflags_value "${name}"`"
    other_ldflags="`gcc_ldflags_value "${name}"`"
 
+   local maketarget
+
+   maketarget="`read_build_setting "${name}" "maketarget" "${MAKETARGET:-install}"`"
+
    local flaglines
    local mapped
 
@@ -208,7 +212,7 @@ build_configure()
          build_fail "${logfile1}" "configure"
       fi
 
-      logging_redirekt_exekutor "${logfile2}" "${MAKE}" ${MAKE_FLAGS} install
+      logging_redirekt_exekutor "${logfile2}" "${MAKE}" ${MAKE_FLAGS} ${maketarget}
       rval=$?
 
       PATH="${oldpath}"

@@ -79,6 +79,9 @@ exekutor_trace_output()
    local redirect="$1"; shift
    local output="$1"; shift
 
+   [ -z "${redirect}" ] && internal_fail "missing redirect file"
+   [ -z "${output}" ] && internal_fail "missing output file"
+
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" -o "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
    then
       local arrow
@@ -128,6 +131,8 @@ redirect_exekutor()
 {
    local output="$1"; shift
 
+   [ -z "${output}" ] && internal_fail "missing output file"
+
    exekutor_trace_output '>' "${output}" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
@@ -141,6 +146,8 @@ redirect_append_exekutor()
 {
    local output="$1"; shift
 
+   [ -z "${output}" ] && internal_fail "missing output file"
+
    exekutor_trace_output '>>' "${output}" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
@@ -153,6 +160,8 @@ redirect_append_exekutor()
 _redirect_append_eval_exekutor()
 {
    local output="$1"; shift
+
+   [ -z "${output}" ] && internal_fail "missing output file"
 
    exekutor_trace_output '>>' "${output}" "$@"
 
@@ -168,6 +177,8 @@ _redirect_append_eval_exekutor()
 logging_redirekt_exekutor()
 {
    local output="$1"; shift
+
+   [ -z "${output}" ] && internal_fail "missing output file"
 
    local arrow
 
@@ -187,6 +198,8 @@ logging_redirekt_exekutor()
 logging_redirect_eval_exekutor()
 {
    local output="$1"; shift
+
+   [ -z "${output}" ] && internal_fail "missing output file"
 
    # overwrite
    local arrow
@@ -911,22 +924,33 @@ ${i}"
 
 simplified_path()
 {
-   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
-   then
-      set +x
-   fi
+   #
+   # quick check if there is something to simplify
+   # because this isn't fast at all
+   #
+   case "${1}" in
+      ""|".")
+         echo "."
+      ;;
 
-   if [ ! -z "$1" ]
-   then
-      _simplified_path "$@"
-   else
-      echo "."
-   fi
+      */|*\.\.*|*\./*)
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+         then
+            set +x
+         fi
 
-   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
-   then
-      set -x
-   fi
+         _simplified_path "$@"
+
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+         then
+            set -x
+         fi
+      ;;
+
+      *)
+         echo "$1"
+      ;;
+   esac
 }
 
 

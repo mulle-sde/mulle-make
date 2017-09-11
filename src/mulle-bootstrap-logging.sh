@@ -147,13 +147,29 @@ log_entry()
 
 log_trace()
 {
-   log_printf "${C_TRACE}%b${C_RESET}\n" "$*"
+   case "${UNAME}" in
+      linux)
+         log_printf "${C_TRACE}$(date "+%s.%N") %b${C_RESET}\n" "$*"
+         ;;
+
+      *)
+         log_printf "${C_TRACE}$(date "+%s") %b${C_RESET}\n" "$*"
+      ;;
+   esac
 }
 
 
 log_trace2()
 {
-   log_printf "${C_TRACE2}%b${C_RESET}\n" "$*"
+   case "${UNAME}" in
+      linux)
+         log_printf "${C_TRACE2}$(date "+%s.%N") %b${C_RESET}\n" "$*"
+         ;;
+         
+      *)
+         log_printf "${C_TRACE2}$(date "+%s") %b${C_RESET}\n" "$*"
+      ;;
+   esac
 }
 
 

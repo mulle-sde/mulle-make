@@ -142,6 +142,10 @@ build_cmake()
    other_cppflags="`gcc_cppflags_value "${name}"`"
    other_ldflags="`gcc_ldflags_value "${name}"`"
 
+   local maketarget
+
+   maketarget="`read_build_setting "${name}" "maketarget" "${MAKETARGET:-install}"`"
+
    local flaglines
    local mapped
 
@@ -326,7 +330,7 @@ build_cmake()
          build_fail "${logfile1}" "cmake"
       fi
 
-      logging_redirekt_exekutor "${logfile2}" "${MAKE}" ${MAKE_FLAGS} ${local_make_flags} install
+      logging_redirekt_exekutor "${logfile2}" "${MAKE}" ${MAKE_FLAGS} ${local_make_flags} ${maketarget}
       rval=$?
 
       PATH="${oldpath}"

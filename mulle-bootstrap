@@ -731,9 +731,19 @@ bootstrap_main()
          mulle_bootstrap_usage
       ;;
    esac
+   log_debug ":bootstrap_main done:"
 }
 
 
+#
+# leading backslash ? looks like we're getting called from
+# mingw via a .BAT or so
+#
+case "$PATH" in
+   '\\'*)
+      PATH="`tr '\\' '/' <<< "${PATH}"`"
+   ;;
+esac
 
 #
 # service both names (mulle-bootstrap and mulle-brew)
@@ -756,6 +766,8 @@ MULLE_EXECUTABLE_ENV_PATH="$PATH"
 export MULLE_EXECUTABLE_PID
 
 MULLE_ARGUMENTS="$*"
+
+
 
 bootstrap_init "$@" # needs params
 
