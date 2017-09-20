@@ -32,7 +32,7 @@ tickle your fancy
 > ```
 > Other platforms see [How to install](dox/INSTALL.md) for install
 > instructions.
-> 
+>
 
 ## A first use
 
@@ -47,7 +47,7 @@ mulle-bootstrap
 
 **mulle-bootstrap** will clone both into a common directory `stashes`.
 
-After cloning **mulle-bootstrap** looks for a `.bootstrap` folder in the freshly checked out repositories. They could have dependencies too. (If they 
+After cloning **mulle-bootstrap** looks for a `.bootstrap` folder in the freshly checked out repositories. They could have dependencies too. (If they
 did, those dependencies would be now also added and fetched).
 
 Everything is now inplace so **mulle-bootstrap** can build both libraries. It will place the installable headers and the libraries into the `dependencies/lib` and `dependencies/include` folders.
@@ -67,8 +67,8 @@ shell scripts. If your system can run the bash, it can run **mulle-bootstrap**.
 
 ## What it does technically
 
-* fetches [git](//enux.pl/article/en/2014-01-21/why-git-sucks) repositories.
-In times of need, it can also checkout [svn](//andreasjacobsen.com/2008/10/26/subversion-sucks-get-over-it/).
+* downloads [zip](http://eab.abime.net/showthread.php?t=5025) and [tar](http://www.grumpynerd.com/?p=132) archives
+* fetches [git](//enux.pl/article/en/2014-01-21/why-git-sucks) repositories and it can also checkout [svn](//andreasjacobsen.com/2008/10/26/subversion-sucks-get-over-it/).
 * builds [cmake](//blog.cppcms.com/post/54),
 [xcodebuild](//devcodehack.com/xcode-sucks-and-heres-why/) and
 [autoconf/configure](//quetzalcoatal.blogspot.de/2011/06/why-autoconf-sucks.html)
@@ -82,6 +82,40 @@ libraries into an "addictions" folder (on participating platforms)
 
 * The [WIKI](https://github.com/mulle-nat/mulle-bootstrap/wiki) should be your first stop, when looking for in-depth information about mulle-bootstrap.
 
+
+## A first use
+
+So you need a bunch of third party projects to build your own
+project ? No problem. Use **mulle-bootstrap init** to do the initial setup of
+a `.bootstrap` folder in your project directory. Then add the git repository
+URLs:
+
+```
+mulle-bootstrap init
+mulle-bootstrap setting -g -r -a "repositories" "https://github.com/madler/zlib.git"
+mulle-bootstrap setting -g -r -a "repositories" "https://github.com/coapp-packages/expat.git"
+mulle-bootstrap
+```
+
+**mulle-bootstrap** will check them out into a common directory `stashes`.
+
+After cloning **mulle-bootstrap** looks for a `.bootstrap` folder in the freshly
+checked out repositories. They might have dependencies too, if they do, those
+dependencies are added and also fetched.
+
+Everything should now be in place so **mulle-bootstrap** that can now build the
+dependencies. It will place the headers and the produced
+libraries into the `dependencies/lib`  and `dependencies/include` folders.
+
+
+## Tell me more
+
+* [How to install](dox/INSTALL.md)
+* [How to use it](dox/COMMANDS.md)
+* [What has changed ?](RELEASENOTES.md)
+* [Tweak guide](dox/SETTINGS.md)
+* [CMakeLists.txt.example](dox/CMakeLists.txt.example) shows how to access dependencies from **cmake**
+* [FAQ](dox/FAQ.md)
 * [Releasenotes](RELEASENOTES.md)
 
 

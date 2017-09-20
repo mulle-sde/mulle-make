@@ -1,3 +1,15 @@
+### 3.12.4
+
+* MAKE_FLAGS is MAKEFLAGS for consistency
+
+### 3.12.1
+
+* deal with empty/bad repositories more gracefully
+
+## 3.12.0
+
+* Various improvements for mingw. New version number for mulle-tests
+
 ### 3.11.2
 
 * improvements for mingw, also improved speed a bit
@@ -12,7 +24,7 @@
 
 Clean command reworked
 
-* `mulle-boostrap clean build` followed by `mulle-bootstrap build` actually rebuilds everything as one would expect. The old functionality is now called `mulle-bootstrap clean cruft`
+* `mulle-bootstrap clean build` followed by `mulle-bootstrap build` actually rebuilds everything as one would expect. The old functionality is now called `mulle-bootstrap clean cruft`
 * `clean build` does not throw away dependencies, use `clean full` for that
 
 ## 3.10.0

@@ -186,7 +186,7 @@ _stash_of_reposdir_file()
 {
    local clone
 
-   clone="`_clone_of_reposdir_file "$@"`"
+   clone="`_clone_of_reposdir_file "$@"`" || exit 1
    _dstdir_part_from_clone "${clone}"
 }
 
@@ -195,7 +195,7 @@ stash_of_repository()
 {
    local clone
 
-   clone="`clone_of_repository "$@"`"
+   clone="`clone_of_repository "$@"`" || exit 1
    _dstdir_part_from_clone "${clone}"
 }
 
@@ -242,7 +242,7 @@ _all_repository_stashes()
       IFS="${DEFAULT_IFS}"
 
       # somewhat a hack, since name is actually a subpath
-      stash="`stash_of_repository "${reposdir}" "${name}"`"
+      stash="`stash_of_repository "${reposdir}" "${name}"`" || exit 1
       if [ ! -z "${stash}" ]
       then
          if [ -d "${stash}" ]
@@ -275,7 +275,7 @@ _all_deep_embedded_repository_stashes()
          IFS="${DEFAULT_IFS}"
 
          # somewhat a hack, since name is actually a subpath
-         stash="`stash_of_repository "${reposdir}" "${name}"`"
+         stash="`stash_of_repository "${reposdir}" "${name}"`" || exit 1
          if [ ! -z "${stash}" ]
          then
            if [ -d "${stash}" ]
@@ -818,7 +818,7 @@ _canonical_clone_name()
       ;;
 
       .*)
-         fail "clone name can't start with a '.'"
+         fail "clone name \"${name}\" can't start with a '.'"
       ;;
    esac
 
@@ -932,7 +932,7 @@ parse_raw_clone()
 #   local name        # name of clone
 process_raw_clone()
 {
-   name="`_canonical_clone_name "${url}"`"
+   name="`_canonical_clone_name "${url}"`" || exit 1
 
    # memo this is done in .auto already
    # stashdir="`computed_stashdir "${name}" "${dstdir}"`"
@@ -1058,6 +1058,11 @@ read_repository_file()
    do
       IFS="${DEFAULT_IFS}"
 
+      if [ -z "${clone}" ]
+      then
+         continue
+      fi
+
       parse_raw_clone "${clone}"
       process_raw_clone
 
@@ -1105,7 +1110,7 @@ ensure_reposdir_directory()
    then
       if [ "${COMMAND}" = "update" ]
       then
-         fail "fetch first before updating"
+         fail "You must fetch first before updating"
       fi
       mkdir_if_missing "${reposdir}"
    fi
@@ -1145,8 +1150,8 @@ merge_repository_contents()
    do
       IFS="${DEFAULT_IFS}"
 
-      url="`_url_part_from_clone "${clone}"`"
-      name="`_canonical_clone_name "${url}"`"
+      url="`_url_part_from_clone "${clone}"`" || internal_fail "_url_part_from_clone \"${url}\""
+      name="`_canonical_clone_name "${url}"`" || internal_fail "_canonical_clone_name \"${url}\""
 
       if [ "$MULLE_FLAG_LOG_SETTINGS" = "YES" -o "$MULLE_FLAG_LOG_MERGE" = "YES"  ]
       then
@@ -1162,8 +1167,8 @@ merge_repository_contents()
    do
       IFS="${DEFAULT_IFS}"
 
-      url="`_url_part_from_clone "${clone}"`"
-      name="`_canonical_clone_name "${url}"`"
+      url="`_url_part_from_clone "${clone}"`" || internal_fail "_url_part_from_clone \"${clone}\""
+      name="`_canonical_clone_name "${url}"`" || internal_fail "_canonical_clone_name \"${url}\""
 
       if [ "$MULLE_FLAG_LOG_SETTINGS" = "YES" -o "$MULLE_FLAG_LOG_MERGE" = "YES"  ]
       then
@@ -1201,7 +1206,7 @@ merge_repository_files()
    local additions
 
    contents="`cat "${dstfile}" 2> /dev/null || :`"
-   additions="`read_repository_file "${srcfile}" "${delete_dstdir}"`" || fail "read"
+   additions="`read_repository_file "${srcfile}" "${delete_dstdir}"`" || fail "Failed to read repository file \"${srcfile}\""
    additions="`echo "${additions}"| sed 's/;*$//'`"
    additions="`merge_repository_contents "${contents}" "${additions}"`"
 
@@ -1240,9 +1245,12 @@ unique_repository_contents()
    do
       IFS="${DEFAULT_IFS}"
 
-      url="`_url_part_from_clone "${clone}"`"
-      name="`_canonical_clone_name "${url}"`"
-      map="`assoc_array_set  "${map}" "${name}" "${clone}"`"
+      if [ ! -z "${clone}" ]
+      then
+         url="`_url_part_from_clone "${clone}"`" || internal_fail "_url_part_from_clone \"${clone}\""
+         name="`_canonical_clone_name "${url}"`" || internal_fail "_canonical_clone_name \"${url}\""
+         map="`assoc_array_set  "${map}" "${name}" "${clone}"`"
+      fi
    done
 
    output=""
@@ -1252,10 +1260,13 @@ unique_repository_contents()
    do
       IFS="${DEFAULT_IFS}"
 
-      url="`_url_part_from_clone "${clone}"`"
-      name="`_canonical_clone_name "${url}"`"
-      uniqued="`assoc_array_get "${map}" "${name}"`"
-      output="`add_line "${output}" "${uniqued:-${clone}}"`"
+      if [ ! -z "${clone}" ]
+      then
+         url="`_url_part_from_clone "${clone}"`" || internal_fail "_url_part_from_clone \"${clone}\""
+         name="`_canonical_clone_name "${url}"`" || internal_fail "_canonical_clone_name \"${url}\""
+         uniqued="`assoc_array_get "${map}" "${name}"`"
+         output="`add_line "${output}" "${uniqued:-${clone}}"`"
+      fi
    done
    IFS="${DEFAULT_IFS}"
 
@@ -1493,7 +1504,6 @@ mulle_repositories_initialize()
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]           && . mulle-bootstrap-settings.sh
    [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ]          && . mulle-bootstrap-functions.sh
    [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ]    && . mulle-bootstrap-common-settings.sh
-
    :
 }
 
