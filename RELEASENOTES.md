@@ -1,3 +1,53 @@
+### 3.15.2
+
+* fix documentation wrapper
+
+### 3.15.1
+
+* fix some missing exits on error conditions
+
+## 3.15.0
+
+* use a different mechanism for walking repositories during update/upgrade, to catch problems with embedded_repositories of minions not being updated
+* properly forget repositories being removed
+
+
+### 3.14.1
+
+* different apt-key in dox
+
+## 3.14.0
+
+* make it a C project (to not require CXX)
+
+
+### 3.13.6
+
+* fix build_script
+* unified  mktemp handling across platforms
+* add libexec to build PATH, for the benefits of scripts (regression)
+
+### 3.13.5
+
+* fix corruption of motd file
+
+### 3.13.4
+
+* protect CC renames affecting subsequent builds
+
+### 3.13.3
+
+* add --lenient flag to mulle-bootstrap, used in mulle-bootstrap git to not abort on failure
+
+### 3.13.1
+
+* use CC, CXX and MAKE internally and heed possible external environment variable of same name
+
+## 3.13.0
+
+* add mulle-bootstrap log command, for looking at build logs of a specific dependency
+
+
 ### 3.12.4
 
 * MAKE_FLAGS is MAKEFLAGS for consistency

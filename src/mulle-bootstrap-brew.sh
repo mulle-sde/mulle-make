@@ -365,6 +365,8 @@ _brew_install_brews()
 
 brew_install_brews()
 {
+   log_debug "brew_install_brews" "$@"
+
    local unprotect
 
    unprotect=
@@ -403,6 +405,8 @@ brew_fetch_loop()
 
 _brew_common_install()
 {
+   log_debug "_brew_common_install" "$@"
+
    if [ $# -ne 0 ]
    then
       log_error "Additional parameters not allowed for fetch (" "$@" ")"
@@ -425,6 +429,8 @@ _brew_common_install()
 
 _brew_common_update()
 {
+   log_debug "_brew_common_update" "$@"
+
    if [ $# -ne 0 ]
    then
       log_error "Additional parameters not allowed for update (" "$@" ")"
@@ -437,12 +443,16 @@ _brew_common_update()
 
 _brew_common_upgrade()
 {
+   log_debug "_brew_common_upgrade" "$@"
+
    brew_install_brews "upgrade" "$@"
 }
 
 
 _brew_common_main()
 {
+   log_debug "_brew_common_main" "$@"
+
    [ -z "${MULLE_BOOTSTRAP_LOCAL_ENVIRONMENT_SH}" ] && . mulle-bootstrap-local-environment.sh
    [ -z "${MULLE_BOOTSTRAP_SETTINGS_SH}" ]          && . mulle-bootstrap-settings.sh
 

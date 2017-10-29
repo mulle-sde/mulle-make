@@ -321,8 +321,9 @@ show_deep_embedded_repositories()
 minion"
    (
       SHOW_PREFIX="${SHOW_PREFIX}   " \
-         walk_deep_embedded_auto_repositories "show_repository" \
-                                              "${permissions}"
+         walk_auto_deep_embedded_repositories "show_repository" \
+                                              "${permissions}" \
+                                              "${REPOS_DIR}"
    )
 }
 

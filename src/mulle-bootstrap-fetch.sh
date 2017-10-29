@@ -514,29 +514,29 @@ upgrade_repository()
 
 #
 # Walk repositories with a callback function
+# update/upgrade use the actually fetched repositories
+# as present in reposdir
 #
 _update_operation_walk_repositories()
 {
+   log_debug "_update_operation_walk_repositories" "$@"
+
    local operation="$1"
 
    local permissions
 
    permissions="minion"
-   walk_auto_repositories "repositories"  \
-                          "${operation}" \
-                          "${permissions}" \
-                          "${REPOS_DIR}"
-
-   permissions="minion"
-   walk_auto_repositories "additional_repositories"  \
-                          "${operation}" \
-                          "${permissions}" \
-                          "${REPOS_DIR}"
+   walk_repos_repositories "repositories"  \
+                           "${operation}" \
+                           "${permissions}" \
+                           "${REPOS_DIR}"
 }
 
 
 _update_operation_walk_embedded_repositories()
 {
+   log_debug "_update_operation_walk_embedded_repositories" "$@"
+
    local operation="$1"
 
    local permissions
@@ -552,16 +552,18 @@ _update_operation_walk_embedded_repositories()
       STASHES_DEFAULT_DIR=""
       MULLE_FLAG_CREATE_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
 
-      walk_auto_repositories "embedded_repositories"  \
-                             "${operation}" \
-                             "${permissions}" \
-                             "${EMBEDDED_REPOS_DIR}"
+      walk_repos_repositories "embedded_repositories"  \
+                              "${operation}" \
+                              "${permissions}" \
+                              "${EMBEDDED_REPOS_DIR}"
    ) || exit 1
 }
 
 
-_update_operation_walk_deep_embedded_auto_repositories()
+_update_operation_walk_auto_deep_embedded_repositories()
 {
+   log_debug "_update_operation_walk_auto_deep_embedded_repositories" "$@"
+
    local operation="$1"
 
    local permissions
@@ -571,8 +573,8 @@ _update_operation_walk_deep_embedded_auto_repositories()
    (
       MULLE_FLAG_CREATE_SYMLINKS="${OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS}" ;
 
-      walk_deep_embedded_auto_repositories "${operation}" \
-                                           "${permissions}"
+      walk_repos_deep_embedded_repositories "${operation}" \
+                                            "${permissions}"
    ) || exit 1
 }
 
@@ -600,7 +602,7 @@ update_deep_embedded_repositories()
 {
    log_entry "update_deep_embedded_repositories"
 
-   _update_operation_walk_deep_embedded_auto_repositories "update_repository"
+   _update_operation_walk_auto_deep_embedded_repositories "update_repository"
 }
 
 
@@ -627,7 +629,7 @@ upgrade_deep_embedded_repositories()
 {
    log_entry "upgrade_deep_embedded_repositories"
 
-   _update_operation_walk_deep_embedded_auto_repositories "upgrade_repository"
+   _update_operation_walk_auto_deep_embedded_repositories "upgrade_repository"
 }
 
 
@@ -853,8 +855,6 @@ auto_update_minions()
 
    local minion
 
-   log_debug ":auto_update_minions: (${minions})"
-
    IFS="
 "
    for minion in ${minions}
@@ -924,6 +924,12 @@ work_clones()
         repotype=""
       ;;
    esac
+
+   if [ -z "${clones}" ]
+   then
+      log_debug "work_clones has nothing to do"
+      return
+   fi
 
    log_debug "Working \"${clones}\""
 
@@ -1097,6 +1103,7 @@ work_clones()
                   fi
 
                   bury_stash "${reposdir}" "${name}" "${oldstashdir}"
+                  forget_repository "${reposdir}" "${name}"
                ;;
 
                "set-remote")
@@ -1149,7 +1156,7 @@ work_clones()
 
       if [ "${skip}" = "YES" ]
       then
-         log_debug "skipping to next clone because..."
+         log_debug "Skipping to next clone as indicated..."
          continue
       fi
 
@@ -1161,13 +1168,12 @@ work_clones()
          # branch could be overwritten
          log_debug "${C_INFO}Remembering ${clone} ..."
 
-         remember_stash_of_repository "${clone}" \
-                                      "${reposdir}" \
-                                      "${name}"  \
-                                      "${stashdir}" \
-                                      "${PARENT_CLONE}"
+         remember_repository "${clone}" \
+                             "${reposdir}" \
+                             "${name}"  \
+                             "${PARENT_CLONE}"
       else
-         log_debug "Don't need to remember it (should be unchanged)"
+         log_debug "Don't need to remember \"${clone}\" (should be unchanged)"
       fi
       mark_stash_as_alive "${reposdir}" "${name}"
 
@@ -1458,6 +1464,8 @@ fetch_loop()
 #
 _common_fetch()
 {
+   log_entry "_common_fetch" "$@"
+
    fetch_loop "${REPOS_DIR}"
 
    #
@@ -1476,6 +1484,8 @@ _common_fetch()
 
 _common_update()
 {
+   log_debug "_common_update" "$@"
+
    case "${BREW_PERMISSIONS}" in
       update|upgrade)
          brew_update_main
@@ -1492,6 +1502,8 @@ _common_update()
 
 _common_upgrade()
 {
+   log_debug "_common_upgrade" "$@"
+
    case "${BREW_PERMISSIONS}" in
       upgrade)
          brew_upgrade_main
@@ -1503,6 +1515,9 @@ _common_upgrade()
 
    upgrade_repositories "$@"
    upgrade_deep_embedded_repositories
+
+   # now we need to redo the auto update and
+   # fetch new dependencies if needed
 
    _common_fetch  # update what needs to be update
 }
@@ -1522,7 +1537,7 @@ _common_main()
    local OPTION_ALLOW_GIT_MIRROR="YES"
    local OPTION_ALLOW_ARCHIVE_CACHE="YES"
    local OPTION_ALLOW_REFRESH_GIT_MIRROR="YES"
-   local OPTION_EMBEDDED_ONLY="NO"
+   local OPTION_EMBEDDED_ONLY="${OPTION_EMBEDDED_ONLY:-NO}"
    local OVERRIDE_BRANCH
    local DONT_WARN_SCRIPTS="NO"
 

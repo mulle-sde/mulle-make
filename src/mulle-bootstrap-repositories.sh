@@ -123,20 +123,27 @@ EOF
 #
 # store it inside the possibly recursed dstprefix dependency
 #
-remember_stash_of_repository()
+remember_repository()
 {
+   log_entry "remember_repository" "$@"
+
    local clone="$1"
    local reposdir="$2"  # ususally .bootstrap.repos
    local name="$3"      # name of the clone
-   local parentclone="$5"
+   local parentclone="$4"
 
    [ -z "${clone}" ]    && internal_fail "clone is missing"
    [ -z "${reposdir}" ] && internal_fail "reposdir is missing"
    [ -z "${name}" ]     && internal_fail "name is missing"
-   [ -z "${stashdir}" ] && internal_fail "stashdir is missing"
 
    local content
    local filepath
+
+   case "${reposdir}" in
+      */|*//*|*/.*/)
+         internal_fail "ugliness ensues: ${reposdir}"
+      ;;
+   esac
 
    mkdir_if_missing "${reposdir}"
    filepath="${reposdir}/${name}"
@@ -147,6 +154,23 @@ ${parentclone}"  ## a clone line
    log_fluff "Remembering repository \"${name}\" via \"${filepath}\""
 
    redirect_exekutor "${filepath}" echo "${content}"
+}
+
+
+forget_repository()
+{
+   local reposdir="$1"  # ususally .bootstrap.repos
+   local name="$2"      # name of the clone
+
+   [ -z "${reposdir}" ] && internal_fail "reposdir is missing"
+   [ -z "${name}" ]     && internal_fail "name is missing"
+
+   local content
+   local filepath
+
+   filepath="${reposdir}/${name}"
+   log_fluff "Forgetting about repository \"${name}\" via \"${filepath}\""
+   remove_file_if_present "${filepath}"
 }
 
 
@@ -322,6 +346,7 @@ _get_all_repos_headers()
 
    for i in "${reposdir}"/*
    do
+      log_debug "repository: $i"
       head -1 "$i"
    done
 }
@@ -329,12 +354,16 @@ _get_all_repos_headers()
 
 _get_all_repos_minions()
 {
+   log_debug "_get_all_repos_minions" "$@" "($PWD)"
+
    _get_all_repos_headers "$@" | egrep '^[^;]*;[^;]*;[^;]*;minion'
 }
 
 
 _get_all_repos_clones()
 {
+   log_debug "_get_all_repos_clones" "$@" "($PWD)"
+
    _get_all_repos_headers "$@" | egrep -v '^[^;]*;[^;]*;[^;]*;minion'
 }
 
@@ -346,6 +375,8 @@ _get_all_repos_clones()
 #
 walk_check()
 {
+   log_debug "walk_check" "$@"
+
    local stashdir="$1"
    local permissions="$2"
 
@@ -392,6 +423,8 @@ walk_check()
 
 _walk_minions()
 {
+   log_debug "_walk_minions" "$@"
+
    local minions="$1"; shift
    local callback="$1"; shift
    local permissions="$1"; shift
@@ -441,9 +474,13 @@ _walk_minions()
    IFS="${DEFAULT_IFS}"
 }
 
-
+#
+# _walk_repositories clones,callback,permissions,reposdir ...
+#
 _walk_repositories()
 {
+   log_debug "_walk_repositories" "$@"
+
    local clones="$1"; shift
    local callback="$1"; shift
    local permissions="$1"; shift
@@ -493,7 +530,7 @@ _walk_repositories()
 
 _deep_walk_repos_trampoline()
 {
-   log_debug ":_deep_walk_repos_trampoline:" "$@"
+   log_debug "_deep_walk_repos_trampoline" "$@"
 
    local reposdir="$1"; shift     # ususally .bootstrap.repos
    local name="$1"; shift         # name of the clone
@@ -514,7 +551,6 @@ _deep_walk_repos_trampoline()
 
       reposdir="${REPOS_DIR}/.deep/${name}.d"
 
-      # sigh have to use read_setting here
       embedded_clones="`_get_all_repos_clones "${reposdir}"`"
 
       PARENT_REPOSITORY_NAME="${name}"
@@ -533,7 +569,7 @@ _deep_walk_repos_trampoline()
 
 _deep_walk_auto_trampoline()
 {
-   log_debug ":_deep_walk_auto_trampoline:" "$@"
+   log_debug "_deep_walk_auto_trampoline" "$@"
 
    local reposdir="$1"; shift     # ususally .bootstrap.repos
    local name="$1"; shift         # name of the clone
@@ -572,17 +608,10 @@ _deep_walk_auto_trampoline()
 }
 
 
-walk_auto_minions()
-{
-   log_debug "walk_auto_minions" "$@"
 
-   local minions
-
-   minions="`read_root_setting "minions"`"
-   _walk_minions "${minions}" "$@"
-}
-
-
+#
+# walk_auto_repositories settingname,callback,permissions,reposdir ...
+#
 walk_auto_repositories()
 {
    log_debug "walk_auto_repositories" "$@"
@@ -596,123 +625,122 @@ walk_auto_repositories()
 }
 
 
-walk_repos_minions()
-{
-   log_debug "walk_repos_minions" "$@"
-
-   local reposdir="$1";shift
-   local callback="$1";shift
-   local permissions="$1";shift
-
-   local minions
-
-   minions="`_get_all_repos_minions "${reposdir}"`"
-   _walk_minions "${clones}" \
-                 "${callback}" \
-                 "${permissions}" \
-                 "${reposdir}" \
-                 "$@"
-}
-
-
+#
+# walk_repos_repositories unused,callback,permissions,reposdir ...
+#
 walk_repos_repositories()
 {
    log_debug "walk_repos_repositories" "$@"
 
-   local reposdir="$1";shift
-   local callback="$1";shift
-   local permissions="$1";shift
+   shift
+
+   local reposdir="$3"
 
    local clones
 
    clones="`_get_all_repos_clones "${reposdir}"`"
-   _walk_repositories "${clones}" \
-                      "${callback}" \
-                      "${permissions}" \
-                      "${reposdir}" \
-                      "$@"
+   _walk_repositories "${clones}" "$@"
 }
 
 
-walk_deep_embedded_auto_minions()
+#
+# walk_auto_deep_embedded_repositories callback,permissions,reposdir ...
+#
+walk_auto_deep_embedded_repositories()
 {
-   log_debug "walk_deep_embedded_auto_minions" "$@"
+   log_debug "walk_auto_deep_embedded_repositories" "$@"
 
    local callback="$1";shift
    local permissions="$1";shift
-
-   local minions
-
-   minions="`read_root_setting "minions"`"
-   _walk_minions "${minions}" \
-                 _deep_walk_auto_trampoline \
-                 "${permissions}" \
-                 "${REPOS_DIR}" \
-                 "${callback}" \
-                 "${permissions}" \
-                 "$@"
-}
-
-
-walk_deep_embedded_auto_repositories()
-{
-   log_debug "walk_deep_embedded_auto_repositories" "$@"
-
-   local callback="$1";shift
-   local permissions="$1";shift
+   local reposdir="$1";shift
 
    local clones
-
 
    clones="`read_root_setting "repositories"`"
    _walk_repositories "${clones}" \
                       _deep_walk_auto_trampoline \
                       "${permissions}" \
-                      "${REPOS_DIR}" \
+                      "${reposdir}" \
                       "${callback}" \
-                      "${permissions}" \
                       "$@"
 }
 
-
-walk_deep_embedded_minion_repositories()
+#
+# walk_repos_deep_embedded_repositories callback,permissions,reposdir ...
+#
+walk_repos_deep_embedded_repositories()
 {
-   log_debug "walk_deep_embedded_minion_repositories" "$@"
+   log_debug "walk_repos_deep_embedded_repositories" "$@"
 
    local callback="$1";shift
    local permissions="$1";shift
-
-   local minions
-
-   minions="`_get_all_repos_minions "${REPOS_DIR}"`"
-   _walk_repositories "${minions}" \
-                      _deep_walk_repos_trampoline \
-                      "${permissions}" \
-                      "${REPOS_DIR}" \
-                      "${callback}" \
-                      "${permissions}" \
-                      "$@"
-}
-
-
-walk_deep_embedded_repos_repositories()
-{
-   log_debug "walk_deep_embedded_repos_repositories" "$@"
-
-   local callback="$1";shift
-   local permissions="$1";shift
+   local reposdir="$1";shift
 
    local clones
 
-   clones="`_get_all_repos_clones "${REPOS_DIR}"`"
+   clones="`_get_all_repos_clones "${reposdir}"`"
    _walk_repositories "${clones}" \
                       _deep_walk_repos_trampoline \
                       "${permissions}" \
-                      "${REPOS_DIR}" \
+                      "${reposdir}" \
                       "${callback}" \
-                      "${permissions}" \
                       "$@"
 }
+
+
+#
+# walk_repos_deep_embedded_minion_repositories callback,permissions,reposdir ...
+#
+walk_repos_deep_embedded_minion_repositories()
+{
+   log_debug "walk_repos_deep_embedded_minion_repositories" "$@"
+
+   local callback="$1"; shift
+   local permissions="$1"; shift
+   local reposdir="$1"; shift
+
+   local minions
+
+   minions="`_get_all_repos_minions "${reposdir}"`"
+   _walk_repositories "${minions}" \
+                      _deep_walk_repos_trampoline \
+                      "${permissions}" \
+                      "${reposdir}" \
+                      "${callback}" \
+                      "$@"
+}
+
+
+#
+# walk_auto_minions callback,permissions,reposdir ...
+#
+walk_auto_minions()
+{
+   log_debug "walk_auto_minions" "$@"
+
+   local minions
+
+   minions="`read_root_setting "minions"`"
+   _walk_minions "${minions}" "$@"
+}
+
+
+#
+# walk_repos_minions callback,permissions,reposdir ...
+#
+walk_repos_minions()
+{
+   log_debug "walk_repos_minions" "$@"
+
+   local reposdir="$3"
+
+   local minions
+
+   minions="`_get_all_repos_minions "${reposdir}"`"
+   _walk_minions "${minions}" "$@"
+}
+
+
 
 
 #
@@ -810,7 +838,7 @@ _canonical_clone_name()
    esac
 
    name="`basename -- "${url}"`"
-   name="`echo "${name%%.*}"`"
+   name="${name%%.*}"
 
    case "${name}" in
       "")
@@ -1042,7 +1070,7 @@ read_repository_file()
 
    srcbootstrap="`dirname -- "${srcfile}"`"
 
-   clones="`read_expanded_setting "$srcfile" "" "${srcbootstrap}"`"
+   clones="`read_expanded_setting "${srcfile}" "" "${srcbootstrap}"`" || exit 1
 
    local url        # url of clone
    local dstdir
@@ -1206,7 +1234,7 @@ merge_repository_files()
    local additions
 
    contents="`cat "${dstfile}" 2> /dev/null || :`"
-   additions="`read_repository_file "${srcfile}" "${delete_dstdir}"`" || fail "Failed to read repository file \"${srcfile}\""
+   additions="`read_repository_file "${srcfile}" "${delete_dstdir}"`" || exit 1
    additions="`echo "${additions}"| sed 's/;*$//'`"
    additions="`merge_repository_contents "${contents}" "${additions}"`"
 
@@ -1290,14 +1318,14 @@ unique_repository_contents()
 #
 sort_repository_file()
 {
+   log_entry "sort_repository_file" "$@"
+
+   local stop
    local match
 
    [ -z "${MULLE_BOOTSTRAP_DEPENDENCY_RESOLVE_SH}" ] && . mulle-bootstrap-dependency-resolve.sh
 
    log_info "Resolving dependencies..."
-
-   log_debug ":sort_repository_file:"
-
 
    #
    # read from .auto
@@ -1380,7 +1408,7 @@ ${clone}"
 
       filename="${stashdir}/.bootstrap/repositories"
 
-      sub_repos="`read_repository_file "${filename}" "" "${stashdir}/.bootstrap"`"
+      sub_repos="`read_repository_file "${filename}" "" "${stashdir}/.bootstrap"`" || exit 1
 
       if [ ! -z "${sub_repos}" ]
       then
@@ -1497,7 +1525,7 @@ mulle_repositories_initialize()
 {
    [ -z "${MULLE_BOOTSTRAP_LOGGING_SH}" ]            && . mulle-bootstrap-logging.sh
 
-   log_debug ":mulle_repositories_initialize:"
+   log_debug "mulle_repositories_initialize"
 
    [ -z "${MULLE_BOOTSTRAP_LOCAL_ENVIRONMENT_SH}" ]  && . mulle-bootstrap-local-environment.sh
    [ -z "${MULLE_BOOTSTRAP_ARRAY_SH}" ]              && . mulle-bootstrap-array.sh

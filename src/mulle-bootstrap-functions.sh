@@ -419,14 +419,13 @@ path_concat()
         "*/")
           i="`echo "${i}" | sed 's|/$||/g'`"
         ;;
-
       esac
 
       if [ -z "${s}" ]
       then
         s="$i"
       else
-        s="${s}/${sep}${i}"
+        s="${s}${sep}${i}"
       fi
    done
 
@@ -1280,6 +1279,34 @@ find_nearest_matching_pattern()
    return 1
 }
 
+
+_make_tmp()
+{
+   local name="${1:-mctmp}"
+   local type="${2}"
+
+   case "${UNAME}" in
+      darwin|freebsd)
+         exekutor mktemp ${type} "/tmp/${name}.XXXXXX"
+      ;;
+
+      *)
+         exekutor mktemp ${type} -t "${name}.XXXXXX"
+      ;;
+   esac
+}
+
+
+make_tmp_file()
+{
+   _make_tmp "$1"
+}
+
+
+make_tmp_directory()
+{
+   _make_tmp "$1" "-d"
+}
 
 
 # ####################################################################

@@ -137,7 +137,7 @@ warn_user_setting()
 
    path="$1"
 
-   if [ -z "${MULLE_BOOTSTRAP_WARN_USER_SETTINGS}" ] 
+   if [ -z "${MULLE_BOOTSTRAP_WARN_USER_SETTINGS}" ]
    then
       MULLE_BOOTSTRAP_WARN_USER_SETTINGS="`read_config_setting "warn_user_setting" "YES"`"
    fi
@@ -534,9 +534,15 @@ list_build_directories()
    local filename
    local name
 
+   if [ ! -d "${directory}" ]
+   then
+      return
+   fi
+
+   log_info "${directory}"
    IFS="
 "
-   for path in `ls -1 "${directory}/"*.build 2> /dev/null`
+   for filename in `ls -1 "${directory}" 2> /dev/null`
    do
       IFS="${DEFAULT_IFS}"
 
@@ -562,7 +568,7 @@ list_dir_settings()
 
    IFS="
 "
-   for filename in `ls -1 "${directory}" 2> /dev/null | sed -n "/${sedpattern}/p" `
+   for filename in `ls -1 "${directory}" 2> /dev/null  | sed -n "/${sedpattern}/p" `
    do
       IFS="${DEFAULT_IFS}"
 
@@ -809,7 +815,6 @@ read_expanded_setting()
    [ $# -eq 3 ]             || internal_fail "wrong parameters"
 
    local value
-   local rval
 
    value="`(
       MULLE_BOOTSTRAP_SETTINGS_NO_AUTO="YES"
@@ -822,11 +827,9 @@ read_expanded_setting()
       value="${default}"
    fi
 
-   rval=0
-
    IFS="
 "
-   echo "${value}" | while read -r line
+   for line in ${value}
    do
       IFS="${DEFAULT_IFS}"
 
@@ -836,7 +839,7 @@ read_expanded_setting()
          empty_expansion_is_error="`read_config_setting "empty_expansion_is_error" "YES"`"
          if [ "${empty_expansion_is_error}" = "YES" ]
          then
-           fail "Aborting, because empty expansion warning is an error condition.
+            fail "Abort \"${filepath}\" read, because empty expansion warning is an error condition.
 To disable this:
    ${C_RESET_BOLD}mulle-bootstrap config -n empty_expansion_is_error"
          fi
@@ -844,8 +847,6 @@ To disable this:
    done
 
    IFS="${DEFAULT_IFS}"
-
-   return $rval
 }
 
 
@@ -1055,8 +1056,12 @@ _setting_list()
          echo "${lines1}"
       fi
 
-      lines1="`list_build_directories "${BOOTSTRAP_DIR}.local" ""`"
-      lines2="`list_build_directories "${BOOTSTRAP_DIR}" "-g"`"
+      if [ -d "${BOOTSTRAP_DIR}.local" -o -d "${BOOTSTRAP_DIR}" ]
+      then
+         log_info "Available repository settings:"
+         list_build_directories "${BOOTSTRAP_DIR}.local" ""
+         list_build_directories "${BOOTSTRAP_DIR}" "-g"
+      fi
 
       if [ ! -z "${lines1}" -a ! -z "${lines2}" ]
       then

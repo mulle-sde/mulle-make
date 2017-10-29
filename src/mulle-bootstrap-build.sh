@@ -157,8 +157,15 @@ tools_environment_common()
    local srcdir="$2"
 
    # no problem if those are empty
-   C_COMPILER="`find_compiler "${name}" "${srcdir}" CC`"
-   CXX_COMPILER="`find_compiler "${name}" "${srcdir}" CXX`"
+   if [ -z "${CC}" ]
+   then
+      CC="`find_compiler "${name}" "${srcdir}" CC`"
+   fi
+
+   if [ -z "${CXX}" ]
+   then
+      CXX="`find_compiler "${name}" "${srcdir}" CXX`"
+   fi
    TR="`verify_binary "tr" "tr" "tr"`"
    SED="`verify_binary "sed" "sed" "sed"`"
 
@@ -320,6 +327,10 @@ build_fail()
 }
 
 
+#
+# build log will be of form
+# <name>--<configuration>-<sdk>.<tool>.log
+# It is ensured, that
 build_log_name()
 {
    local tool="$1"; shift
@@ -329,19 +340,53 @@ build_log_name()
    [ -z "${name}" ] && internal_fail "name missing"
 
    local logfile
+   local  s
+
+   case "${name}" in
+      *-)
+         fail "Dependency \"${name}\" ends with -, that won't work here"
+      ;;
+
+      *--*)
+         fail "Dependency \"${name}\" contains --, that won't work here"
+      ;;
+   esac
 
    logfile="${BUILDLOGS_DIR}/${name}"
 
+   if [ $# -ne 0 ]
+   then
+      logfile="${logfile}-"
+   fi
+
    while [ $# -gt 0 ]
    do
-      if [ ! -z "$1" ]
+      s="$1"
+      shift
+
+      if [ ! -z "$s" ]
       then
-         logfile="${logfile}-$1"
+         s="$(tr '-' '_' <<< "${s}")"
+         logfile="${logfile}-${s}"
       fi
-      [ $# -eq 0 ] || shift
    done
 
+   tool="$(tr '-' '_' <<< "${tool}")"
    absolutepath "${logfile}.${tool}.log"
+}
+
+
+add_path_if_exists()
+{
+   local line="$1"
+   local path="$2"
+
+   if [ -e "${path}" ]
+   then
+      colon_concat "${line}" "${path}"
+   else
+      echo "${line}"
+   fi
 }
 
 
@@ -786,10 +831,16 @@ configure"`"
 
       for configuration in ${configurations}
       do
-         build_with_configuration_sdk_preferences "${name}" \
-                                                  "${configuration}" \
-                                                  "${sdk}" \
-                                                  "${AVAILABLE_PLUGINS}"
+         #
+         # let it run in subshell so environment variable changes (like CC)
+         # do not affect next build
+         #
+         (
+            build_with_configuration_sdk_preferences "${name}" \
+                                                     "${configuration}" \
+                                                     "${sdk}" \
+                                                     "${AVAILABLE_PLUGINS}"
+         )
          if [ $? -ne 0 ]
          then
             fail "Don't know how to build ${name}"
@@ -1254,6 +1305,8 @@ build_main()
       if [ "${MULLE_FLAG_MAGNUM_FORCE}" != "NONE" ] || \
          [ ! -z "${OPTION_FROM}" -o ! -z "${OPTION_TO}" ]
       then
+         [ -z "${MULLE_BOOTSTRAP_SNIP_SH}" ] && . mulle-bootstrap-snip.sh
+
          force_rebuild "${OPTION_FROM}" "${OPTION_TO}"
       fi
    fi

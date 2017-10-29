@@ -40,11 +40,13 @@ MULLE_BOOTSTRAP_LOGGING_VERSION="3.0"
 #
 log_printf()
 {
+   local format="$1" ; shift
+
    if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
    then
-      printf "$@" >&2
+      printf "${format}" "$@" >&2
    else
-      printf "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
+      printf "${format}" "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
    fi
 }
 
@@ -165,7 +167,7 @@ log_trace2()
       linux)
          log_printf "${C_TRACE2}$(date "+%s.%N") %b${C_RESET}\n" "$*"
          ;;
-         
+
       *)
          log_printf "${C_TRACE2}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
@@ -204,7 +206,7 @@ _bail()
 #         kill -INT $$  # actually useful
 #      fi
 #   fi
-
+   sleep 1
    exit 1
 }
 

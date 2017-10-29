@@ -70,6 +70,7 @@ HIDDEN_COMMANDS="\
    expansion     : read or edit fetch expansions
    git           : run git commands on fetched repositories
    library-path  : print path to mulle-bootstrap libexec
+   log           : show build logs
    project-path  : print path to folder containing .bootstrap
    run           : run command with proper dependencies PATHs
    setting       : read or edit build settings
@@ -228,24 +229,24 @@ resolve_symlinks()
 
 bootstrap_libexec_path()
 {
-   local path="$1"
+   local executablepath="$1"
 
    local exedir
    local exedirpath
    local prefix
    local libexecpath
 
-   case "${path}" in
+   case "${executablepath}" in
       \.*|/*|~*)
       ;;
 
       *)
-         path="`command -v "${path}"`"
+         executablepath="`command -v "${executablepath}"`"
       ;;
    esac
 
-   path="`resolve_symlinks "${path}"`"
-   exedirpath="`dirname "${path}"`"
+   executablepath="`resolve_symlinks "${executablepath}"`"
+   exedirpath="`dirname "${executablepath}"`"
    prefix="`dirname "${exedirpath}"`"
    libexecpath="${prefix}/libexec/mulle-bootstrap"
 
@@ -272,13 +273,33 @@ bootstrap_libexec_path()
 
 bootstrap_init()
 {
-   MULLE_BOOTSTRAP_LIBEXEC_PATH="`bootstrap_libexec_path "$0"`"
+   if [ "$1" = "version" ]
+   then
+      echo "${MULLE_EXECUTABLE_VERSION}"
+      exit 0
+   fi
 
+   MULLE_BOOTSTRAP_LIBEXEC_PATH="`bootstrap_libexec_path "$0"`"
    if [ -z "${MULLE_BOOTSTRAP_LIBEXEC_PATH}" ]
    then
-      echo "Fatal Error: Could not find libexec for ${MULLE_EXECUTABLE_NAME} ($PWD)" >&2
+      echo "Fatal Error: Could not find libexec for ${MULLE_EXECUTABLE} ($PWD)" >&2
       exit 1
    fi
+
+   #
+   # shell export commands with minimal
+   # trap setup
+   #
+   case "$1" in
+      library-path)
+         echo "${MULLE_BOOTSTRAP_LIBEXEC_PATH}"
+         exit 0
+      ;;
+
+      shell)
+         fail "shell has moved to mulle-sde"
+      ;;
+   esac
 
    PATH="${MULLE_BOOTSTRAP_LIBEXEC_PATH}:$PATH"
    export PATH
@@ -287,26 +308,6 @@ bootstrap_init()
    then
       echo "PATH=$PATH" >&2
    fi
-
-   #
-   # shell export commands with minimal
-   # trap setup
-   #
-   case "${1}" in
-      library-path)
-         echo "${MULLE_BOOTSTRAP_LIBEXEC_PATH}"
-         exit 0
-      ;;
-
-      version)
-         echo "${MULLE_EXECUTABLE_VERSION}"
-         exit 0
-      ;;
-
-      shell)
-         fail "shell has moved to mulle-sde"
-      ;;
-   esac
 
    #  set -e # more pain then gain in the end
    #  set -u # doesn't work with my style
@@ -356,6 +357,7 @@ bootstrap_main()
    local MULLE_FLAG_MAGNUM_FORCE="NONE"
    local MULLE_FLAG_IGNORE_GRAVEYARD="NO"
    local MULLE_FLAG_VERBOSE_BUILD="NO"
+   local MULLE_FLAG_LENIENT="NO"
 
    # technical flags
    local MULLE_FLAG_DONT_DEFER="NO"
@@ -393,6 +395,10 @@ bootstrap_main()
 
          -y|--prefer-local)
             MULLE_FLAG_ANSWER="YES"
+         ;;
+
+         --lenient)
+            MULLE_FLAG_LENIENT="YES"
          ;;
 
          --no-defer)
@@ -596,8 +602,14 @@ bootstrap_main()
       ;;
 
       library-path)
-         echo "$PATH" | tr ':' '\012' | head -1
-         return 0
+         echo "${MULLE_BOOTSTRAP_LIBEXEC_PATH}"
+         exit 0
+      ;;
+
+      log|logs)
+         [ -z "${MULLE_BOOTSTRAP_LOG_SH}" ] && . mulle-bootstrap-log.sh
+
+         log_main "$@" || exit 1
       ;;
 
       master-path)
@@ -766,8 +778,6 @@ MULLE_EXECUTABLE_ENV_PATH="$PATH"
 export MULLE_EXECUTABLE_PID
 
 MULLE_ARGUMENTS="$*"
-
-
 
 bootstrap_init "$@" # needs params
 

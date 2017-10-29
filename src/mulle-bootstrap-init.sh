@@ -43,8 +43,8 @@ Usage:
   it doesn't exist yet.
 
 Options
-   -c       : create default files
-   -n       : do not setup a shared buildinfo repository (if none present)
+   -c   : create default files
+   -n   : do not setup a shared buildinfo repository (if none present)
 
 EOF
   exit 1
@@ -232,6 +232,17 @@ init_main()
    done
 
    if [ $# -eq 1 ]
+   then
+      local directory="$1"; shift
+
+      if [ ! -d "${directory}" ]
+      then
+         mkdir_if_missing "${directory}" || exit 1
+      fi
+      cd "${directory}" || fail "Failed to enter directory \"${directory}\""
+   fi
+
+   if [ -d "${BOOTSTRAP_DIR}" ]
    then
       OPTION_DIRECTORY="$1"
       shift

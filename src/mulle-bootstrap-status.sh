@@ -103,9 +103,9 @@ status_embedded_repositories()
 
    permissions="minion"
    walk_auto_repositories "embedded_repositories"  \
-                     "_status_repository" \
-                     "${permissions}" \
-                     "${EMBEDDED_REPOS_DIR}"
+                          "_status_repository" \
+                          "${permissions}" \
+                          "${EMBEDDED_REPOS_DIR}"
 }
 
 
@@ -114,8 +114,9 @@ status_deep_embedded_repositories()
    local permissions
 
    permissions="minion"
-   walk_deep_embedded_auto_repositories "_status_repository" \
-                                   "${permissions}"
+   walk_auto_deep_embedded_repositories "_status_repository" \
+                                        "${permissions}" \
+                                        "${REPOS_DIR}"
 }
 
 
