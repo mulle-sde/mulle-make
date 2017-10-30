@@ -84,7 +84,7 @@ EOF
    local  repositories
 
    repositories="`all_repository_names`"
-   if [ -z "${repositories}" ]
+   if [ ! -z "${repositories}" ]
    then
       echo "Currently available repositories are:"
       echo "${repositories}" | sed 's/^/   /'
