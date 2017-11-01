@@ -213,7 +213,6 @@ status_main()
 
    [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
    [ -z "${MULLE_BOOTSTRAP_FETCH_SH}" ]        && . mulle-bootstrap-fetch.sh
-   [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ]          && . mulle-bootstrap-source.sh
    [ -z "${MULLE_BOOTSTRAP_BREW_SH}" ]         && . mulle-bootstrap-brew.sh
 
    if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]

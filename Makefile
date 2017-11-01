@@ -30,7 +30,6 @@ src/mulle-bootstrap-settings.sh \
 src/mulle-bootstrap-shared.sh \
 src/mulle-bootstrap-show.sh \
 src/mulle-bootstrap-snip.sh \
-src/mulle-bootstrap-source.sh \
 src/mulle-bootstrap-status.sh \
 src/mulle-bootstrap-systeminstall.sh \
 src/mulle-bootstrap-tag.sh \
@@ -41,12 +40,7 @@ src/mulle-bootstrap-build-plugins/autoconf.sh \
 src/mulle-bootstrap-build-plugins/cmake.sh \
 src/mulle-bootstrap-build-plugins/configure.sh \
 src/mulle-bootstrap-build-plugins/script.sh \
-src/mulle-bootstrap-build-plugins/xcodebuild.sh \
-src/mulle-bootstrap-source-plugins/git.sh \
-src/mulle-bootstrap-source-plugins/svn.sh \
-src/mulle-bootstrap-source-plugins/symlink.sh \
-src/mulle-bootstrap-source-plugins/tar.sh \
-src/mulle-bootstrap-source-plugins/zip.sh
+src/mulle-bootstrap-build-plugins/xcodebuild.sh
 
 CHECKSTAMPS=$(SCRIPTS:.sh=.chk)
 
@@ -75,7 +69,6 @@ install:
 clean:
 	@- rm src/*.chk
 	@- rm src/mulle-bootstrap-build-plugins/*.chk
-	@- rm src/mulle-bootstrap-source-plugins/*.chk
 
 shellcheck_check:
 	which shellcheck || brew install shellcheck

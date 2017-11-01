@@ -68,7 +68,7 @@ Commands:
    upgrade  :  execute a "pull" in fetched repositories
 
 Options:
-   --caches            :  use LOCALS_PATH to locate local repositories
+   --caches            :  use LOCAL_PATH to locate local repositories
    --check-usr-local   :  check /usr/local for duplicates
    --embedded-only     :  fetch embedded repositories only
 
@@ -144,301 +144,144 @@ check_tars()
 }
 
 
-log_action()
+emit_mulle_fetch_eval_options()
 {
-   local action="$1" ; shift
+   local options
+   local refresh="${OPTION_REFRESH_GIT_MIRROR}"
+   local match
 
-   local reposdir="$1"     # ususally .bootstrap.repos
-   local name="$2"         # name of the clone
-   local url="$3"          # URL of the clone
-   local branch="$4"       # branch of the clone
-   local tag="$5"          # tag to checkout of the clone
-   local source="$6"          # source to use for this clone
-   local sourceoptions="$7"   # options to use on source
-   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
-
-   assert_sane_parameters "empty reposdir is ok"
-
-   local info
-
-   if [ -L "${url}" ]
+   if [ "${refresh}" = "YES" -a ! -z "${UPTODATE_MIRRORS_FILE}" ]
    then
-      info=" symlinked "
-   else
-      info=" "
-   fi
+      log_debug "Mirror URLS: `cat "${UPTODATE_MIRRORS_FILE}" 2>/dev/null`"
 
-   log_fluff "Perform ${action}${info}${url} into ${stashdir} ..."
-}
-
-
-#
-###
-#
-can_symlink_it()
-{
-   log_entry "can_symlink_it" "$@"
-
-   local directory="$1"
-
-   if [ "${MULLE_FLAG_CREATE_SYMLINKS}" != "YES" ]
-   then
-      log_fluff "Not allowed to symlink it. (Use --symlinks to allow)"
-      return 1
-   fi
-
-   case "${UNAME}" in
-      minwgw)
-         log_fluff "Can't symlink it, because symlinking is unavailable on this platform"
-         return 1
-      ;;
-   esac
-
-   if git_is_repository "${directory}"
-   then
-       # if bare repo, we can only clone anyway
-      if git_is_bare_repository "${directory}"
+      match="`fgrep -s -x "${url}" "${UPTODATE_MIRRORS_FILE}" 2>/dev/null`"
+      if [ ! -z "${match}" ]
       then
-         log_verbose "${directory} is a bare git repository. So no symlinking"
-         return 1
+         refresh="NO"
       fi
-   else
-      log_info "${directory} is not a git repository (yet ?)
-So symlinking is the only way to go."
    fi
 
-  return 0
-}
-
-
-mkdir_stashparent_if_missing()
-{
-   local stashdir="$1"
-
-   local stashparent
-
-   stashparent="`dirname -- "${stashdir}"`"
-   case "${stashparent}" in
-      ""|"\.")
-      ;;
-
-      *)
-         mkdir_if_missing "${stashparent}"
-         echo "${stashparent}"
-      ;;
-   esac
-}
-
-
-get_local_item()
-{
-   log_entry "get_local_item" "$@"
-
-   local reposdir="$1"     # ususally .bootstrap.repos
-   local name="$2"         # name of the clone
-   local url="$3"          # URL of the clone
-   local branch="$4"       # branch of the clone
-   local tag="$5"          # tag to checkout of the clone
-   local source="$6"          # source to use for this clone
-   local sourceoptions="$7"   # options to use on source
-   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
-
-   if [ "${OPTION_ALLOW_SEARCH_LOCALS}" = "NO" ]
+   if [ "${MULLE_FLAG_CREATE_SYMLINKS}" = "YES" ]
    then
-      log_fluff "Not searching local filesystem because --no-locals"
-      return
+      options="--symlinks-return-2"
    fi
 
-   local operation
-
-   operation="`get_source_function "${source}" "search_local"`"
-
-   if [ ! -z "${operation}" ]
+   if [ "${OPTION_CHECK_USR_LOCAL_INCLUDE}" = "YES" ]
    then
-      "${operation}" "${url}" "${name}" "${branch}"
-   else
-      log_fluff "Not searching locals because source \"${source}\" does not support \"${operation}\""
+      options="`concat "${options}" "--check-system-includes"`"
    fi
+
+   if [ "${OPTION_ALLOW_ARCHIVE_CACHE}" = "YES" ]
+   then
+      options="`concat "${options}" "--cache-dir" "'${CACHE_DIR}'"`"
+   fi
+
+   if [ "${OPTION_ALLOW_GIT_MIRROR}" = "YES" ]
+   then
+      options="`concat "${options}" "--mirror-dir" "'${CACHE_DIR}'"`"
+   fi
+
+   if [ "${refresh}" = "NO" ]
+   then
+      options="`concat "${options}" "--no-refresh"`"
+   fi
+
+   if [ "${OPTION_SEARCH_LOCALS}" = "YES" ]
+   then
+      options="`concat "${options}" "-l" "${LOCAL_PATH}"`"
+   fi
+
+   echo "${options}"
 }
 
 
-do_operation()
-{
-   log_entry "do_operation" "$@"
-
-   local opname="$1" ; shift
-
-   [ -z "${opname}" ] && internal_fail "operation is empty"
-
-   log_action "${opname}" "$@"
-
-#   local reposdir="$1"     # ususally .bootstrap.repos
-   local name="$2"         # name of the clone
-#   local url="$3"          # URL of the clone
-#   local branch="$4"       # branch of the clone
-#   local tag="$5"          # tag to checkout of the clone
-   local source="$6"          # source to use for this clone
-#   local sourceoptions="$7"   # options to use on source
-#   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
-
-   [ -z "${source}" ] && internal_fail "source is empty"
-
-   script="`find_build_setting_file "${name}" "bin/${opname}.sh"`"
-   if [ ! -z "${script}" ]
-   then
-      run_script "${script}" "%@"
-      return $?
-   fi
-
-   source_operation "${opname}" "$@"
-
-   case $? in
-      0)
-      ;;
-
-      111)
-         fail "Source \"${source}\" does not support ${opname}"
-      ;;
-
-      *)
-         fail "Source \"${source}\" ${opname} failed for \"${name}\""
-      ;;
-   esac
-}
 
 ##
 ## CLONE
 ##
-clone_or_symlink()
+
+_has_system_include()
 {
-   log_entry "clone_or_symlink" "$@"
+   local name="$1"
 
-   local reposdir="$1"     # ususally .bootstrap.repos
-   local name="$2"         # name of the clone
-   local url="$3"          # URL of the clone
-   local branch="$4"       # branch of the clone
-   local tag="$5"          # tag to checkout of the clone
-   local source="$6"          # source to use for this clone
-   local sourceoptions="$7"   # options to use on source
-   local stashdir="$8"     # stashdir of this clone (absolute or relative to $PWD)
+   local include_search_path="${HEADER_SEARCH_PATH}"
 
-   assert_sane_parameters "empty reposdir is ok"
-
-   [ $# -le 8 ] || internal_fail "too many parameters"
-
-   local stashparent
-   local operation
-
-   stashparent="`mkdir_stashparent_if_missing "${stashdir}"`"
-
-   local found
-   local rval
-
-   case "${url}" in
-      /*)
-         if can_symlink_it "${url}"
-         then
-            source="symlink"
-         fi
-      ;;
-
-      #
-      # don't move up using url
-      #
-      */\.\./*|\.\./*|*/\.\.|\.\.)
-         internal_fail "Faulty url \"${url}\" should have been caught before"
-      ;;
-
-      *)
-         found="`get_local_item "$@"`"
-
-         if [ ! -z "${found}" ]
-         then
-            log_verbose "Using local item \"${found}\""
-            url="${found}"
-
-            case "${source}" in
-               "git")
-                  if can_symlink_it "${url}"
-                  then
-                     source="symlink"
-                     log_verbose "Using symlink to local item \"${found}\""
-                     url="`symlink_relpath "${url}" "${ROOT_DIR}"`"
-                  fi
-               ;;
-            esac
-         fi
-      ;;
-   esac
-
-   script="`find_build_setting_file "${name}" "bin/clone.sh"`"
-   if [ ! -z "${script}" ]
+   if [ -z "${include_search_path}" ]
    then
-      run_script "${script}" \
-                 "${reposdir}" \
-                 "${name}" \
-                 "${url}" \
-                 "${branch}" \
-                 "${tag}" \
-                 "${source}" \
-                 "${sourceoptions}" \
-                 "${stashdir}"
-      return $?
+      case "${UNAME}" in
+         mingw)
+            include_search_path="~/include"
+         ;;
+
+         "")
+            fail "UNAME not set yet"
+         ;;
+
+         darwin)
+            # should check xcode paths too
+            include_search_path="/usr/local/include:/usr/include"
+         ;;
+
+         *)
+            include_search_path="/usr/local/include:/usr/include"
+         ;;
+      esac
    fi
 
-   source_operation "clone" \
-                 "${reposdir}" \
-                 "${name}" \
-                 "${url}" \
-                 "${branch}" \
-                 "${tag}" \
-                 "${source}" \
-                 "${sourceoptions}" \
-                 "${stashdir}"
+   local includedir
+   local includefile
 
-   rval="$?"
-   case $rval in
-      0)
-      ;;
+   includedir="`echo "${name}" | tr '-' '_'`"
+   includefile="${includedir}.h"
 
-      111)
-         log_fail "Source \"${source}\" is unknown"
-      ;;
-
-      *)
-         return $rval
-      ;;
-   esac
-
-   if [ -d "${stashdir}/.bootstrap.local" ]
+   if [ "${includedir}" = "${name}" ]
    then
-      log_warning "${name} came with it's own .bootstrap.local folder. It will be ignored."
+      includedir=""
    fi
 
-   if [ "${source}" = "symlink" ]
-   then
-      log_debug "Symlink successful"
-      return 2
-   fi
+   IFS=":"
+   for i in ${include_search_path}
+   do
+      IFS="${DEFAULT_IFS}"
 
-   #
-   # don't warn for symlinks
-   #
-   if [ "${COPY_INHERITED_SCRIPTS}" = "YES" -a "${DONT_WARN_SCRIPTS}" = "NO" ]
-   then
-      [ -z "${MULLE_BOOTSTRAP_WARN_SCRIPTS_SH}" ] && . mulle-bootstrap-warn-scripts.sh
+      if [ -d "${i}/${name}" -o -f "${i}/${includefile}" ]
+      then
+         return 0
+      fi
 
-      warn_scripts_main "${stashdir}/.bootstrap" "${stashdir}" || fail "Ok, aborted"  #sic
-   fi
+      if [ ! -z "${includedir}" ] && [ -d "${i}/${includedir}" ]
+      then
+         return 0
+      fi
+   done
 
-   log_debug "Source \"${source}\" clone was successful"
-   return 0
+   IFS="${DEFAULT_IFS}"
+   return 1
 }
 
 
-clone_repository()
+mkdir_parent_if_missing()
 {
-   log_entry "clone_repository" "$@"
+   local dstdir="$1"
+
+   local parent
+
+   parent="`dirname -- "${dstdir}"`"
+   case "${parent}" in
+      ""|"\.")
+      ;;
+
+      *)
+         mkdir_if_missing "${parent}" || exit 1
+         echo "${parent}"
+      ;;
+   esac
+}
+
+
+_do_fetch_operation()
+{
+   log_entry "_do_fetch_operation" "$@"
 
    local reposdir="$1"     # ususally .bootstrap.repos
    local name="$2"         # name of the clone
@@ -451,9 +294,7 @@ clone_repository()
 
    [ $# -eq 8 ] || internal_fail "fail"
 
-   assert_sane_parameters "empty is ok"
-
-   if [ "${OPTION_CHECK_USR_LOCAL_INCLUDE}" = "YES" ] && has_usr_local_include "${name}"
+   if [ "${OPTION_CHECK_USR_LOCAL_INCLUDE}" = "YES" ] && _has_system_include "${name}"
    then
       log_info "${C_MAGENTA}${C_BOLD}${name}${C_INFO} is a system library, so not fetching it"
       return 1
@@ -478,38 +319,121 @@ Suggested fix:
       bury_stash "${reposdir}" "${name}" "${stashdir}"
    fi
 
-   clone_or_symlink "$@"   # pass thru rval
+
+   local stashparent
+
+   stashparent="`mkdir_parent_if_missing "${stashdir}"`"
+
+   script="`find_build_setting_file "${name}" "bin/clone.sh"`"
+   if [ ! -z "${script}" ]
+   then
+      run_script "${script}" \
+                 "${reposdir}" \
+                 "${name}" \
+                 "${url}" \
+                 "${branch}" \
+                 "${tag}" \
+                 "${source}" \
+                 "${sourceoptions}" \
+                 "${stashdir}"
+      return $?
+   fi
+
+   local options
+   local rval
+
+   options="`emit_mulle_fetch_eval_options`"
+   eval_exekutor mulle-fetch "${opname}" --scm "'${source}'" \
+                                         --tag "'${tag}'" \
+                                         --branch "'${branch}'" \
+                                         --options "'${sourceoptions}'" \
+                                         --url "'${url}'" \
+                                         ${options} \
+                                         "'${stashdir}'"
+
+
+   rval="$?"
+   case $rval in
+      0|2)
+      ;;
+
+      111)
+         log_fail "Source \"${source}\" is unknown"
+      ;;
+
+      *)
+         return $rval
+      ;;
+   esac
+
+   if [ ! -z "${UPTODATE_MIRRORS_FILE}" ]
+   then
+      redirect_append_exekutor "${UPTODATE_MIRRORS_FILE}" echo "${url}"
+   fi
+
+   if [ -d "${stashdir}/.bootstrap.local" ]
+   then
+      log_warning "${name} came with it's own .bootstrap.local folder. It will be ignored."
+   fi
+
+   #
+   # don't warn for symlinks
+   #
+   if [ "${COPY_INHERITED_SCRIPTS}" = "YES" -a "${DONT_WARN_SCRIPTS}" = "NO" ]
+   then
+      [ -z "${MULLE_BOOTSTRAP_WARN_SCRIPTS_SH}" ] && . mulle-bootstrap-warn-scripts.sh
+
+      warn_scripts_main "${stashdir}/.bootstrap" "${stashdir}" || fail "Ok, aborted"  #sic
+   fi
+
+   return $rval
 }
 
 
-##
-## CHECKOUT
-##
-checkout_repository()
+do_operation()
 {
-   do_operation "checkout" "$@"
+   log_entry "do_operation" "$@"
+
+   local opname="$1" ; shift
+
+   if [ "${opname}" = "clone" ]
+   then
+      _do_fetch_operation "$@"
+      return $?
+   fi
+
+   [ -z "${opname}" ] && internal_fail "operation is empty"
+
+   local reposdir="$1"        # ususally .bootstrap.repos
+   local name="$2"            # name of the clone
+   local url="$3"             # URL of the clone
+   local branch="$4"          # branch of the clone
+   local tag="$5"             # tag to checkout of the clone
+   local source="$6"          # source to use for this clone
+   local sourceoptions="$7"   # options to use on source
+   local stashdir="$8"        # stashdir of this clone (absolute or relative to $PWD)
+
+   [ -z "${source}" ] && internal_fail "source is empty"
+
+   script="`find_build_setting_file "${name}" "bin/${opname}.sh"`"
+   if [ ! -z "${script}" ]
+   then
+      run_script "${script}" "%@"
+      return $?
+   fi
+
+   local options
+
+   options="`emit_mulle_fetch_eval_options`"
+   eval_exekutor mulle-fetch "${opname}" --scm "'${source}'" \
+                                         --tag "'${tag}'" \
+                                         --branch "'${branch}'" \
+                                         --options "'${sourceoptions}'" \
+                                         --url "'${url}'" \
+                                         ${options} \
+                                         "'${stashdir}'"
 }
 
-
-##
-## UPDATE
-## this like git fetch, does not update repository
-##
-
-update_repository()
-{
-   do_operation "update" "$@"
-}
-
-
-##
-## UPGRADE
-## This is a pull
-##
-upgrade_repository()
-{
-   do_operation "upgrade" "$@"
-}
 
 
 #
@@ -582,6 +506,13 @@ _update_operation_walk_auto_deep_embedded_repositories()
 ##
 ## UPDATE
 ##
+
+update_repository()
+{
+   do_operation "update" "$@"
+}
+
+
 update_repositories()
 {
    log_entry "update_repositories"
@@ -609,6 +540,12 @@ update_deep_embedded_repositories()
 ##
 ## UPGRADE
 ##
+upgrade_repository()
+{
+   do_operation "upgrade" "$@"
+}
+
+
 upgrade_repositories()
 {
    log_entry "upgrade_repositories"
@@ -770,7 +707,12 @@ required_action_for_clone()
       ;;
    esac
 
-   have_upgrade="`get_source_function "${source}" "upgrade"`"
+   local available
+
+   available="`mulle-fetch operations -s "${source}"`" || return 1
+
+   have_upgrade="$(echo "${available}" | fgrep -s -x "upgrade")"
+
    if [ "${branch}" != "${newbranch}" ]
    then
       log_fluff "Branch has changed from \"${branch}\" to \"${newbranch}\", need to fetch"
@@ -783,7 +725,7 @@ required_action_for_clone()
       fi
    fi
 
-   have_checkout="`get_source_function "${source}" "checkout"`"
+   have_checkout="$(echo "${available}" | fgrep -s -x "checkout")"
    if [ "${tag}" != "${newtag}" ]
    then
       log_fluff "Tag has changed from \"${tag}\" to \"${newtag}\", need to check-out"
@@ -796,13 +738,13 @@ required_action_for_clone()
       fi
    fi
 
-   have_set_url="`get_source_function "${source}" "set_url"`"
+   have_checkout="$(echo "${available}" | fgrep -s -x "set-url")"
    if [ "${url}" != "${newurl}" ]
    then
       log_fluff "URL has changed from \"${url}\" to \"${newurl}\", need to set remote url and fetch"
       if [ ! -z "${have_upgrade}" -a ! -z "${have_set_url}" ]
       then
-         echo "set-remote"
+         echo "set-url"
          echo "upgrade"
       else
          default_action_for_clone "${source}" "${stashdir}"
@@ -964,7 +906,7 @@ work_clones()
       [ -z "${stashdir}" ] && internal_fail "empty stashdir"
 
       case "${name}" in
-         http:*|https:*)
+         http*|https:*)
             internal_fail "failed name: ${name}"
       esac
 
@@ -1005,30 +947,30 @@ work_clones()
             runpostscript="NO"
 
             case "${item}" in
-               "checkout")
-                  if ! checkout_repository "${reposdir}" \
-                                           "${name}" \
-                                           "${url}" \
-                                           "${branch}" \
-                                           "${tag}" \
-                                           "${source}" \
-                                           "${sourceoptions}" \
-                                           "${stashdir}"
+               "checkout"|"upgrade"|"set-url")
+                  if ! do_operation "${item}" "${reposdir}" \
+                                              "${name}" \
+                                              "${url}" \
+                                              "${branch}" \
+                                              "${tag}" \
+                                              "${source}" \
+                                              "${sourceoptions}" \
+                                              "${stashdir}"
                   then
-                     fail "Failed to checkout"
+                     fail "Failed to ${item}"
                   fi
                   runpostscript="YES"
                ;;
 
                "clone")
-                  clone_repository "${reposdir}" \
-                                   "${name}" \
-                                   "${url}" \
-                                   "${branch}" \
-                                   "${tag}" \
-                                   "${source}" \
-                                   "${sourceoptions}" \
-                                   "${stashdir}"
+                  do_operation "clone" "${reposdir}" \
+                                       "${name}" \
+                                       "${url}" \
+                                       "${branch}" \
+                                       "${tag}" \
+                                       "${source}" \
+                                       "${sourceoptions}" \
+                                       "${stashdir}"
 
                   case "$?" in
                      0)
@@ -1073,26 +1015,11 @@ work_clones()
 
                   log_info "Moving ${repotype}stash ${C_MAGENTA}${C_BOLD}${name}${C_INFO} from \"${oldstashdir}\" to \"${stashdir}\""
 
-                  mkdir_stashparent_if_missing "${stashdir}"
+                  mkdir_parent_if_missing "${stashdir}"
                   if ! exekutor mv ${COPYMOVEFLAGS} "${oldstashdir}" "${stashdir}"  >&2
                   then
                      fail "Move failed!"
                   fi
-               ;;
-
-               "upgrade")
-                  if ! upgrade_repository "${reposdir}" \
-                                          "${name}" \
-                                          "${url}" \
-                                          "${branch}" \
-                                          "${tag}" \
-                                          "${source}" \
-                                          "${sourceoptions}" \
-                                          "${stashdir}"
-                  then
-                     fail "Failed to checkout"
-                  fi
-                  runpostscript="YES"
                ;;
 
                remove*)
@@ -1104,19 +1031,6 @@ work_clones()
 
                   bury_stash "${reposdir}" "${name}" "${oldstashdir}"
                   forget_repository "${reposdir}" "${name}"
-               ;;
-
-               "set-remote")
-                  log_info "Changing ${repotype}remote to \"${url}\""
-
-                  local remote
-
-                  remote="`git_get_default_remote "${stashdir}"`"
-                  if [ -z "${remote}" ]
-                  then
-                     fail "Could not figure out a remote for \"$PWD/${stashdir}\""
-                  fi
-                  git_set_url "${stashdir}" "${remote}" "${url}"
                ;;
 
                *)
@@ -1182,6 +1096,7 @@ work_clones()
 
    IFS="${DEFAULT_IFS}"
 }
+
 
 #
 #
@@ -1533,10 +1448,10 @@ _common_main()
 
    local OPTION_CHECK_USR_LOCAL_INCLUDE="NO"
    local OPTION_ALLOW_CREATING_EMBEDDED_SYMLINKS="NO"
-   local OPTION_ALLOW_SEARCH_LOCALS="YES"
-   local OPTION_ALLOW_GIT_MIRROR="YES"
+   local OPTION_SEARCH_LOCALS="YES"
+   local OPTION_GIT_MIRROR="DEFAULT"
    local OPTION_ALLOW_ARCHIVE_CACHE="YES"
-   local OPTION_ALLOW_REFRESH_GIT_MIRROR="YES"
+   local OPTION_REFRESH_GIT_MIRROR="DEFAULT"
    local OPTION_EMBEDDED_ONLY="${OPTION_EMBEDDED_ONLY:-NO}"
    local OVERRIDE_BRANCH
    local DONT_WARN_SCRIPTS="NO"
@@ -1616,12 +1531,16 @@ _common_main()
             OPTION_ALLOW_ARCHIVE_CACHE="NO"
          ;;
 
-          --no-git-mirror)
-            OPTION_ALLOW_GIT_MIRROR="NO"
+         --git-mirror)
+            OPTION_GIT_MIRROR="YES"
+         ;;
+
+         --no-git-mirror)
+            OPTION_GIT_MIRROR="NO"
          ;;
 
          --no-refresh-git_mirror)
-            OPTION_ALLOW_REFRESH_GIT_MIRROR="NO"
+            OPTION_REFRESH_GIT_MIRROR="NO"
          ;;
 
          --no-caches)
@@ -1629,7 +1548,7 @@ _common_main()
          ;;
 
          --no-locals)
-            OPTION_ALLOW_SEARCH_LOCALS="NO"
+            OPTION_SEARCH_LOCALS="NO"
          ;;
 
          --no-symlink-creation|--no-symlinks)
@@ -1680,7 +1599,6 @@ _common_main()
 
    [ -z "${MULLE_BOOTSTRAP_AUTO_UPDATE_SH}" ]     && . mulle-bootstrap-auto-update.sh
    [ -z "${MULLE_BOOTSTRAP_COMMON_SETTINGS_SH}" ] && . mulle-bootstrap-common-settings.sh
-   [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ]             && . mulle-bootstrap-source.sh
    [ -z "${MULLE_BOOTSTRAP_GIT_SH}" ]             && . mulle-bootstrap-git.sh
    [ -z "${MULLE_BOOTSTRAP_SCRIPTS_SH}" ]         && . mulle-bootstrap-scripts.sh
    [ -z "${MULLE_BOOTSTRAP_ZOMBIFY_SH}" ]         && . mulle-bootstrap-zombify.sh
@@ -1689,19 +1607,24 @@ _common_main()
    # "repository" caches can and usually are outside the project folder
    # this can be multiple paths!
    #
-   if [ "${OPTION_ALLOW_SEARCH_LOCALS}" = "YES" -a -z "${LOCAL_PATH}" ]
+   if [ "${OPTION_SEARCH_LOCALS}" = "YES" -a -z "${LOCAL_PATH}" ]
    then
       LOCAL_PATH="`read_config_setting "search_path" "${MULLE_BOOTSTRAP_LOCAL_PATH}"`"
    fi
 
-   if [ "${OPTION_ALLOW_GIT_MIRROR}" = "YES" ]
+   if [ "${OPTION_GIT_MIRROR}" != "NO" ]
    then
-      git_enable_mirroring "${OPTION_ALLOW_REFRESH_GIT_MIRROR}"
-   fi
+      GIT_MIRROR="`read_config_setting "git_mirror"`"
 
-   if [ "${OPTION_ALLOW_ARCHIVE_CACHE}" = "YES" ]
-   then
-      archive_enable_caching
+      if [ "${OPTION_REFRESH_GIT_MIRROR}" = "DEFAULT" ]
+      then
+         OPTION_REFRESH_GIT_MIRROR="`read_config_setting "refresh_git_mirror" "YES"`"
+      fi
+
+      if [ "${OPTION_REFRESH_GIT_MIRROR}" = "NO" ]
+      then
+         UPTODATE_MIRRORS_FILE="${REPOS_DIR}/.uptodate-mirrors"
+      fi
    fi
 
    #
@@ -1732,6 +1655,10 @@ _common_main()
       ;;
    esac
 
+   local mulle_fetch_version
+
+   mulle_fetch_version="`mulle-fetch version`"
+   [ -z "${mulle_fetch_version}" ] && "mulle-fetch not installed"
 
    local default_permissions
 

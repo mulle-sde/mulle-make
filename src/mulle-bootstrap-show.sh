@@ -86,7 +86,7 @@ show_path()
 
       redirect="`readlink "${filepath}"`"
       directory="`dirname -- "${filepath}"`"
-      printf "%b"  "${filepath} -> `( cd "${directory}" ; _show_path "${redirect}" )`"
+      printf "%b"  "${filepath} -> $( cd "${directory}" ; _show_path "${redirect}" )"
    else
       _show_path "${filepath}"
    fi
@@ -471,7 +471,6 @@ _show_main()
 
    [ -z "${MULLE_BOOTSTRAP_REPOSITORIES_SH}" ] && . mulle-bootstrap-repositories.sh
    [ -z "${MULLE_BOOTSTRAP_FETCH_SH}" ]        && . mulle-bootstrap-fetch.sh
-   [ -z "${MULLE_BOOTSTRAP_SOURCE_SH}" ]          && . mulle-bootstrap-source.sh
    [ -z "${MULLE_BOOTSTRAP_BREW_SH}" ]         && . mulle-bootstrap-brew.sh
 
    if [ "${MULLE_EXECUTABLE_NAME}" = "mulle-bootstrap" ]

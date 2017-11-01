@@ -953,12 +953,12 @@ all_build_flag_keys()
    local keys1
    local keys2
 
-   keys1=`(cd "${BOOTSTRAP_DIR}.auto/overrides" 2> /dev/null || exit 1 ; \
-           ls -1 | egrep '\b[A-Z][A-Z_0-9]+\b')`
-   keys2=`(cd "${BOOTSTRAP_DIR}.auto/${package}.build" 2> /dev/null || exit 1 ; \
-           ls -1 | egrep '\b[A-Z][A-Z_0-9]+\b')`
-   keys3=`(cd "${BOOTSTRAP_DIR}.auto/settings" 2> /dev/null || exit 1 ; \
-           ls -1 | egrep '\b[A-Z][A-Z_0-9]+\b')`
+   keys1=$(cd "${BOOTSTRAP_DIR}.auto/overrides" 2> /dev/null || exit 1 ; \
+           ls -1 | egrep '\b[A-Z][A-Z_0-9]+\b')
+   keys2=$(cd "${BOOTSTRAP_DIR}.auto/${package}.build" 2> /dev/null || exit 1 ; \
+           ls -1 | egrep '\b[A-Z][A-Z_0-9]+\b')
+   keys3=$(cd "${BOOTSTRAP_DIR}.auto/settings" 2> /dev/null || exit 1 ; \
+           ls -1 | egrep '\b[A-Z][A-Z_0-9]+\b')
 
    echo "${keys1}
 ${keys2}

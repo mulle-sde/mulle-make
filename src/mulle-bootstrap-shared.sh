@@ -59,6 +59,14 @@ EOF
 }
 
 
+_shared_is_git_repository()
+{
+   [ -z "$1" ] && internal_fail "empty parameter"
+
+   [ -d "${1}/.git" ] || [ -d  "${1}/refs" -a -f "${1}/HEAD" ]
+}
+
+
 shared_init()
 {
    log_entry "shared_init" "$@"
@@ -67,7 +75,7 @@ shared_init()
    local do_add="NO"
 
    mkdir_if_missing "${repodir}" || exit 1
-   if ! git_is_repository "${repodir}"
+   if ! _shared_is_git_repository "${repodir}"
    then
       (
          exekutor cd "${repodir}" || exit 1
@@ -120,7 +128,7 @@ shared_upgrade()
 
    local repodir="$1"
 
-   git_is_repository "${repodir}" || fail "The shared build info repository
+   _shared_is_git_repository "${repodir}" || fail "The shared build info repository
 ${C_RESET_BOLD}${repodir}${C_ERROR} does not exist (or is no git repo)."
 
    (
@@ -138,7 +146,7 @@ shared_add()
    local repodir="$1"
    local urls="$2"
 
-   git_is_repository "${repodir}" || fail "The shared build info repository
+   _shared_is_git_repository "${repodir}" || fail "The shared build info repository
 ${C_RESET_BOLD}${repodir}${C_ERROR} does not exist (or is no git repo)."
 
    local url
@@ -164,7 +172,7 @@ shared_remove()
    local repodir="$1"
    local names="$2"
 
-   git_is_repository "${repodir}" || fail "The shared build info repository
+   _shared_is_git_repository "${repodir}" || fail "The shared build info repository
 ${C_RESET_BOLD}${repodir}${C_ERROR} does not exist (or is no git repo)."
 
    local name
@@ -197,7 +205,7 @@ shared_list()
 
    local repodir="$1"
 
-   git_is_repository "${repodir}" || fail "The shared build info repository
+   _shared_is_git_repository "${repodir}" || fail "The shared build info repository
 ${C_RESET_BOLD}${repodir}${C_ERROR} does not exist (or is no git repo).
 Create one with: ${C_RESET_BOLD}${MULLE_EXECUTABLE_NAME} shared init${C_ERROR}"
 
