@@ -1,28 +1,60 @@
 #! /bin/sh
 
+[ "${TRACE}" = "YES" ] && set -x
+
 
 TEST_DIR="`dirname "$0"`"
-PROJECT_DIR="`( cd "${TEST_DIR}/.." ; pwd -P)`"
+PROJECT_DIR="$( cd "${TEST_DIR}/.." ; pwd -P)"
 
 PATH="${PROJECT_DIR}:$PATH"
 export PATH
 
+
 main()
 {
+   _options_mini_main "$@"
+
+   MULLE_MAKE="`which mulle-make`" || exit 1
+
    local i
 
+   log_verbose "mulle-make: `mulle-make version` (`mulle-make library-path`)"
+
+   OUTPUT_DEVICE=
    for i in "${TEST_DIR}"/*
    do
       if [ -x "$i/run-test.sh" ]
       then
-         echo "------------------------------------------" >&2
-         echo "$i:" >&2
-         echo "------------------------------------------" >&2
-         ( cd "$i" && ./run-test.sh "$@" ) || exit 1
+         case "$i" in
+            *-xcodebuild)
+               if [ "${UNAME}" != darwin ]
+               then
+                  continue
+               fi
+            ;;
+         esac
+
+         log_verbose "------------------------------------------"
+         log_info    "$i:"
+         log_verbose "------------------------------------------"
+         if [ "${MULLE_FLAG_LOG_TERSE}" = "YES" ]
+         then
+            ( cd "$i" && ./run-test.sh "$@" > /dev/null 2>&1 ) || fail "Test \"$i\" failed"
+         else
+            ( cd "$i" && ./run-test.sh "$@" ) || fail "Test \"$i\" failed"
+         fi
       fi
    done
 }
 
-echo "mulle-bootstrap: `mulle-bootstrap version` (`mulle-bootstrap library-path`)" >&2
 
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env library-path`" || exit 1
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+init "$@"
 main "$@"
+

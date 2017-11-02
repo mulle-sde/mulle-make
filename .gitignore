@@ -8,17 +8,13 @@ tmp.*
 xcuserdata/
 build/
 .repos/
-.bootstrap.auto/
-.bootstrap.local/
-.bootstrap.repos/
+.make.auto/
+.make.local/
+.make.repos/
 dependencies/
 addictions/
-mulle-bootstrap.sublime-workspace
-relpath-python.sh
-relpath.sh
-mulle-projec/publisher-info.sh
+mulle-make.sublime-workspace
+mulle-project/publisher-info.sh
 
-tutorial/*/.bootstrap
 
 tests/
-!*.sh

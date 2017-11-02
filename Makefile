@@ -1,46 +1,17 @@
 SCRIPTS=install.sh \
-src/mulle-bootstrap-array.sh \
-src/mulle-bootstrap-auto-update.sh \
-src/mulle-bootstrap-brew.sh \
-src/mulle-bootstrap-build.sh \
-src/mulle-bootstrap-clean.sh \
-src/mulle-bootstrap-command.sh \
-src/mulle-bootstrap-common-settings.sh \
-src/mulle-bootstrap-copy.sh \
-src/mulle-bootstrap-core-options.sh \
-src/mulle-bootstrap-defer.sh \
-src/mulle-bootstrap-dependency-resolve.sh \
-src/mulle-bootstrap-dispense.sh \
-src/mulle-bootstrap-fetch.sh \
-src/mulle-bootstrap-functions.sh \
-src/mulle-bootstrap-gcc.sh \
-src/mulle-bootstrap-git.sh \
-src/mulle-bootstrap-init.sh \
-src/mulle-bootstrap-local-environment.sh \
-src/mulle-bootstrap-log.sh \
-src/mulle-bootstrap-logging.sh \
-src/mulle-bootstrap-mingw.sh \
-src/mulle-bootstrap-mv-force.sh \
-src/mulle-bootstrap-paths.sh \
-src/mulle-bootstrap-project.sh \
-src/mulle-bootstrap-repositories.sh \
-src/mulle-bootstrap-scm.sh \
-src/mulle-bootstrap-scripts.sh \
-src/mulle-bootstrap-settings.sh \
-src/mulle-bootstrap-shared.sh \
-src/mulle-bootstrap-show.sh \
-src/mulle-bootstrap-snip.sh \
-src/mulle-bootstrap-status.sh \
-src/mulle-bootstrap-systeminstall.sh \
-src/mulle-bootstrap-tag.sh \
-src/mulle-bootstrap-warn-scripts.sh \
-src/mulle-bootstrap-xcode.sh \
-src/mulle-bootstrap-zombify.sh \
-src/mulle-bootstrap-build-plugins/autoconf.sh \
-src/mulle-bootstrap-build-plugins/cmake.sh \
-src/mulle-bootstrap-build-plugins/configure.sh \
-src/mulle-bootstrap-build-plugins/script.sh \
-src/mulle-bootstrap-build-plugins/xcodebuild.sh
+src/mulle-make-build.sh \
+src/mulle-make-command.sh \
+src/mulle-make-dispense.sh \
+src/mulle-make-compiler.sh \
+src/mulle-make-log.sh \
+src/mulle-make-mingw.sh \
+src/mulle-make-mv-force \
+src/mulle-make-systeminstall.sh \
+src/plugins/autoconf.sh \
+src/plugins/cmake.sh \
+src/plugins/configure.sh \
+src/plugins/script.sh \
+src/plugins/xcodebuild.sh
 
 CHECKSTAMPS=$(SCRIPTS:.sh=.chk)
 
@@ -57,9 +28,9 @@ SHELLFLAGS=-x -e SC2016,SC2034,SC2086,SC2164,SC2166,SC2006,SC1091,SC2039,SC2181,
 	- shellcheck $(SHELLFLAGS) $<
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 
-all:	$(CHECKSTAMPS) mulle-bootstrap.chk shellcheck_check jq_check
+all:	$(CHECKSTAMPS) mulle-make.chk shellcheck_check jq_check
 
-mulle-bootstrap.chk:	mulle-bootstrap
+mulle-make.chk:	mulle-make
 	- shellcheck $(SHELLFLAGS) $<
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 
@@ -68,7 +39,7 @@ install:
 
 clean:
 	@- rm src/*.chk
-	@- rm src/mulle-bootstrap-build-plugins/*.chk
+	@- rm src/mulle-make-build-plugins/*.chk
 
 shellcheck_check:
 	which shellcheck || brew install shellcheck

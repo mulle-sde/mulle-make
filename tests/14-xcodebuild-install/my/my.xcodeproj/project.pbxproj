@@ -1,0 +1,234 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4166694B1FAF5F1100DD454C /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 4166694A1FAF5F1100DD454C /* main.c */; };
+		4166695B1FAF5FB800DD454C /* mylib.c in Sources */ = {isa = PBXBuildFile; fileRef = 416669591FAF5FB800DD454C /* mylib.c */; };
+		4166695C1FAF5FB800DD454C /* mylib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4166695A1FAF5FB800DD454C /* mylib.h */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		416669451FAF5F1100DD454C /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		416669471FAF5F1100DD454C /* myexe */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = myexe; sourceTree = BUILT_PRODUCTS_DIR; };
+		4166694A1FAF5F1100DD454C /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		416669551FAF5F2400DD454C /* libmylib.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libmylib.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		416669591FAF5FB800DD454C /* mylib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mylib.c; sourceTree = "<group>"; };
+		4166695A1FAF5FB800DD454C /* mylib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mylib.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		416669441FAF5F1100DD454C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		416669521FAF5F2400DD454C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4166693E1FAF5F1000DD454C = {
+			isa = PBXGroup;
+			children = (
+				416669491FAF5F1100DD454C /* my */,
+				416669481FAF5F1100DD454C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		416669481FAF5F1100DD454C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				416669471FAF5F1100DD454C /* myexe */,
+				416669551FAF5F2400DD454C /* libmylib.dylib */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		416669491FAF5F1100DD454C /* my */ = {
+			isa = PBXGroup;
+			children = (
+				4166694A1FAF5F1100DD454C /* main.c */,
+				416669591FAF5FB800DD454C /* mylib.c */,
+				4166695A1FAF5FB800DD454C /* mylib.h */,
+			);
+			path = my;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		416669531FAF5F2400DD454C /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4166695C1FAF5FB800DD454C /* mylib.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		416669461FAF5F1100DD454C /* myexe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4166694E1FAF5F1100DD454C /* Build configuration list for PBXNativeTarget "myexe" */;
+			buildPhases = (
+				416669431FAF5F1100DD454C /* Sources */,
+				416669441FAF5F1100DD454C /* Frameworks */,
+				416669451FAF5F1100DD454C /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = myexe;
+			productName = my;
+			productReference = 416669471FAF5F1100DD454C /* myexe */;
+			productType = "com.apple.product-type.tool";
+		};
+		416669541FAF5F2400DD454C /* mylib */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 416669561FAF5F2400DD454C /* Build configuration list for PBXNativeTarget "mylib" */;
+			buildPhases = (
+				416669511FAF5F2400DD454C /* Sources */,
+				416669521FAF5F2400DD454C /* Frameworks */,
+				416669531FAF5F2400DD454C /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = mylib;
+			productName = mylib;
+			productReference = 416669551FAF5F2400DD454C /* libmylib.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4166693F1FAF5F1100DD454C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = "Mulle kybernetiK";
+				TargetAttributes = {
+					416669461FAF5F1100DD454C = {
+						CreatedOnToolsVersion = 8.3.3;
+						ProvisioningStyle = Automatic;
+					};
+					416669541FAF5F2400DD454C = {
+						CreatedOnToolsVersion = 8.3.3;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 416669421FAF5F1100DD454C /* Build configuration list for PBXProject "my" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			mainGroup = 4166693E1FAF5F1000DD454C;
+			productRefGroup = 416669481FAF5F1100DD454C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				416669461FAF5F1100DD454C /* myexe */,
+				416669541FAF5F2400DD454C /* mylib */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		416669431FAF5F1100DD454C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4166694B1FAF5F1100DD454C /* main.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		416669511FAF5F2400DD454C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4166695B1FAF5FB800DD454C /* mylib.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		4166694D1FAF5F1100DD454C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGETNAME)";
+			};
+			name = Release;
+		};
+		416669501FAF5F1100DD454C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		416669581FAF5F2400DD454C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		416669421FAF5F1100DD454C /* Build configuration list for PBXProject "my" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4166694D1FAF5F1100DD454C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4166694E1FAF5F1100DD454C /* Build configuration list for PBXNativeTarget "myexe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				416669501FAF5F1100DD454C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		416669561FAF5F2400DD454C /* Build configuration list for PBXNativeTarget "mylib" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				416669581FAF5F2400DD454C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4166693F1FAF5F1100DD454C /* Project object */;
+}
