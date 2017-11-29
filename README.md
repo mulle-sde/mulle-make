@@ -9,9 +9,10 @@
 Let it run on a source directory. It will determine if the project needs to
 be build via `configure`, `autoconf`, `cmake` or some other build tool.
 
-It will then proceed to build the project. 
+It will then proceed to build the project.
 
-Finally `mulle-make` can distribute the build results into a destination directory, reorganizing some things on the fly.
+Finally `mulle-make` can distribute the build results into a destination
+directory, reorganizing some things on the fly.
 
 
 ## GitHub and Mulle kybernetiK

@@ -1,0 +1,87 @@
+#! /bin/sh
+
+[ "${TRACE}" = YES ] && set -x
+
+
+emit_args()
+{
+   local key
+
+   while [ "$#" -ne 0 ]
+   do
+      key="$1"
+      case "${key}" in
+         -*=*)
+            echo "${key}"
+         ;;
+
+         --prefix|--*dir)
+            shift
+            echo "${key} $1"
+         ;;
+
+         *)
+            echo "${key}"
+         ;;
+      esac
+
+      shift
+   done
+}
+
+
+emit_env()
+{
+   local key
+   local value
+
+   IFS=":"
+   for key in ${__MULLE_MAKE_ARGS}
+   do
+      if [ ! -z "${key}" ]
+      then
+         value="`eval echo "\\\$$key"`" || fail "eval failed"
+         echo "[${key}=${value}]"
+      fi
+   done
+   IFS="${DEFAULTIFS}"
+}
+
+
+emit_env_and_args()
+{
+   emit_env
+   emit_args "$@"
+}
+
+
+main()
+{
+   local envvar
+   local filename
+
+   [ -z "${__MULLE_MAKE_ARGS}" ] && fail "not called by mulle-make (__MULLE_MAKE_ARGS is missing)"
+
+   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z|'`_REDIRECT_FILE"
+   filename="`eval echo "\\\$$envvar"`"
+
+   if [ ! -z "${filename}"  ]
+   then
+      log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
+      emit_env_and_args "$@" | sort > "${filename}"
+   else
+      emit_env_and_args "$@" | sort
+   fi
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env library-path`"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"

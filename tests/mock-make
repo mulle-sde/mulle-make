@@ -1,0 +1,65 @@
+#! /bin/sh
+
+[ "${TRACE}" = YES ] && set -x
+
+emit_defines()
+{
+   while [ "$#" -ne 0 ]
+   do
+      case "$1" in
+         -D)
+            shift
+            echo "$1"
+         ;;
+
+         -D*)
+            cut -c3- <<< "${1}"
+         ;;
+
+         -I)
+         ;;
+
+         -I*)
+            shift
+         ;;
+
+         -W|-o|-l|-j|-C)
+            shift
+         ;;
+      esac
+
+      shift
+   done
+}
+
+
+main()
+{
+   local envvar
+   local filename
+
+   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z|'`_REDIRECT_FILE"
+   filename="`eval echo "\\\$$envvar"`"
+
+   if [ ! -z "${filename}"  ]
+   then
+      log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
+      emit_defines "$@" | sort > "${filename}"
+   else
+      emit_defines "$@" | sort
+   fi
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env library-path`"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+
+

@@ -31,6 +31,25 @@
 MULLE_MAKE_PLUGIN_CONFIGURE_SH="included"
 
 
+convert_path_to_flag()
+{
+   local path="$1"
+   local flag="$2"
+   local quote="$3"
+
+   local output
+   local component
+
+   IFS=":"
+   for component in ${path}
+   do
+      output="`concat "${output}" "${flag}${quote}${component}${quote}"`"
+   done
+   IFS="${DEFAULT_IFS}"
+
+   printf "%s" "${output}"
+}
+
 #
 # remove old builddir, create a new one
 # depending on configuration cmake with flags
@@ -43,7 +62,7 @@ build_configure()
 
    [ $# -eq 8 ] || internal_fail "api error"
 
-   local command="$1"; shift
+   local cmd="$1"; shift
    local projectfile="$1"; shift
    local configuration="$1"; shift
    local srcdir="$1"; shift
@@ -67,13 +86,13 @@ build_configure()
 
    cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}"`"
    cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}"`"
-   cppflags="`compiler_cppflags_value "${OPTION_CC}" "${configuration}"`"
-   ldflags="`compiler_ldflags_value "${OPTION_CC}" "${configuration}"`"
+   cppflags="`compiler_cppflags_value`"
+   ldflags="`compiler_ldflags_value`"
 
    local maketarget
    local arguments
 
-   case "${command}" in
+   case "${cmd}" in
       build)
          maketarget=
          if [ ! -z "${OPTION_PREFIX}" ]
@@ -99,6 +118,30 @@ build_configure()
       cppflags="`concat "-isysroot ${sdkpath}" "${cppflags}"`"
       ldflags="`concat "-isysroot ${sdkpath}" "${ldflags}"`"
    fi
+
+   local headersearchpaths
+
+   case "${OPTION_CC}" in
+      *clang*|*gcc)
+         headersearchpaths="`convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-isystem " "'"`"
+      ;;
+
+      *)
+         headersearchpaths="`convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-I" "'"`"
+      ;;
+   esac
+   cppflags="`concat "${cppflags}" "${headersearchpaths}"`"
+
+   local librarysearchpaths
+
+   librarysearchpaths="`convert_path_to_flag "${OPTION_LIB_PATH}" "-L" "'"`"
+   ldflags="`concat "${ldflags}" "${librarysearchpaths}"`"
+
+   local frameworksearchpaths
+
+   frameworksearchpaths="`convert_path_to_flag "${OPTION_FRAMEWORKS_PATH}" "-F" "'"`"
+   ldflags="`concat "${ldflags}" "${frameworksearchpaths}"`"
+
 
    local configure_defines
    local env_flags

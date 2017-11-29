@@ -364,13 +364,11 @@ OPTION_CONFIGURATION
 OPTION_CXX
 OPTION_CXXFLAGS
 OPTION_DETERMINE_XCODE_SDK
-OPTION_DISPENSE_DIR
-OPTION_DISPENSE_STYLE
-OPTION_FRAMEWORK_PATH
+OPTION_FRAMEWORKS_PATH
 OPTION_GCC_PREPROCESSOR_DEFINITIONS
+OPTION_INCLUDE_PATH
 OPTION_LDFLAGS
-OPTION_LIBRARY_PATH
-OPTION_LOG_DIR
+OPTION_LIB_PATH
 OPTION_MAKE
 OPTION_MAKETARGET
 OPTION_OTHER_CFLAGS
@@ -396,23 +394,39 @@ ${KNOWN_XCODEBUILD_PLUGIN_OPTIONS}"
 #
 all_userdefined_unknown_keys()
 {
+   log_entry "all_userdefined_unknown_keys" "$@"
+
+   if [ -z "${DEFINED_OPTIONS}" ]
+   then
+      return
+   fi
+
    local pattern
 
    pattern="$(tr '\012' '|' <<< "${KNOWN_OPTIONS}")"
    pattern="$(sed 's/\(.*\)|$/\1/g' <<< "${pattern}")"
 
-   egrep -v -s -x "${pattern}" <<< "${DEFINED_OPTIONS}"
+   log_debug "${DEFINED_OPTIONS}"
+   egrep -v -x "${pattern}" <<< "${DEFINED_OPTIONS}"
 }
 
 
 all_userdefined_unknown_plus_keys()
 {
+   log_entry "all_userdefined_unknown_plus_keys" "$@"
+
+   if [ -z "${DEFINED_PLUS_OPTIONS}" ]
+   then
+      return
+   fi
+
    local pattern
 
    pattern="$(tr '\012' '|' <<< "${KNOWN_OPTIONS}")"
    pattern="$(sed 's/\(.*\)|$/\1/g' <<< "${pattern}")"
 
-   egrep -v -s -x "${pattern}" <<< "${DEFINED_PLUS_OPTIONS}"
+   log_debug "${DEFINED_PLUS_OPTIONS}"
+   egrep -v -x "${pattern}" <<< "${DEFINED_PLUS_OPTIONS}"
 }
 
 
@@ -421,6 +435,8 @@ all_userdefined_unknown_plus_keys()
 #
 emit_userdefined_definitions()
 {
+   log_entry "emit_userdefined_definitions" "$@"
+
    local prefix="$1"
    local sep="${2:-=}"
    local plussep="${3:-=}"
@@ -434,6 +450,7 @@ emit_userdefined_definitions()
 "
    for key in `all_userdefined_unknown_keys`
    do
+      IFS="${DEFAULT_IFS}"
       value="`eval echo "\\\$$key"`"
       buildsettings="`concat "${buildsetting}" "${prefix}${key#OPTION_}${sep}'${value}'"`"
    done
@@ -443,18 +460,18 @@ emit_userdefined_definitions()
    #
    if [ "${plussep}" != "${sep}" -o ! -z "${pluspref}" ]
    then
+      IFS="
+"
       for key in `all_userdefined_unknown_plus_keys`
       do
+         IFS="${DEFAULT_IFS}"
          value="`eval echo "\\\$$key"`"
          buildsettings="`concat "${buildsetting}" "${prefix}${key#OPTION_}${plussep}'${pluspref}${value}'"`"
       done
    fi
    IFS="${DEFAULT_IFS}"
 
-   if [ ! -z "${buildsettings}" ]
-   then
-      echo "${buildsettings}"
-   fi
+   printf "%s" "${buildsettings}"
 }
 
 
@@ -464,7 +481,15 @@ emit_userdefined_definitions()
 #
 check_option_key_without_prefix()
 {
+   log_entry "check_option_key_without_prefix" "$@"
+
    local key="$1"
+
+   case "${key}" in
+      OPTION_*)
+         fail "Key \"${key}\" must not have OPTION_ prefix"
+      ;;
+   esac
 
    local match
 
@@ -500,6 +525,8 @@ check_option_key_without_prefix()
 
 make_define_option()
 {
+   log_entry "make_define_option" "$@"
+
    local keyvalue
 
    keyvalue="$1"
@@ -533,6 +560,8 @@ make_define_option()
 
 make_define_plusoption()
 {
+   log_entry "make_define_plusoption" "$@"
+
    local keyvalue
 
    keyvalue="$1"
@@ -556,12 +585,61 @@ make_define_plusoption()
 
    check_option_key_without_prefix "${key}"
 
-
    eval "OPTION_${key}='${value}'"
 
    log_fluff "OPTION_${key} defined as \"${value}\""
 
    DEFINED_PLUS_OPTIONS="`add_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"`"
+}
+
+
+read_defines_dir()
+{
+   log_entry "read_defines_dir" "$@"
+
+   local directory="$1"
+   local callback="$1"
+
+   local key
+   local value
+
+   IFS="
+"
+   for key in `ls -1 "${directory}"/[A-Z_][A-Z0-9_]* 2> /dev/null`
+   do
+      IFS="${DEFAULT_IFS}"
+
+      value="`egrep -s -v '^#' "${key}"`"
+      if [ -z "${value}" ]
+      then
+         continue
+      fi
+
+      # case insensitive fs needs this
+      key="$(tr '[a-z]' '[A-Z]' <<< "${key}")"
+
+      "${callback}" "$key" "${value}"
+   done
+
+   IFS="${DEFAULT_IFS}"
+}
+
+
+read_info_dir()
+{
+   log_entry "read_info_dir" "$@"
+
+   directory="$1"
+
+   [ ! -d "${directory}" ] && fail "info directory \"${directory}\" missing"
+
+   if [ -d "${directory}/${UNAME}" ]
+   then
+      directory="${directory}/${UNAME}"
+   fi
+
+   read_defines_dir "${directory}" "make_define_option"
+   read_defines_dir "${directory}/plus" "make_define_plus_option"
 }
 
 
@@ -586,10 +664,8 @@ xcodebuild"
 
    local OPTION_CONFIGURATION="DEFAULT"
    local OPTION_SDK="DEFAULT"
-   local OPTION_DISPENSE_STYLE  # keep empty
    local OPTION_CLEAN_BEFORE_BUILD="DEFAULT"
    local OPTION_BUILD_DIR
-   local OPTION_LOG_DIR
    local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
    local OPTION_XCODE_ADD_USR_LOCAL="DEFAULT"
    local OPTION_DETERMINE_XCODE_SDK="DEFAULT"
@@ -614,14 +690,11 @@ xcodebuild"
 
          --debug)
             OPTION_CONFIGURATION="Debug"
-            OPTION_DISPENSE_STYLE="none"
          ;;
 
          --release)
             OPTION_CONFIGURATION="Release"
-            OPTION_DISPENSE_STYLE="none"
          ;;
-
 
          --determine-xcode-sdk)
             OPTION_DETERMINE_XCODE_SDK="YES"
@@ -664,6 +737,14 @@ xcodebuild"
             read -r OPTION_CONFIGURATION || fail "missing argument to \"${argument}\""
          ;;
 
+         -i|--info-dir)
+            read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
+         ;;
+
+         --no-info-dir)
+            OPTION_INFO_DIR="NONE"
+         ;;
+
          -j|--cores)
             read -r OPTION_CORES || fail "missing argument to \"${argument}\""
 
@@ -680,10 +761,6 @@ xcodebuild"
 
          -K|--no-clean)
             OPTION_CLEAN_BEFORE_BUILD="NO"
-         ;;
-
-         -l|--log-dir)
-            read -r OPTION_LOG_DIR || fail "missing argument to \"${argument}\""
          ;;
 
          -p|--prefix)
@@ -708,6 +785,21 @@ xcodebuild"
 
          -D*)
             make_define_option "`echo "${argument}" | sed s'/^-D[ ]*//'`"
+         ;;
+
+         # as in /usr/include:/usr/local/include
+         -I|--include-path)
+            read -r OPTION_INCLUDE_PATH || fail "missing argument to \"${argument}\""
+         ;;
+
+         # as in /usr/lib:/usr/local/lib
+         -L|--lib-path)
+            read -r OPTION_LIB_PATH || fail "missing argument to \"${argument}\""
+         ;;
+
+         # as in /Library/Frameworks:Frameworks etc.
+         -F|--frameworks-path)
+            read -r OPTION_FRAMEWORKS_PATH || fail "missing argument to \"${argument}\""
          ;;
 
          -*)
@@ -741,6 +833,10 @@ xcodebuild"
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-plugin.sh" || return 1
    fi
 
+   if [ "${OPTION_INFO_DIR}" = "NONE" ]
+   then
+      read_info_dir "${OPTION_INFO_DIR:-.mulle-make}"
+   fi
 
    local srcdir
    local dstdir

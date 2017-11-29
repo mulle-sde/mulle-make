@@ -60,7 +60,7 @@ Expected: ($expect)
 ----------------
 Diff:
 ----------------
-${diff}
+${diffs}
 ----------------
 EOF
       exit 1
@@ -70,18 +70,14 @@ EOF
 
 run_test()
 {
-   local directory="$1"; shift
-   local xcodebuild_expect="$1"; shift
+   local cmake_expect="$1"; shift
+   local make_expect="$1"; shift
 
-   #
-   # MOCK_TEST_DIR is passed to mock-xcodebuild so it can create
-   # paths that look the same
-   #
-   MOCK_TEST_DIR="${directory}" \
-   XCODEBUILD_REDIRECT_FILE="${directory}/xcodebuild-args.txt" \
-   XCODEBUILD_REDIRECT_FILE="${directory}/xcodebuild-args.txt" \
-      run_mulle_make make --build-dir "${directory}/build" \
-                          -DXCODEBUILD="${PWD}/../mock-xcodebuild" \
+   CMAKE_REDIRECT_FILE="${directory}/cmake-args.txt" \
+   MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
+      run_mulle_make ${MULLE_MAKE_FLAGS} make --build-dir "${directory}/build" \
+                          -DCMAKE="${PWD}/../mock-cmake" \
+                          -DMAKE="${PWD}/../mock-make" \
                           "$@"
 
    if [ "$?" -ne 0 ]
@@ -89,9 +85,11 @@ run_test()
       exit 1
    fi
 
-   expect_content "${directory}/xcodebuild-args.txt" "${xcodebuild_expect}"
+   expect_content "${directory}/cmake-args.txt" "${cmake_expect}"
+   expect_content "${directory}/make-args.txt" "${make_expect}"
 
-   remove_file_if_present "${directory}/xcodebuild-args.txt"
+   remove_file_if_present "${directory}/cmake-args.txt"
+   remove_file_if_present "${directory}/make-args.txt"
    rmdir_safer "${directory}/build"
 }
 
@@ -110,26 +108,32 @@ main()
    #
    # Default is release
    #
-   run_test "${directory}" "release_xcodebuild.txt" -c "Release"
+   run_test "release_cmake.txt" "make.txt"
    log_verbose "----- #1 PASSED -----"
-
-   run_test "${directory}" "debug_xcodebuild.txt" -c "Debug"
+   run_test "release_cmake.txt" "make.txt" -c Release
    log_verbose "----- #2 PASSED -----"
-
-   run_test "${directory}" "prefix_xcodebuild.txt" -c "Release" -p "/tmp"
+   run_test "release_cmake.txt" "make.txt" --release
    log_verbose "----- #3 PASSED -----"
 
-   run_test "${directory}" "sdk_xcodebuild.txt" -c "Release" -s "mulle-sdk"
+   run_test "debug_cmake.txt" "make.txt" -c Debug
    log_verbose "----- #4 PASSED -----"
-
-   run_test "${directory}" "user_xcodebuild.txt" -c "Release" -DUSER_INFO="VfL Bochum 1848"
+   run_test "debug_cmake.txt" "make.txt" --debug
    log_verbose "----- #5 PASSED -----"
 
-   run_test "${directory}" "userplus_xcodebuild.txt" -c "Release" -DUSER_INFO+="VfL Bochum 1848"
+   run_test "xxx_cmake.txt" "make.txt" -DXXX=yyy
    log_verbose "----- #6 PASSED -----"
 
-   run_test "${directory}" "xcconfig_xcodebuild.txt" -c "Release" --xcode-config-file whatever.xcconfig
+   # check that known flags are filtered
+   run_test "release_cmake.txt" "make.txt" -DMAKETARGET=filtered_away
    log_verbose "----- #7 PASSED -----"
+
+   #
+   # check -I -L -F
+   #
+   run_test "paths_cmake.txt" "make.txt" -I /usr/local/include:/usr/include \
+                                         -L /usr/local/lib:/usr/lib \
+                                         -F /Network/Library/Frameworks:/Library/Frameworks
+   log_verbose "----- #8 PASSED -----"
 
    log_info "----- ALL PASSED -----"
 

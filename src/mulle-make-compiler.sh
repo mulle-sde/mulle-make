@@ -71,7 +71,7 @@ platform_cxx_compiler()
 # assume default is release and the flags
 # are set for that
 #
-compiler_debug_options()
+_compiler_debug_options()
 {
    local name="$1"
 
@@ -118,6 +118,8 @@ compiler_sdk_parameter()
 # COMPILER_PREPROCESSOR_DEFINITIONS
 compiler_cppflags_value()
 {
+   log_entry "compiler_cppflags_value" "$@"
+
    local value
    local result
 
@@ -132,6 +134,7 @@ _compiler_cflags_value()
 {
    local compiler="$1"
    local configuration="$2"
+   local addoptflags="${3:-YES}"
 
    local value
    local result
@@ -140,12 +143,15 @@ _compiler_cflags_value()
    value="${OPTION_WARNING_CFLAGS}"
    result="`concat "$result" "$value"`"
 
-   case "${configuration}" in
-      Debug)
-         value="`compiler_debug_options "${compiler}"`"
-         result="`concat "$result" "$value"`"
-      ;;
-   esac
+   if [ "${addoptflags}" = "YES" ]
+   then
+      case "${configuration}" in
+         Debug)
+            value="`_compiler_debug_options "${compiler}"`"
+            result="`concat "$result" "$value"`"
+         ;;
+      esac
+   fi
 
    case "${compiler%.*}" in
       c++|cc|gcc*|*clang*|"")
@@ -164,11 +170,17 @@ _compiler_cflags_value()
 
 compiler_cflags_value()
 {
+   log_entry "compiler_cflags_value" "$@"
+
+   local compiler="$1"
+   local configuration="$2"
+   local addoptflags="$3"
+
    result="${OPTION_CFLAGS}"
    value="${OPTION_OTHER_CFLAGS}"
    result="`concat "$result" "$value"`"
 
-   value="`_compiler_cflags_value "$@"`"
+   value="`_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"`"
    result="`concat "$result" "$value"`"
 
    echo "${result}"
@@ -177,6 +189,12 @@ compiler_cflags_value()
 
 compiler_cxxflags_value()
 {
+   log_entry "compiler_cxxflags_value" "$@"
+
+   local compiler="$1"
+   local configuration="$2"
+   local addoptflags="$3"
+
    local value
    local result
    local name
@@ -185,7 +203,7 @@ compiler_cxxflags_value()
    value="${OPTION_OTHER_CXXFLAGS}"
    result="`concat "$result" "$value"`"
 
-   value="`_compiler_cflags_value "$@"`"
+   value="`_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"`"
    result="`concat "$result" "$value"`"
 
    echo "${result}"
@@ -194,7 +212,7 @@ compiler_cxxflags_value()
 
 compiler_ldflags_value()
 {
-   local name="$1"
+   log_entry "compiler_ldflags_value" "$@"
 
    local value
    local result

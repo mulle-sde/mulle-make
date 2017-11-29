@@ -1,3 +1,4 @@
+-alltargets
 -configuration Release
 -sdk mulle-sdk
 ARCHS=${ARCHS_STANDARD_32_64_BIT}

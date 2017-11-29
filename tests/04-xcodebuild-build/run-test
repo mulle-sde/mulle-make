@@ -44,7 +44,7 @@ expect_content()
 
    local diffs
 
-   diffs="`diff -b -B "${output}" "${expect}"`"
+   diffs="`diff "${output}" "${expect}"`"
    if [ $? -ne 0 ]
    then
       log_error "Unexpected output generated"
@@ -60,7 +60,7 @@ Expected: ($expect)
 ----------------
 Diff:
 ----------------
-${diff}
+${diffs}
 ----------------
 EOF
       exit 1
@@ -70,33 +70,27 @@ EOF
 
 run_test()
 {
-   local autoreconf_expect="$1"; shift
-   local autoconf_expect="$1"; shift
-   local configure_expect="$1"; shift
-   local make_expect="$1"; shift
+   local directory="$1"; shift
+   local xcodebuild_expect="$1"; shift
 
-   AUTORECONF_REDIRECT_FILE="${directory}/autoreconf-args.txt" \
-   AUTOCONF_REDIRECT_FILE="${directory}/autoconf-args.txt" \
-   CONFIGURE_REDIRECT_FILE="${directory}/configure-args.txt" \
-   MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
-      run_mulle_make make --build-dir "${directory}/build" \
-                          -DAUTORECONF="${PWD}/../mock-autoreconf" \
-                          -DAUTOCONF="${PWD}/../mock-autoconf" \
-                          -DMAKE="${PWD}/../mock-make" \
+   #
+   # MOCK_TEST_DIR is passed to mock-xcodebuild so it can create
+   # paths that look the same
+   #
+   MOCK_TEST_DIR="${directory}" \
+   XCODEBUILD_REDIRECT_FILE="${directory}/xcodebuild-args.txt" \
+      run_mulle_make ${MULLE_MAKE_FLAGS} make --build-dir "${directory}/build" \
+                          -DXCODEBUILD="${PWD}/../mock-xcodebuild" \
                           "$@"
+
    if [ "$?" -ne 0 ]
    then
       exit 1
    fi
-   expect_content "${directory}/autoreconf-args.txt" "${autoreconf_expect}"
-   expect_content "${directory}/autoconf-args.txt" "${autoconf_expect}"
-   expect_content "${directory}/configure-args.txt" "${configure_expect}"
-   expect_content "${directory}/make-args.txt" "${make_expect}"
 
-   remove_file_if_present "${directory}/autoreconf-args.txt"
-   remove_file_if_present "${directory}/autoconf-args.txt"
-   remove_file_if_present "${directory}/configure-args.txt"
-   remove_file_if_present "${directory}/make-args.txt"
+   expect_content "${directory}/xcodebuild-args.txt" "${xcodebuild_expect}"
+
+   remove_file_if_present "${directory}/xcodebuild-args.txt"
    rmdir_safer "${directory}/build"
 }
 
@@ -115,8 +109,34 @@ main()
    #
    # Default is release
    #
-   run_test "autoreconf.txt" "autoconf.txt" "configure.txt" "make.txt" --no-determine-xcode-sdk
+   run_test "${directory}" "release_xcodebuild.txt" -c "Release"
    log_verbose "----- #1 PASSED -----"
+
+   run_test "${directory}" "debug_xcodebuild.txt" -c "Debug"
+   log_verbose "----- #2 PASSED -----"
+
+   run_test "${directory}" "prefix_xcodebuild.txt" -c "Release" -p "/tmp"
+   log_verbose "----- #3 PASSED -----"
+
+   run_test "${directory}" "sdk_xcodebuild.txt" -c "Release" -s "mulle-sdk"
+   log_verbose "----- #4 PASSED -----"
+
+   run_test "${directory}" "user_xcodebuild.txt" -c "Release" -DUSER_INFO="VfL Bochum 1848"
+   log_verbose "----- #5 PASSED -----"
+
+   run_test "${directory}" "userplus_xcodebuild.txt" -c "Release" -DUSER_INFO+="VfL Bochum 1848"
+   log_verbose "----- #6 PASSED -----"
+
+   run_test "${directory}" "xcconfig_xcodebuild.txt" -c "Release" \
+                                                     --xcode-config-file whatever.xcconfig
+   log_verbose "----- #7 PASSED -----"
+
+   run_test "${directory}" "paths_xcodebuild.txt" -c "Release" \
+                                                  -I /usr/local/include:/usr/include \
+                                                  -L /usr/local/lib:/usr/lib \
+                                                  -F /Network/Library/Frameworks:/Library/Frameworks
+   log_verbose "----- #8 PASSED -----"
+
    log_info "----- ALL PASSED -----"
 
    rmdir_safer "${directory}"

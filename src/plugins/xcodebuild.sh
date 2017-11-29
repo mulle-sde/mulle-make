@@ -67,6 +67,34 @@ xcode_get_setting()
 }
 
 
+#
+# Let's not inherit here
+#
+convert_path_to_value()
+{
+   local path="$1"
+   local inherit="${2:-NO}"
+
+   local output
+   local component
+
+   IFS=":"
+   for component in ${path}
+   do
+      output="`concat "${output}" "${component}" `"
+   done
+   IFS="${DEFAULT_IFS}"
+
+   if [ "${inherit}" = "YES" -a ! -z "${inherit}" ]
+   then
+      output="`concat "${output}" "\$(inherited)" `"
+   fi
+
+
+   printf "%s" "${output}"
+}
+
+
 _build_xcodebuild()
 {
    log_entry "_build_xcodebuild" "$@"
@@ -92,7 +120,7 @@ _build_xcodebuild()
 
    local projectdir
 
-   projectdir="`dirname -- "${projectfile}"`"
+   projectdir="`dirname -- "${projectfile}" `"
 
    #
    # xctool needs schemes, these are often autocreated, which xctool cant do
@@ -134,54 +162,63 @@ EOF
    arguments=""
    if [ ! -z "${projectname}" ]
    then
-      arguments="${arguments} -project \"${projectname}\""
+      arguments="$(concat "${arguments}" "-project '${projectname}'" )"
    fi
    if [ ! -z "${sdk}" ]
    then
       if [ "${sdk}" = "Default" ]
       then
-         arguments="${arguments} -sdk \"macosx\""
+         arguments="$(concat "${arguments}" "-sdk 'macosx'" )"
       else
-         arguments="${arguments} -sdk \"${sdk}\""
+         arguments="$(concat "${arguments}" "-sdk '${sdk}'" )"
       fi
    fi
 
    if [ -z "${schemename}" -a -z "${targetname}" ]
    then
-      arguments="${arguments} -alltargets"
+      arguments="$(concat "${arguments}" "-alltargets")"
    else
       if [ ! -z "${schemename}" ]
       then
-         arguments="${arguments} -scheme \"${schemename}\""
+         arguments="$(concat "${arguments}" "-scheme '${schemename}'" )"
       else
-         arguments="${arguments} -target \"${targetname}\""
+         arguments="$(concat "${arguments}" "-target '${targetname}'" )"
       fi
    fi
    if [ ! -z "${configuration}" ]
    then
-      arguments="${arguments} -configuration \"${configuration}\""
+      arguments="$(concat "${arguments}" "-configuration '${configuration}'" )"
    fi
 
-# an empty xcconfig is nice, because it acts as a reset for
+   # an empty xcconfig is nice, because it acts as a reset for ?
    local xcconfig
 
    xcconfig="${OPTION_XCODE_XCCONFIG_FILE}"
    if [ ! -z "${xcconfig}" ]
    then
-      arguments="${arguments} -xcconfig \"${xcconfig}\""
+      arguments="$(concat "${arguments}" "-xcconfig '${xcconfig}'" )"
    fi
 
    local buildsettings
    local user_buildsettings
-   local absbuildir
+   local absbuilddir
 
-   absbuildir="`absolutepath "${builddir}"`"
+   # don't expand stuff with variables
+   case "${builddir}" in
+      ""|*$*)
+         absbuilddir="${builddir}"
+      ;;
+
+      *)
+         absbuilddir="`absolutepath "${builddir}" `"
+      ;;
+   esac
 
    buildsettings="ARCHS='${OPTION_XCODE_ARCHS:-\${ARCHS_STANDARD_32_64_BIT}}'"
-   buildsettings="`concat "${buildsettings}" "DSTROOT='${dstdir:-${absbuildir}}'"`"
-   buildsettings="`concat "${buildsettings}" "OBJROOT='${absbuildir}/obj'"`"
-   buildsettings="`concat "${buildsettings}" "SYMROOT='${absbuildir}/'"`"
-   buildsettings="`concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${ONLY_ACTIVE_ARCH:-NO}'"`"
+   buildsettings="`concat "${buildsettings}" "DSTROOT='${dstdir:-${absbuilddir}}'" `"
+   buildsettings="`concat "${buildsettings}" "OBJROOT='${absbuilddir}/obj'" `"
+   buildsettings="`concat "${buildsettings}" "SYMROOT='${absbuilddir}/'" `"
+   buildsettings="`concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${ONLY_ACTIVE_ARCH:-NO}'" `"
 
    local cflags
    local cxxflags
@@ -189,44 +226,68 @@ EOF
 
    if [ ! -z "${OPTION_CFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "CFLAGS='${OPTION_CFLAGS}'"`"
+      buildsettings="`concat "${buildsettings}" "CFLAGS='${OPTION_CFLAGS}'" `"
    fi
    if [ ! -z "${OPTION_CXXFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "CXXFLAGS='${OPTION_CXXFLAGS}'"`"
+      buildsettings="`concat "${buildsettings}" "CXXFLAGS='${OPTION_CXXFLAGS}'" `"
    fi
    if [ ! -z "${OPTION_LDFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "LDFLAGS='${OPTION_LDFLAGS}'"`"
+      buildsettings="`concat "${buildsettings}" "LDFLAGS='${OPTION_LDFLAGS}'" `"
    fi
 
    if [ ! -z "${OPTION_OTHER_CFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "OTHER_CFLAGS='${OPTION_OTHER_CFLAGS}'"`"
+      buildsettings="`concat "${buildsettings}" "OTHER_CFLAGS='${OPTION_OTHER_CFLAGS}'" `"
    fi
    if [ ! -z "${OPTION_OTHER_CXXFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "OTHER_CXXFLAGS='${OPTION_OTHER_CXXFLAGS}'"`"
+      buildsettings="`concat "${buildsettings}" "OTHER_CXXFLAGS='${OPTION_OTHER_CXXFLAGS}'" `"
    fi
    if [ ! -z "${OPTION_OTHER_LDFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "OTHER_LDFLAGS='${OPTION_OTHER_LDFLAGS}'"`"
+      buildsettings="`concat "${buildsettings}" "OTHER_LDFLAGS='${OPTION_OTHER_LDFLAGS}'" `"
    fi
 
    if [ ! -z "${OPTION_PREFIX}" ]
    then
-      buildsettings="`concat "${buildsettings}" "DYLIB_INSTALL_NAME_BASE='${OPTION_PREFIX}'"`"
+      buildsettings="`concat "${buildsettings}" "DYLIB_INSTALL_NAME_BASE='${OPTION_PREFIX}'" `"
    fi
 
    if [ "${OPTION_XCODE_HAS_PROPER_SKIP_INSTALL:-NO}" = "NO" ]
    then
-      buildsettings="`concat "${buildsettings}" "SKIP_INSTALL=NO"`"
+      buildsettings="`concat "${buildsettings}" "SKIP_INSTALL=NO" `"
+   fi
+
+   #
+   # create HEADER_SEARCH_PATHS LIBRARY_SEARCH_PATHS FRAMEWORK_SEARCH_PATHS
+   # we don't inherit
+   #
+   local value
+
+   value="`convert_path_to_value "${OPTION_INCLUDE_PATH}"`"
+   if [ ! -z "${value}" ]
+   then
+      buildsettings="`concat "${buildsettings}" "HEADER_SEARCH_PATHS='${value}'" `"
+   fi
+
+   value="`convert_path_to_value "${OPTION_LIB_PATH}"`"
+   if [ ! -z "${value}" ]
+   then
+      buildsettings="`concat "${buildsettings}" "LIBRARY_SEARCH_PATHS='${value}'" `"
+   fi
+
+   value="`convert_path_to_value "${OPTION_FRAMEWORKS_PATH}"`"
+   if [ ! -z "${value}" ]
+   then
+      buildsettings="`concat "${buildsettings}" "FRAMEWORK_SEARCH_PATHS='${value}'" `"
    fi
 
    user_buildsettings="`emit_userdefined_definitions`"
    if [ ! -z "${user_buildsettings}" ]
    then
-      buildsettings="`concat "${buildsettings}" "${user_buildsettings}"`"
+      buildsettings="`concat "${buildsettings}" "${user_buildsettings}" `"
    fi
 
    local logfile
@@ -234,7 +295,7 @@ EOF
    mkdir_if_missing "${logsdir}"
    logfile="`build_log_name "${logsdir}" "${TOOLNAME}" "${srcdir}" \
                             "${configuration}" "${targetname}" "${schemename}" \
-                            "${sdk}"`" || exit 1
+                            "${sdk}" `" || exit 1
 
    (
       set -f  # prevent bash from expanding glob
@@ -329,7 +390,7 @@ test_xcodebuild()
 
    if [ ! -d "${projectfile}" ]
    then
-      projectfile="`find_nearest_matching_pattern "${srcdir}" "*.xcodeproj" "${name}.xcodeproj"`"
+      projectfile="`find_nearest_matching_pattern "${srcdir}" "*.xcodeproj" "${name}.xcodeproj" `"
       if [ -z "${projectfile}" ]
       then
          log_fluff "There is no Xcode project in \"${srcdir}\""
@@ -337,7 +398,7 @@ test_xcodebuild()
       fi
    fi
 
-   projectdir="`dirname -- "${projectfile}"`"
+   projectdir="`dirname -- "${projectfile}" `"
    tools_environment_xcodebuild "${projectdir}"
 
    if [ -z "${XCODEBUILD}" ]
@@ -356,7 +417,7 @@ test_xcodebuild()
       AUXINFO=" Scheme ${C_MAGENTA}${C_BOLD}${schemename}${C_INFO}"
    fi
 
-   TOOLNAME="`basename -- "${XCODEBUILD}"`"
+   TOOLNAME="`basename -- "${XCODEBUILD}" `"
    PROJECTFILE="${projectfile}"
    WASXCODE="YES"
 

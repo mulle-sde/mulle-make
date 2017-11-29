@@ -334,7 +334,7 @@ find_nearest_matching_pattern()
    if [ ! -z "${found}" ]
    then
       found="`sed 's|^\./||g' <<< "${found}"`"
-      log_fluff "$\"${found}\" found as nearest match"
+      log_fluff "\"${found}\" found as nearest match"
       echo "${found}"
       return 0
    fi

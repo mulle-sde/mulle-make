@@ -58,7 +58,7 @@ trap_fail()
 SHOWN_COMMANDS="\
    build         : build project [default]
    log           : show build log
-   systeminstall : build project and install locallyl
+   install       : build project and install
    version       : print mulle-make version"
 
 
@@ -208,7 +208,6 @@ fetch_libexec_path()
 
 _main()
 {
-   local MULLE_FLAG_ANSWER="ASK"
    local MULLE_FLAG_MAGNUM_FORCE="NONE"
    local MULLE_FLAG_IGNORE_GRAVEYARD="NO"
 
@@ -237,28 +236,12 @@ _main()
       fi
 
       case "${argument}" in
-         -a|--prefer-origin)
-            MULLE_FLAG_ANSWER="NO"
-          ;;
-
-         -y|--prefer-local)
-            MULLE_FLAG_ANSWER="YES"
-         ;;
-
          -f|--force)
             MULLE_FLAG_MAGNUM_FORCE="BOTH"
          ;;
 
          -h|--help)
             usage "${MULLE_TRACE}"
-         ;;
-
-         --git-terminal-prompt)
-            [ $# -eq 1 ] && fail "missing argument to \"${argument}\""
-            shift
-
-            GIT_TERMINAL_PROMPT="$1"
-            export GIT_TERMINAL_PROMPT
          ;;
 
          --version)

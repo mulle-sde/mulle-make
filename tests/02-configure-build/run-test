@@ -60,7 +60,7 @@ Expected: ($expect)
 ----------------
 Diff:
 ----------------
-${diff}
+${diffs}
 ----------------
 EOF
       exit 1
@@ -112,6 +112,16 @@ main()
 
    run_test "release_prefix_configure.txt" "make.txt" --no-determine-xcode-sdk "--prefix" "/tmp/foo"
    log_verbose "----- #2 PASSED -----"
+
+   #
+   # check -I -L -F
+   #
+   run_test "paths_configure.txt" "make.txt" -DDETERMINE_XCODE_SDK="NO" \
+                                             -I /usr/local/include:/usr/include \
+                                             -L /usr/local/lib:/usr/lib \
+                                             -F /Network/Library/Frameworks:/Library/Frameworks
+   log_verbose "----- #3 PASSED -----"
+
 
    log_info "----- ALL PASSED -----"
 

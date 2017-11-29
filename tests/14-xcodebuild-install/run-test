@@ -60,7 +60,7 @@ Expected: ($expect)
 ----------------
 Diff:
 ----------------
-${diff}
+${diffs}
 ----------------
 EOF
       exit 1

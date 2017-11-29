@@ -1,0 +1,93 @@
+#! /bin/sh
+
+[ "${TRACE}" = YES ] && set -x
+
+emit_args()
+{
+   local argument
+   local key
+   local value
+   local envvar
+   local prefix
+   local subst
+
+   prefix="`eval echo \$MOCK_TEST_DIR`"
+   prefix="`escaped_sed_pattern "${prefix}"`"
+   while [ "$#" -ne 0 ]
+   do
+      argument="$1"
+      case "${argument}" in
+         -project|-target|-configuration|-scheme|-workspace|-sdk|-destination*)
+            shift
+            echo "${argument}" "$1"
+         ;;
+
+         -xc*|-export-*|-arch|-enable*|-*Path|-*Language|-toolchain)
+            shift
+            echo "${argument}" "$1"
+         ;;
+
+         -*=*)
+            key="$(cut -d= -f1 <<< "${argument:1}")"
+            value="$(cut -d= -f2- <<< "${argument:1}")"
+            subst="$(sed "s/^\\(.*\\)${prefix}\\(.*\\)/\\1\${MOCK_TEST_DIR}\\2/g" <<< "${value}")"
+            subst="$(sed "s|^/private\${MOCK_TEST_DIR}|\${MOCK_TEST_DIR}|" <<< "${subst}")"
+            echo "<$key=${subst}>"
+         ;;
+
+         *=*)
+            key="$(cut -d= -f1 <<< "${argument}")"
+            value="$(cut -d= -f2- <<< "${argument}")"
+            subst="$(sed "s/^\\(.*\\)${prefix}\\(.*\\)/\\1\${MOCK_TEST_DIR}\\2/g" <<< "${value}")"
+            subst="$(sed "s|^/private\${MOCK_TEST_DIR}|\${MOCK_TEST_DIR}|" <<< "${subst}")"
+            echo "$key=${subst}"
+         ;;
+
+         # commands ignore
+         -license|-usage|-version|-showsdks|-showBuildSettings|-list|-exportArchive|-exportLocalizations|-importLocalizations)
+         ;;
+
+         # actions ignore
+         build|build-for-testing|analyze|archive|test|test-without-building|install-src|install|clean)
+         ;;
+
+         *)
+            echo "${argument}"
+         ;;
+      esac
+
+      shift
+   done
+}
+
+
+main()
+{
+   local envvar
+   local filename
+
+   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z|'`_REDIRECT_FILE"
+   filename="`eval echo "\\\$$envvar"`"
+
+   if [ ! -z "${filename}"  ]
+   then
+      log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
+      emit_args "$@" | sort > "${filename}"
+   else
+      emit_args "$@" | sort
+   fi
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env library-path`"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+
+

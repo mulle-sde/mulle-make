@@ -119,7 +119,7 @@ build_cmake()
 
    [ $# -eq 8 ] || internal_fail "api error"
 
-   local command="$1"; shift
+   local cmd="$1"; shift
    local projectfile="$1"; shift
    local configuration="$1"; shift
    local srcdir="$1"; shift
@@ -128,7 +128,7 @@ build_cmake()
    local logsdir="$1"; shift
    local sdk="$1"; shift
 
-   [ -z "${command}" ] && internal_fail "command is empty"
+   [ -z "${cmd}" ] && internal_fail "cmd is empty"
    [ -z "${projectfile}" ] && internal_fail "projectfile is empty"
    [ -z "${configuration}" ] && internal_fail "configuration is empty"
    [ -z "${srcdir}" ] && internal_fail "srcdir is empty"
@@ -144,10 +144,10 @@ build_cmake()
    local cppflags
    local ldflags
 
-   cflags="`compiler_cflags_value "${OPTION_CC}"`"
-   cxxflags="`compiler_cxxflags_value "${OPTION_CC}"`"
-   cppflags="`compiler_cppflags_value "${OPTION_CC}"`"
-   ldflags="`compiler_ldflags_value "${OPTION_CC}"`"
+   cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO"`"
+   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO"`"
+   cppflags="`compiler_cppflags_value`"
+   ldflags="`compiler_ldflags_value`"
 
    if [ ! -z "${cppflags}" ]
    then
@@ -161,8 +161,8 @@ build_cmake()
    local projectdir
 
    projectdir="`dirname -- "${projectfile}"`"
-   absprojectdir="$(simplifiedabsolutepath "${projectdir}")"
-   absbuilddir="$(simplifiedabsolutepath "${builddir}")"
+   absprojectdir="$(simplified_absolutepath "${projectdir}")"
+   absbuilddir="$(simplified_absolutepath "${builddir}")"
 
    rel_project_dir="`projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"`"
 
@@ -172,7 +172,7 @@ build_cmake()
 
    local maketarget
 
-   case "${command}" in
+   case "${cmd}" in
       build)
          maketarget=
          if [ ! -z "${OPTION_PREFIX}" ]
@@ -235,14 +235,20 @@ build_cmake()
    #then
    #   cmake_dirs="`concat "${cmake_dirs}" "-DCMAKE_INCLUDE_PATH='${includelines}'"`"
    #fi
-   if [ ! -z "${OPTION_LIBRARY_PATH}" ]
+   if [ ! -z "${OPTION_LIB_PATH}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_LIBRARY_PATH='${OPTION_LIBRARY_PATH}'"`"
+      local munged
+
+      munged="$(tr ':' ';' <<< "${OPTION_LIB_PATH}")"
+      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_LIBRARY_PATH='${munged}'"`"
    fi
 
-   if [ ! -z "${OPTION_FRAMEWORK_PATH}" ]
+   if [ ! -z "${OPTION_FRAMEWORKS_PATH}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_FRAMEWORK_PATH='${OPTION_FRAMEWORK_PATH}'"`"
+      local munged
+
+      munged="$(tr ':' ';' <<< "${OPTION_FRAMEWORKS_PATH}")"
+      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_FRAMEWORK_PATH='${munged}'"`"
    fi
 
    local other_buildsettings

@@ -20,10 +20,9 @@ main()
 
    log_verbose "mulle-make: `mulle-make version` (`mulle-make library-path`)"
 
-   OUTPUT_DEVICE=
    for i in "${TEST_DIR}"/*
    do
-      if [ -x "$i/run-test.sh" ]
+      if [ -x "$i/run-test" ]
       then
          case "$i" in
             *-xcodebuild)
@@ -39,9 +38,9 @@ main()
          log_verbose "------------------------------------------"
          if [ "${MULLE_FLAG_LOG_TERSE}" = "YES" ]
          then
-            ( cd "$i" && ./run-test.sh "$@" > /dev/null 2>&1 ) || fail "Test \"$i\" failed"
+            ( cd "$i" && ./run-test "$@" > /dev/null 2>&1 ) || fail "Test \"$i\" failed"
          else
-            ( cd "$i" && ./run-test.sh "$@" ) || fail "Test \"$i\" failed"
+            ( cd "$i" && ./run-test "$@" ) || fail "Test \"$i\" failed"
          fi
       fi
    done

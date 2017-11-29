@@ -60,7 +60,7 @@ Expected: ($expect)
 ----------------
 Diff:
 ----------------
-${diff}
+${diffs}
 ----------------
 EOF
       exit 1
@@ -68,30 +68,6 @@ EOF
 }
 
 
-run_test()
-{
-   local cmake_expect="$1"; shift
-   local make_expect="$1"; shift
-
-   CMAKE_REDIRECT_FILE="${directory}/cmake-args.txt" \
-   MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
-      run_mulle_make make --build-dir "${directory}/build" \
-                          -DCMAKE="${PWD}/../mock-cmake" \
-                          -DMAKE="${PWD}/../mock-make" \
-                          "$@"
-
-   if [ "$?" -ne 0 ]
-   then
-      exit 1
-   fi
-
-   expect_content "${directory}/cmake-args.txt" "${cmake_expect}"
-   expect_content "${directory}/make-args.txt" "${make_expect}"
-
-   remove_file_if_present "${directory}/cmake-args.txt"
-   remove_file_if_present "${directory}/make-args.txt"
-   rmdir_safer "${directory}/build"
-}
 
 
 main()
@@ -101,30 +77,38 @@ main()
    _options_mini_main "$@"
 
    local directory
+   local dstdir
+   local builddir
 
    directory="`make_tmp_directory`" || exit 1
    directory="${directory:-/tmp/build}"
 
+   builddir="${directory}/build"
+   dstdir="${directory}/root"
+
    #
    # Default is release
    #
-   run_test "release_cmake.txt" "make.txt"
+   if ! run_mulle_make install --build-dir "${builddir}" "." "${dstdir}"
+   then
+      exit 1
+   fi
+
+   case "${UNAME}" in
+      mingw)
+         [ -x "${dstdir}/bin/myexe.exe" ]   || fail "myexe.exe failed"
+         [ -f "${dstdir}/lib/mylib.lib" ]   || fail "mylib.lib failed"
+         [ -f "${dstdir}/include/mylib.h" ] || fail "mylib.h failed"
+      ;;
+
+      *)
+         [ -x "${dstdir}/bin/myexe" ]       || fail "myexe failed"
+         [ -f "${dstdir}/lib/libmylib.a" ]  || fail "libmylib.a failed"
+         [ -f "${dstdir}/include/mylib.h" ] || fail "mylib.h failed"
+      ;;
+   esac
+
    log_verbose "----- #1 PASSED -----"
-   run_test "release_cmake.txt" "make.txt" -c Release
-   log_verbose "----- #2 PASSED -----"
-   run_test "release_cmake.txt" "make.txt" --release
-   log_verbose "----- #3 PASSED -----"
-
-   run_test "debug_cmake.txt" "make.txt" -c Debug
-   log_verbose "----- #4 PASSED -----"
-   run_test "debug_cmake.txt" "make.txt" --debug
-   log_verbose "----- #5 PASSED -----"
-
-   run_test "xxx_cmake.txt" "make.txt" -DXXX=yyy
-   log_verbose "----- #6 PASSED -----"
-
-   run_test "release_cmake.txt" "make.txt" -DDISPENSE_STYLE=filtered
-   log_verbose "----- #7 PASSED -----"
 
    log_info "----- ALL PASSED -----"
 

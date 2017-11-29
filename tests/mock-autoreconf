@@ -1,0 +1,34 @@
+#! /bin/sh
+
+[ "${TRACE}" = YES ] && set -x
+
+main()
+{
+   local envvar
+   local filename
+
+   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z|'`_REDIRECT_FILE"
+   filename="`eval echo "\\\$$envvar"`"
+
+   if [ ! -z "${filename}"  ]
+   then
+      log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
+      echo "$*" > "${filename}"
+   else
+      echo "$*"
+   fi
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env library-path`"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+
+
