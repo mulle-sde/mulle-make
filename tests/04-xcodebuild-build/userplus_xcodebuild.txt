@@ -1,0 +1,10 @@
+-alltargets
+-configuration Release
+-sdk macosx
+ARCHS=${ARCHS_STANDARD_32_64_BIT}
+DSTROOT=${MOCK_TEST_DIR}/build
+OBJROOT=${MOCK_TEST_DIR}/build/obj
+ONLY_ACTIVE_ARCH=NO
+SKIP_INSTALL=NO
+SYMROOT=${MOCK_TEST_DIR}/build/
+USER_INFO=$(inherited) VfL Bochum 1848

@@ -1,0 +1,3 @@
+CMAKE_BUILD_TYPE=Release
+CMAKE_FRAMEWORK_PATH=/Network/Library/Frameworks;/Library/Frameworks
+CMAKE_LIBRARY_PATH=/usr/local/lib;/usr/lib

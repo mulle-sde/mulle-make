@@ -71,7 +71,7 @@ find_cmake()
 {
    local toolname
 
-   toolname="${OPTION_CMAKE:-cmake}"
+   toolname="${OPTION_CMAKE:-${CMAKE:-cmake}}"
    verify_binary "${toolname}" "cmake" "cmake"
 }
 

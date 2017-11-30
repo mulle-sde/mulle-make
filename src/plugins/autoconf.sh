@@ -35,7 +35,7 @@ find_autoconf()
 {
    local toolname
 
-   toolname="${OPTION_AUTOCONF:-autoconf}"
+   toolname="${OPTION_AUTOCONF:-${AUTOCONF:-autoconf}}"
    verify_binary "${toolname}" "autoconf" "autoconf"
 }
 
@@ -44,7 +44,7 @@ find_autoreconf()
 {
    local toolname
 
-   toolname="${OPTION_AUTORECONF:-autoreconf}"
+   toolname="${OPTION_AUTORECONF:-${AUTORECONF:-autoreconf}}"
    verify_binary "${toolname}" "autoreconf" "autoreconf"
 }
 

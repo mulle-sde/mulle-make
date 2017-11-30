@@ -141,10 +141,21 @@ determine_build_subdir()
 #
 build_with_preference_if_possible()
 {
+   [ ! -z "${configuration}" ] || internal_fail "configuration not defined"
+   [ ! -z "${name}" ]          || internal_fail "name not defined"
+   [ ! -z "${sdk}" ]           || internal_fail "sdk not defined"
+   [ ! -z "${preference}" ]    || internal_fail "preference not defined"
+   [ ! -z "${cmd}" ]           || internal_fail "cmd not defined"
+   [ ! -z "${srcdir}" ]        || internal_fail "srcdir not defined"
+# dstdir can be empty (check what OPTION_PREFIX does differently)
+#   [ ! -z "${dstdir}" ]        || internal_fail "dstdir not defined"
+   [ ! -z "${builddir}" ]      || internal_fail "builddir not defined"
+   [ ! -z "${logsdir}" ]       || internal_fail "builddir not defined"
+
    (
       local WASXCODE="NO"
       local PROJECTFILE
-      local TOOLNAME"${preference}"
+      local TOOLNAME="${preference}"
       local AUX_INFO
 
       if ! "test_${preference}" "${configuration}" "${srcdir}"
@@ -161,7 +172,7 @@ ${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
 ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir}\" ..."
 
-      if ! "build_${preference}" "${command}" \
+      if ! "build_${preference}" "${cmd}" \
                                  "${PROJECTFILE}" \
                                  "${configuration}" \
                                  "${srcdir}" \
@@ -181,7 +192,7 @@ build_with_configuration_sdk_preferences()
 {
    log_entry "build_with_configuration_sdk_preferences" "$@"
 
-   local command="$1"; shift
+   local cmd="$1"; shift
 
    local srcdir="$1"
    local dstdir="$2"
@@ -198,6 +209,10 @@ build_with_configuration_sdk_preferences()
    then
       fail "You are just asking for major trouble naming your configuration \"${configuration}\"."
    fi
+
+   local name
+
+   name="`basename -- "${srcdir}"`"
 
    #
    # remove symlinks
@@ -217,7 +232,7 @@ build_with_configuration_sdk_preferences()
 
    local logsdir
 
-   logsdir="${OPTION_LOGS_DIR}"
+   logsdir="${OPTION_LOG_DIR}"
    if [ -z "${logsdir}" ]
    then
       logsdir="${builddir}/.logs"
@@ -257,7 +272,7 @@ build()
 {
    log_entry "build" "$@"
 
-   local command="$1"
+   local cmd="$1"
    local srcdir="$2"
    local dstdir="$3"
 
@@ -307,7 +322,7 @@ There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERE
       ;;
    esac
 
-   build_with_configuration_sdk_preferences "${command}" \
+   build_with_configuration_sdk_preferences "${cmd}" \
                                             "${srcdir}" \
                                             "${dstdir}" \
                                             "${configuration}" \
@@ -369,6 +384,7 @@ OPTION_GCC_PREPROCESSOR_DEFINITIONS
 OPTION_INCLUDE_PATH
 OPTION_LDFLAGS
 OPTION_LIB_PATH
+OPTION_LOG_DIR
 OPTION_MAKE
 OPTION_MAKETARGET
 OPTION_OTHER_CFLAGS
@@ -625,6 +641,9 @@ read_defines_dir()
 }
 
 
+#
+# it is assumed that the caller (mulle-build) resolved the UNAME already
+#
 read_info_dir()
 {
    log_entry "read_info_dir" "$@"
@@ -632,11 +651,6 @@ read_info_dir()
    directory="$1"
 
    [ ! -d "${directory}" ] && fail "info directory \"${directory}\" missing"
-
-   if [ -d "${directory}/${UNAME}" ]
-   then
-      directory="${directory}/${UNAME}"
-   fi
 
    read_defines_dir "${directory}" "make_define_option"
    read_defines_dir "${directory}/plus" "make_define_plus_option"
@@ -647,7 +661,7 @@ _make_build_main()
 {
    log_entry "_make_build_main" "$@"
 
-   local command="${1:-build}"
+   local cmd="${1:-build}"
    shift
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
@@ -662,13 +676,16 @@ xcodebuild"
       ;;
    esac
 
-   local OPTION_CONFIGURATION="DEFAULT"
-   local OPTION_SDK="DEFAULT"
-   local OPTION_CLEAN_BEFORE_BUILD="DEFAULT"
-   local OPTION_BUILD_DIR
    local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
-   local OPTION_XCODE_ADD_USR_LOCAL="DEFAULT"
+   local OPTION_CLEAN_BEFORE_BUILD="DEFAULT"
+   local OPTION_CONFIGURATION="DEFAULT"
    local OPTION_DETERMINE_XCODE_SDK="DEFAULT"
+   local OPTION_SDK="DEFAULT"
+   local OPTION_XCODE_ADD_USR_LOCAL="DEFAULT"
+
+   local OPTION_BUILD_DIR
+   local OPTION_INFO_DIR
+   local OPTION_LOG_DIR
    local OPTION_PREFIX
 
    local argument
@@ -741,10 +758,6 @@ xcodebuild"
             read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
          ;;
 
-         --no-info-dir)
-            OPTION_INFO_DIR="NONE"
-         ;;
-
          -j|--cores)
             read -r OPTION_CORES || fail "missing argument to \"${argument}\""
 
@@ -761,6 +774,10 @@ xcodebuild"
 
          -K|--no-clean)
             OPTION_CLEAN_BEFORE_BUILD="NO"
+         ;;
+
+         -l|--log-dir)
+            read -r OPTION_LOG_DIR || fail "missing argument to \"${argument}\""
          ;;
 
          -p|--prefix)
@@ -833,15 +850,15 @@ xcodebuild"
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-plugin.sh" || return 1
    fi
 
-   if [ "${OPTION_INFO_DIR}" = "NONE" ]
+   if [ ! -z "${OPTION_INFO_DIR}" ]
    then
-      read_info_dir "${OPTION_INFO_DIR:-.mulle-make}"
+      read_info_dir "${OPTION_INFO_DIR}" || return 1
    fi
 
    local srcdir
    local dstdir
 
-   case "${command}" in
+   case "${cmd}" in
       build)
          srcdir="${argument:-$PWD}"
          if read -r argument
@@ -854,7 +871,7 @@ xcodebuild"
             fail "${MULLE_EXECUTABLE_FAIL_PREFIX}: Source directory \"${srcdir}\" is missing"
          fi
 
-         build "${command}" "${srcdir}"
+         build "${cmd}" "${srcdir}"
       ;;
 
       install)

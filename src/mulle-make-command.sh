@@ -34,6 +34,8 @@ MULLE_MAKE_COMMAND_SH="included"
 
 suggest_binary_install()
 {
+   log_entry "suggest_binary_install" "$@"
+
    local toolname="$1"
 
    case "${toolname}" in
@@ -94,9 +96,10 @@ suggest_binary_install()
 
 which_binary()
 {
-   local toolname
+   log_entry "which_binary" "$@"
 
-   toolname="$1"
+   local toolname="$1"
+
    case "${UNAME}" in
       mingw)
          case "${toolname}" in
@@ -114,14 +117,15 @@ which_binary()
 }
 
 
+#
 # used by test scripts outside of mulle-make
+#
 assert_binary()
 {
-   local toolname
-   local toolfamily
+   log_entry "assert_binary" "$@"
 
-   toolname="$1"
-   toolfamily="$2"
+   local toolname="$1"
+   local toolfamily="$2"
 
    [ -z "${toolname}" ] && internal_fail "toolname for \"${toolfamily}\" is empty"
 
@@ -142,6 +146,8 @@ assert_binary()
 #
 verify_binary()
 {
+   log_entry "verify_binary" "$@"
+
    local toolname="$1"
    local toolfamily="$2"
    local tooldefaultname="$3"
@@ -150,7 +156,7 @@ verify_binary()
 
    local path
 
-   path=`which_binary "${toolname}"`
+   path="`which_binary "${toolname}" `"
    if [ ! -z "${path}" ]
    then
       log_fluff "${toolfamily:-${tooldefaultname}} is \"${path}\""
@@ -163,8 +169,8 @@ verify_binary()
    # there is bad.
    # Otherwise it's maybe OK (f.e. only using xcodebuild not cmake)
    #
-   toolname="`extension_less_basename "${toolname}"`"
-   tooldefaultname="`extension_less_basename "${tooldefaultname}"`"
+   toolname="`extensionless_basename "${toolname}"`"
+   tooldefaultname="`extensionless_basename "${tooldefaultname}"`"
 
    if [ "${toolname}" != "${tooldefaultname}" ]
    then
@@ -177,6 +183,18 @@ ${C_RESET}${C_BOLD}   `suggest_binary_install "${toolname}"`"
 
    return 1
 }
+
+
+command_initialize()
+{
+   if [ -z "${MULLE_PATH_SH}" ]
+   then
+      # shellcheck source=../../mulle-bashfunctions/src/mulle-path.sh
+      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || exit 1
+   fi
+}
+
+command_initialize
 
 :
 

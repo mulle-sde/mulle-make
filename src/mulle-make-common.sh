@@ -77,7 +77,7 @@ find_make()
 
    local toolname
 
-   toolname="${OPTION_MAKE:-${defaultname}}"
+   toolname="${OPTION_MAKE:-${MAKE:-make}}"
    verify_binary "${toolname}" "make" "${defaultname}"
 }
 
@@ -109,18 +109,25 @@ tools_environment_make()
 {
    tools_environment_common
 
-   local defaultmake
+   #
+   # allow environment to override
+   # (makes testing easier)
+   #
+   if [ -z "${MAKE}" ]
+   then
+      local defaultmake
 
-   defaultmake="`platform_make "${CC}"`"
-   case "${UNAME}" in
-      mingw)
-         MAKE="`find_make "${defaultmake}"`"
-      ;;
+      defaultmake="`platform_make "${CC}"`"
+      case "${UNAME}" in
+         mingw)
+            MAKE="`find_make "${defaultmake}"`"
+         ;;
 
-      *)
-         MAKE="`find_make`"
-      ;;
-   esac
+         *)
+            MAKE="`find_make`"
+         ;;
+      esac
+   fi
 }
 
 

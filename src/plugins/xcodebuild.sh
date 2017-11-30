@@ -35,7 +35,7 @@ find_xcodebuild()
 {
    local toolname
 
-   toolname="${OPTION_XCODEBUILD:-xcodebuild}"
+   toolname="${OPTION_XCODEBUILD:-${XCODEBUILD:-xcodebuild}}"
    verify_binary "${toolname}" "xcodebuild" "xcodebuild"
 }
 

@@ -331,7 +331,7 @@ _init()
    MULLE_MAKE_LIBEXEC_DIR="`fetch_libexec_path "$0"`"
    if [ -z "${MULLE_MAKE_LIBEXEC_DIR}" ]
    then
-      echo "$0 fatal Error: Could not find libexec ($PWD)" >&2
+      echo "$0 fatal error: Could not find libexec ($PWD)" >&2
       exit 1
    fi
 
