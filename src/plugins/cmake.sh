@@ -144,9 +144,9 @@ build_cmake()
    local cppflags
    local ldflags
 
-   cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO"`"
-   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO"`"
-   cppflags="`compiler_cppflags_value`"
+   cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO" `"
+   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO" `"
+   cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `" # only cmake does OPTION_INCLUDE_PATH here
    ldflags="`compiler_ldflags_value`"
 
    if [ ! -z "${cppflags}" ]
@@ -165,6 +165,13 @@ build_cmake()
    absbuilddir="$(simplified_absolutepath "${builddir}")"
 
    rel_project_dir="`projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"`"
+
+   log_debug "projectfile:     ${projectfile}"
+   log_debug "projectdir:      ${projectdir}"
+   log_debug "absprojectdir:   ${absprojectdir}"
+   log_debug "absbuilddir:     ${absbuilddir}"
+   log_debug "rel_project_dir: ${rel_project_dir}"
+   log_debug "PWD:             ${PWD}"
 
    local cmake_flags
 

@@ -6,10 +6,10 @@
 run_mulle_make()
 {
    log_fluff "####################################"
-   log_fluff ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
+   log_fluff ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@" --no-ninja
    log_fluff "####################################"
 
-   exekutor ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
+   exekutor ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@" --no-ninja
 }
 
 

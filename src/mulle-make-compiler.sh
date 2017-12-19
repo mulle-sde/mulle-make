@@ -112,21 +112,44 @@ compiler_sdk_parameter()
 }
 
 
+#
 # Mash some known settings from xcodebuild together for regular
 # OTHER_CFLAGS
 # WARNING_CFLAGS
 # COMPILER_PREPROCESSOR_DEFINITIONS
+#
+# In general it would be nice when using cmake, that the -I detection would
+# be just done by find_library. Unfortunately, this doesn't work when you
+# have header only libraries with no .a file.
+# Therefore we need to add -Isystem here if passes
+#
 compiler_cppflags_value()
 {
    log_entry "compiler_cppflags_value" "$@"
 
-   local value
    local result
 
-   result="${OPTION_CPPFLAGS}"
-   value="${OPTION_OTHER_CPPFLAGS}"
+   result="`concat "${OPTION_CPPFLAGS}" "${OPTION_OTHER_CPPFLAGS}" `"
 
-   concat "$result" "$value"
+   if [ ! -z "$1" ]
+   then
+      local tmp
+
+      # space bug ?
+      #
+      # the flags get passed in as quoted, if the path itself has spaces
+      # this will not work I suspect. But let's try anyway
+      #
+      tmp="$(sed -e 's/ /\\ /g' <<< "$1")"
+      tmp="`convert_path_to_flag "$1" "-isystem " "" `"
+
+      result="`concat "${result}" "${tmp}" `"
+   fi
+
+   if [ ! -z "${result}" ]
+   then
+      echo "${result}"
+   fi
 }
 
 

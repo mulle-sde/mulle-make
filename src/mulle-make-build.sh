@@ -88,10 +88,10 @@ EOF
 }
 
 
-enforce_build_sanity()
+mkdir_build_directories()
 {
    local builddir="$1"
-   local logsdir="$1"
+   local logsdir="$2"
 
    [ -z "${builddir}" ] && internal_fail "builddir is empty"
 
@@ -123,10 +123,10 @@ determine_build_subdir()
    then
       if [ "${configuration}" != "Release" ]
       then
-         echo "/${configuration}"
+         echo "${configuration}"
       fi
    else
-      echo "/${configuration}-${sdk}"
+      echo "${configuration}-${sdk}"
    fi
 }
 
@@ -150,7 +150,7 @@ build_with_preference_if_possible()
 # dstdir can be empty (check what OPTION_PREFIX does differently)
 #   [ ! -z "${dstdir}" ]        || internal_fail "dstdir not defined"
    [ ! -z "${builddir}" ]      || internal_fail "builddir not defined"
-   [ ! -z "${logsdir}" ]       || internal_fail "builddir not defined"
+   [ ! -z "${logsdir}" ]       || internal_fail "logsdir not defined"
 
    (
       local WASXCODE="NO"
@@ -220,14 +220,19 @@ build_with_configuration_sdk_preferences()
    srcdir="`canonicalize_path "${srcdir}"`"
 
    local builddir
+   local buildroot
 
-   builddir="${OPTION_BUILD_DIR}"
+   buildroot="${OPTION_BUILD_DIR}"
+   builddir="${buildroot}"
+
+   local build_subdir
+
+   build_subdir="`determine_build_subdir "${configuration}" "${sdk}"`" || exit 1
+
    if [ -z "${builddir}" ]
    then
-      local build_subdir
-
-      build_subdir="`determine_build_subdir "${configuration}" "${sdk}"`" || exit 1
-      builddir="${srcdir}/build${build_subdir}"
+      buildroot="${srcdir}/build"
+      builddir="`filepath_concat "${buildroot}" "${build_subdir}" `"
    fi
 
    local logsdir
@@ -235,10 +240,11 @@ build_with_configuration_sdk_preferences()
    logsdir="${OPTION_LOG_DIR}"
    if [ -z "${logsdir}" ]
    then
-      logsdir="${builddir}/.logs"
+      logsdir="${buildroot}/logs"
+      logsdir="`filepath_concat "${logsdir}" "${build_subdir}" `"
    fi
 
-   enforce_build_sanity "${builddir}" "${logsdir}"
+   mkdir_build_directories "${builddir}" "${logsdir}"
 
    # now known to exist, so we can canonialize
    builddir="`canonicalize_path "${builddir}"`"
@@ -259,7 +265,6 @@ build_with_configuration_sdk_preferences()
       rval="$?"
       if [ "${rval}" != 255 ]
       then
-
          return "${rval}"
       fi
    done
@@ -386,6 +391,7 @@ OPTION_LDFLAGS
 OPTION_LIB_PATH
 OPTION_LOG_DIR
 OPTION_MAKE
+OPTION_NINJA
 OPTION_MAKETARGET
 OPTION_OTHER_CFLAGS
 OPTION_OTHER_CPPFLAGS
@@ -543,9 +549,42 @@ make_define_option()
 {
    log_entry "make_define_option" "$@"
 
-   local keyvalue
+   local key="$1"
+   local value="$2"
 
-   keyvalue="$1"
+   check_option_key_without_prefix "${key}"
+
+   eval "OPTION_${key}='${value}'"
+
+   log_fluff "OPTION_${key} defined as \"${value}\""
+
+   DEFINED_OPTIONS="`add_line "${DEFINED_OPTIONS}" "OPTION_${key}"`"
+}
+
+
+make_define_plusoption()
+{
+   log_entry "make_define_plusoption" "$@"
+
+   local key="$1"
+   local value="$2"
+
+   check_option_key_without_prefix "${key}"
+
+   eval "OPTION_${key}='${value}'"
+
+   log_fluff "OPTION_${key} defined as \"${value}\""
+
+   DEFINED_PLUS_OPTIONS="`add_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"`"
+}
+
+
+
+make_define_option_keyvalue()
+{
+   log_entry "make_define_option_keyvalue" "$@"
+
+   local keyvalue="$1"
 
    if [ -z "${keyvalue}" ]
    then
@@ -564,23 +603,15 @@ make_define_option()
       value="`echo "${keyvalue}" | cut -d= -f2-`"
    fi
 
-   check_option_key_without_prefix "${key}"
-
-   eval "OPTION_${key}='${value}'"
-
-   log_fluff "OPTION_${key} defined as \"${value}\""
-
-   DEFINED_OPTIONS="`add_line "${DEFINED_OPTIONS}" "OPTION_${key}"`"
+   make_define_option "${key}" "${value}"
 }
 
 
-make_define_plusoption()
+make_define_plusoption_keyvalue()
 {
-   log_entry "make_define_plusoption" "$@"
+   log_entry "make_define_plusoption_keyvalue" "$@"
 
-   local keyvalue
-
-   keyvalue="$1"
+   local keyvalue="$1"
 
    if [ -z "${keyvalue}" ]
    then
@@ -599,14 +630,9 @@ make_define_plusoption()
       value="`echo "${keyvalue}" | cut '-d=' -f2-`"
    fi
 
-   check_option_key_without_prefix "${key}"
-
-   eval "OPTION_${key}='${value}'"
-
-   log_fluff "OPTION_${key} defined as \"${value}\""
-
-   DEFINED_PLUS_OPTIONS="`add_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"`"
+   make_define_plusoption "${key}" "${value}"
 }
+
 
 
 read_defines_dir()
@@ -614,27 +640,29 @@ read_defines_dir()
    log_entry "read_defines_dir" "$@"
 
    local directory="$1"
-   local callback="$1"
+   local callback="$2"
 
    local key
    local value
+   local filename
 
    IFS="
 "
-   for key in `ls -1 "${directory}"/[A-Z_][A-Z0-9_]* 2> /dev/null`
+   for filename in `ls -1 "${directory}"/[A-Z_][A-Z0-9_]* 2> /dev/null`
    do
       IFS="${DEFAULT_IFS}"
 
-      value="`egrep -s -v '^#' "${key}"`"
+      value="`egrep -v '^#' "${filename}"`"
       if [ -z "${value}" ]
       then
          continue
       fi
 
       # case insensitive fs needs this
+      key="`basename -- "${filename}"`"
       key="$(tr '[a-z]' '[A-Z]' <<< "${key}")"
 
-      "${callback}" "$key" "${value}"
+      "${callback}" "${key}" "${value}"
    done
 
    IFS="${DEFAULT_IFS}"
@@ -682,6 +710,7 @@ xcodebuild"
    local OPTION_DETERMINE_XCODE_SDK="DEFAULT"
    local OPTION_SDK="DEFAULT"
    local OPTION_XCODE_ADD_USR_LOCAL="DEFAULT"
+   local OPTION_NINJA="DEFAULT"
 
    local OPTION_BUILD_DIR
    local OPTION_INFO_DIR
@@ -693,8 +722,8 @@ xcodebuild"
    while read -r argument
    do
       case "${argument}" in
-         [-]*h|help|[-]*help)
-            build_usage
+         -h*|--h*)
+            "${usage}"
          ;;
 
          --allow-unknown-option)
@@ -711,6 +740,19 @@ xcodebuild"
 
          --release)
             OPTION_CONFIGURATION="Release"
+         ;;
+
+         --ninja)
+            OPTION_NINJA="YES"
+         ;;
+
+
+         --no-ninja)
+            OPTION_NINJA="NO"
+         ;;
+
+         --no-determine-xcode-sdk)
+            OPTION_DETERMINE_XCODE_SDK="NO"
          ;;
 
          --determine-xcode-sdk)
@@ -763,7 +805,7 @@ xcodebuild"
 
             case "${UNAME}" in
                mingw)
-                  build_usage
+                   "${usage}"
                ;;
             esac
          ;;
@@ -797,11 +839,11 @@ xcodebuild"
          ;;
 
          -D*+=*)
-            make_define_plusoption "`echo "${argument}" | sed s'/^-D[ ]*//'`"
+            make_define_plusoption_keyvalue "`echo "${argument}" | sed s'/^-D[ ]*//'`"
          ;;
 
          -D*)
-            make_define_option "`echo "${argument}" | sed s'/^-D[ ]*//'`"
+            make_define_option_keyvalue "`echo "${argument}" | sed s'/^-D[ ]*//'`"
          ;;
 
          # as in /usr/include:/usr/local/include
@@ -820,8 +862,8 @@ xcodebuild"
          ;;
 
          -*)
-            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown build option ${argument}"
-            build_usage
+            log_error "Unknown build option ${argument}"
+            "${usage}"
          ;;
 
          ""|*)
@@ -863,12 +905,13 @@ xcodebuild"
          srcdir="${argument:-$PWD}"
          if read -r argument
          then
+            log_error "Superflous argument \"${argument}\""
             build_usage
          fi
 
          if [ ! -d "${srcdir}" ]
          then
-            fail "${MULLE_EXECUTABLE_FAIL_PREFIX}: Source directory \"${srcdir}\" is missing"
+            fail "Source directory \"${srcdir}\" is missing"
          fi
 
          build "${cmd}" "${srcdir}"
@@ -878,16 +921,19 @@ xcodebuild"
          srcdir="${argument}"
          if ! read -r dstdir
          then
+            log_fluff "Defaulting to install prefix \"/tmp\", as there is no argument"
             dstdir="/tmp"
          fi
+
          if read -r argument
          then
+            log_error "Superflous argument \"${argument}\""
             install_usage
          fi
 
          if [ ! -d "${srcdir}" ]
          then
-            fail "${MULLE_EXECUTABLE_FAIL_PREFIX}: Source directory \"${srcdir}\" is missing"
+            fail "Source directory \"${srcdir}\" is missing"
          fi
 
          build "install" "${srcdir}" "${dstdir}"
@@ -900,6 +946,7 @@ make_build_main()
 {
    log_entry "make_build_main" "$@"
 
+   usage="build_usage"
    _make_build_main "build" "$@"
 }
 
@@ -908,6 +955,7 @@ make_install_main()
 {
    log_entry "make_install_main" "$@"
 
+   usage="install_usage"
    _make_build_main "install" "$@"
 }
 

@@ -68,8 +68,6 @@ EOF
 }
 
 
-
-
 main()
 {
    MULLE_MAKE_FLAGS="$@"
@@ -89,7 +87,7 @@ main()
    #
    # Default is release
    #
-   if ! run_mulle_make install --build-dir "${builddir}" "." "${dstdir}"
+   if ! run_mulle_make install --no-ninja --build-dir "${builddir}" "." "${dstdir}"
    then
       exit 1
    fi

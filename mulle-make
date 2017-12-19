@@ -63,7 +63,7 @@ SHOWN_COMMANDS="\
 
 
 HIDDEN_COMMANDS="\
-   library-path  : print path to ${MULLE_EXECUTABLE_NAME} libexec
+   libexec-path  : print path to ${MULLE_EXECUTABLE_NAME} libexec
    uname         : ${MULLE_EXECUTABLE_NAME}'s simplified uname(1)"
 
 
@@ -85,6 +85,7 @@ print_flags()
    cat <<EOF
    -f            : force operation
    --args <file> : read the commandline from <file>. Must be only option.
+   --no-ninja    : prefer make over ninja
 EOF
 
    options_technical_flags_usage "         : "
@@ -99,7 +100,7 @@ usage()
 Usage:
    ${MULLE_EXECUTABLE_NAME} [flags] [command] [options]
 
-   Retrieve and unpack tar archive, git repositories, svn repositories.
+   Build a project using cmake or configure or something else.
 
 Flags:
 EOF
@@ -250,7 +251,7 @@ _main()
          ;;
 
          -*)
-            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown option \"${argument}\""
+            log_error "Unknown flag \"${argument}\""
             usage "${MULLE_TRACE}"
          ;;
 
@@ -296,7 +297,7 @@ _main()
          usage "${MULLE_TRACE}"
       ;;
 
-      library-path)
+      libexec-path|library-path)
          echo "${MULLE_MAKE_LIBEXEC_DIR}"
       ;;
 
@@ -310,7 +311,7 @@ _main()
       ;;
 
       *)
-         log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${cmd}\""
+         log_error "Unknown command \"${cmd}\""
          usage "${MULLE_TRACE}"
       ;;
    esac
@@ -338,13 +339,14 @@ _init()
    #
    # minimal setup exit
    #
-   if [ "$1" = "library-path" ]
-   then
-      echo "${MULLE_MAKE_LIBEXEC_DIR}"
-      exit 0
-   fi
+   case "$1" in
+      "libexec-path"|"library-path")
+         echo "${MULLE_MAKE_LIBEXEC_DIR}"
+         exit 0
+      ;;
+   esac
 
-   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env library-path 2> /dev/null`"
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-path 2> /dev/null`"
    if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
    then
       if [ -z "`command -v "${executablepath}"`" ]

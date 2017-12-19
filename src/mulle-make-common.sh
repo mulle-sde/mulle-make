@@ -39,16 +39,6 @@ platform_make()
 
    name="`basename -- "${compilerpath}"`"
 
-   #
-   # Ninja is probably preferable if installed
-   # Should configure this though somewhere
-   #
-   if [ ! -z "`command -v ninja`" ]
-   then
-      echo "ninja"
-      return
-   fi
-
    case "${UNAME}" in
       mingw)
          case "${name%.*}" in
@@ -76,6 +66,24 @@ find_make()
    local defaultname="${1:-make}"
 
    local toolname
+
+   #
+   # Ninja is preferable if installed
+   #
+   case "${OPTION_NINJA}" in
+      "YES"|"DEFAULT")
+         if [ ! -z "`command -v ninja`" ]
+         then
+            echo "ninja"
+            return
+         fi
+
+         if [ "${OPTION_NINJA}" = "YES" ]
+         then
+            fail "ninja not found"
+         fi
+      ;;
+   esac
 
    toolname="${OPTION_MAKE:-${MAKE:-make}}"
    verify_binary "${toolname}" "make" "${defaultname}"
@@ -118,15 +126,7 @@ tools_environment_make()
       local defaultmake
 
       defaultmake="`platform_make "${CC}"`"
-      case "${UNAME}" in
-         mingw)
-            MAKE="`find_make "${defaultmake}"`"
-         ;;
-
-         *)
-            MAKE="`find_make`"
-         ;;
-      esac
+      MAKE="`find_make "${defaultmake}"`"
    fi
 }
 
@@ -293,6 +293,23 @@ find_nearest_matching_pattern()
    fi
 
    local found
+
+   #
+   # allow user to specify directory to use for building
+   #
+   found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir.${UNAME}" `"
+   if [  -z "${found}" ]
+   then
+      found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir" `"
+   fi
+
+   if [ ! -z "${found}" ]
+   then
+      log_fluff "Use .mulle-make-dir specified directory \"${found}\""
+      echo "${found}"
+      return
+   fi
+
    local depth
 
    found=""

@@ -5,6 +5,7 @@
 *.old
 tmp.*
 
+build/
 xcuserdata/
 *.xcworkspace/
 mulle-make.sublime-workspace
