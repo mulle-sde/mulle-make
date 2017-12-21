@@ -3,7 +3,7 @@
 # formula operations.
 #
 PROJECT="mulle-make"      # your project/repository name
-DESC="🤖 Build projects using a variety of build systems"
+DESC="🤖 Build projects uniformly with a variety of build systems"
 LANGUAGE="bash"                # c,cpp, objc, bash ...
 # NAME="${PROJECT}"        # formula filename without .rb extension
 
