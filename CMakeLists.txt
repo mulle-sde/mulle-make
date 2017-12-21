@@ -52,18 +52,18 @@ endif()
 set( LIBRARY_SCRIPTS
 src/mulle-make-build.sh
 src/mulle-make-command.sh
-src/mulle-make-dispense.sh
+src/mulle-make-common.sh
 src/mulle-make-compiler.sh
-src/mulle-make-log.sh
+src/mulle-make-list.sh
 src/mulle-make-mingw.sh
-src/mulle-make-systeminstall.sh
+src/mulle-make-plugin.sh
 )
 
 
 set( BUILD_PLUGIN_SCRIPTS
+src/plugins/autoconf.sh
 src/plugins/cmake.sh
 src/plugins/configure.sh
-src/plugins/script.sh
 src/plugins/xcodebuild.sh
 )
 
