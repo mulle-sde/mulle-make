@@ -85,7 +85,6 @@ print_flags()
    cat <<EOF
    -f            : force operation
    --args <file> : read the commandline from <file>. Must be only option.
-   --no-ninja    : prefer make over ninja
 EOF
 
    options_technical_flags_usage "         : "

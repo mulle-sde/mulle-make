@@ -34,41 +34,62 @@ MULLE_MAKE_BUILD_SH="included"
 _emit_common_options()
 {
    cat <<EOF
-Options:
-   --sdk <name>   :  SDK to use (Default)
-   -c <name>      :  configuration to build like Debug or Release (Default)
-   -K             :  always clean before building
-   -k             :  don't clean before building
-   -p <list>      :  tool preference order. Tools are separated by ','
+   -D<key>=<value>            : set definition (can't mix with += definitions)
+   -D<key>+=<value>           : add to definition
+   --debug                    : build with configuration Debug
+   --release                  : build with configuration Release (Default)
+   --build-dir <dir>          : specify build directory
+   --log-dir <dir>            : specify log directory
+   --include-path <path>      : specify header search PATH, separated by :
+   --lib-path <path>          : specify library search PATH, separated by :
+   --frameworks-path <path>   : specify Frameworks search PATH, separated by :
 EOF
 
    case "${UNAME}" in
+
       mingw*)
          :
       ;;
 
       *)
          cat <<EOF
-   -j             :  number of cores parameter for make (${CORES})
+   -j                         : number of cores parameter for make (${CORES})
 EOF
       ;;
    esac
-   echo
 }
 
 
-install_usage()
+_emit_uncommon_options()
 {
-   cat <<EOF >&2
-Usage:
-   ${MULLE_EXECUTABLE_NAME} install [options] <directory> [dstdirectory]
-
-   Build the project in directory. Then the build results are installed in
-   dstdirectory.  If dstdirectory is omitted '/tmp' is used.
+   cat <<EOF
+   --configuration <name>     : configuration to build like Debug or Release
+   -K                         : always clean before building
+   -k                         : don't clean before building
+   --info-dir <path>          : specify info directory
+   --tool-preferences <list>  : tool preference order. Tools are separated by ','
+   --prefix <prefix>          : prefix to use for build products e.g. /usr/local
+   --project-name <name>      : explicitly set project name
+   --sdk <name>               : SDK to use (Default)
+   --no-ninja                 : prefer make over ninja
 EOF
-   _emit_common_options >&2
+   case "${UNAME}" in
+      darwin)
+         echo "\
+   --no-determine-xcode-sdk   : don't use xcrun to figure out Xcode SDK to use
+   --xcode-config-file <file> : specify xcode config file to use"
+      ;;
+   esac
+}
 
-   exit 1
+
+emit_options()
+{
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   then
+      _emit_common_options
+   fi
+   _emit_uncommon_options
 }
 
 
@@ -81,11 +102,30 @@ Usage:
    Build the project in directory. If directory is omitted, the current
    directory is used.
 
+Options:
 EOF
-   _emit_common_options >&2
+   emit_options | sort
 
    exit 1
 }
+
+install_usage()
+{
+   cat <<EOF >&2
+Usage:
+   ${MULLE_EXECUTABLE_NAME} install [options] <src> [dst]
+
+   Build the project in src. Then the build results are installed in
+   dst.  If dst is omitted '/tmp' is used.
+
+Options:
+EOF
+   emit_options | sort
+
+   exit 1
+}
+
+
 
 
 mkdir_build_directories()
@@ -355,11 +395,7 @@ There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERE
 # egrep -h -o -w 'OPTION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | sort -u
 #
 KNOWN_XCODEBUILD_PLUGIN_OPTIONS="\
-OPTION_XCODEBUILD
-OPTION_XCODE_ADD_USR_LOCAL
-OPTION_XCODE_MANGLE_HEADER_DASH
-OPTION_XCODE_MANGLE_HEADE_PATHS
-OPTION_XCODE_MANGLE_INCLUDE_PREFIX"
+OPTION_XCODEBUILD"
 
 KNOWN_CMAKE_PLUGIN_OPTIONS="\
 OPTION_CMAKE
@@ -670,18 +706,33 @@ read_defines_dir()
 
 
 #
-# it is assumed that the caller (mulle-build) resolved the UNAME already
+# it is assumed that the caller (mulle-craft) resolved the UNAME already
 #
 read_info_dir()
 {
    log_entry "read_info_dir" "$@"
 
-   directory="$1"
+   local projectdir="$1"
 
-   [ ! -d "${directory}" ] && fail "info directory \"${directory}\" missing"
+   if [ "${OPTION_LOG_DIR}" = "NO" ]
+   then
+      return
+   fi
 
-   read_defines_dir "${directory}" "make_define_option"
-   read_defines_dir "${directory}/plus" "make_define_plus_option"
+   local infodir
+
+   infodir="${projectdir}/.mulle-make"  # default, optional
+   if [ ! -z "${OPTION_LOG_DIR}" ]
+   then
+      infodir="${OPTION_LOG_DIR}"
+      if [ ! -d "${infodir}" ]  # now required
+      then
+         fail "infodir \"${infodir}\" is missing ($PWD)"
+      fi
+   fi
+
+   read_defines_dir "${infodir}" "make_define_option"
+   read_defines_dir "${infodir}/plus" "make_define_plus_option"
 }
 
 
@@ -709,7 +760,6 @@ xcodebuild"
    local OPTION_CONFIGURATION="DEFAULT"
    local OPTION_DETERMINE_XCODE_SDK="DEFAULT"
    local OPTION_SDK="DEFAULT"
-   local OPTION_XCODE_ADD_USR_LOCAL="DEFAULT"
    local OPTION_NINJA="DEFAULT"
 
    local OPTION_BUILD_DIR
@@ -751,10 +801,6 @@ xcodebuild"
             OPTION_NINJA="NO"
          ;;
 
-         --no-determine-xcode-sdk)
-            OPTION_DETERMINE_XCODE_SDK="NO"
-         ;;
-
          --determine-xcode-sdk)
             OPTION_DETERMINE_XCODE_SDK="YES"
          ;;
@@ -779,10 +825,6 @@ xcodebuild"
 
          --xcode-config-file)
             read -r OPTION_XCODE_XCCONFIG_FILE || fail "missing argument to \"${argument}\""
-         ;;
-
-         --xcode-add-usr-local|--use-prefix-libraries)
-            OPTION_XCODE_ADD_USR_LOCAL=YES
          ;;
 
          #
@@ -892,11 +934,6 @@ xcodebuild"
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-plugin.sh" || return 1
    fi
 
-   if [ ! -z "${OPTION_INFO_DIR}" ]
-   then
-      read_info_dir "${OPTION_INFO_DIR}" || return 1
-   fi
-
    local srcdir
    local dstdir
 
@@ -913,6 +950,8 @@ xcodebuild"
          then
             fail "Source directory \"${srcdir}\" is missing"
          fi
+
+         read_info_dir "${srcdir}"
 
          build "${cmd}" "${srcdir}"
       ;;
@@ -935,6 +974,8 @@ xcodebuild"
          then
             fail "Source directory \"${srcdir}\" is missing"
          fi
+
+         read_info_dir "${srcdir}"
 
          build "install" "${srcdir}" "${dstdir}"
       ;;

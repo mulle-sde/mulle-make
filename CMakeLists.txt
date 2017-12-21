@@ -57,7 +57,6 @@ src/mulle-make-dispense.sh
 src/mulle-make-compiler.sh
 src/mulle-make-log.sh
 src/mulle-make-mingw.sh
-src/mulle-make-mv-force
 src/mulle-make-systeminstall.sh
 )
 

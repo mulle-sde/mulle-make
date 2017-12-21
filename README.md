@@ -1,18 +1,40 @@
-# mulle-make, cross platform meta-build tool
+# mulle-make, 🤖 Build projects using a variety of build systems 
 
 ![Last version](https://img.shields.io/github/tag/{{PUBLISHER}}/mulle-make.svg)
 
 ... for Linux, OS X, FreeBSD, Windows
 
-... for C, C++, Objective-C
-
-Let it run on a source directory. It will determine if the project needs to
+**mulle-make** will determine if the project needs to
 be build via `configure`, `autoconf`, `cmake` or some other build tool.
+It will then proceed to build the project using that tool.
 
-It will then proceed to build the project.
 
-Finally `mulle-make` can distribute the build results into a destination
-directory, reorganizing some things on the fly.
+Executable   | Description
+-------------|--------------------------------
+`mulle-make` | Build a single project
+
+
+## Install
+
+OS    | Command
+------|------------------------------------
+macos | `brew install mulle-kybernetik/software/mulle-make`
+other | ./install.sh  (Requires: [mulle-bashfunctions](https://github.com/mulle-nat/mulle-bashfunctions))
+
+## What **mulle-make** does
+
+Essentially, **mulle-make** does:
+
+```
+src="`find ${PROJECT_DIR} --name "CMakeLists.txt -print`"
+cd "${src}"
+mkdir build
+cd build
+cmake ..
+ninja
+```
+
+But that's really not all. :) It's provides a uniform call interface to various build tools.
 
 
 ## GitHub and Mulle kybernetiK

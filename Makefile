@@ -5,7 +5,6 @@ src/mulle-make-compiler.sh \
 src/mulle-make-install.sh \
 src/mulle-make-log.sh \
 src/mulle-make-mingw.sh \
-src/mulle-make-mv-force \
 src/plugins/autoconf.sh \
 src/plugins/cmake.sh \
 src/plugins/configure.sh \
