@@ -7,7 +7,7 @@ set( CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 set( CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set( CPACK_PACKAGE_CONTACT "Nat! <nat@mulle-kybernetik.de>")
 set( CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
-set( CPACK_PACKAGE_DESCRIPTION_SUMMARY "👢 Cross platform dependency manager for developers")
+set( CPACK_PACKAGE_DESCRIPTION_SUMMARY "🤖 Build projects using a variety of build systems")
 set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set( CPACK_STRIP_FILES false)
 
@@ -18,7 +18,8 @@ set( CPACK_STRIP_FILES false)
 #
 set( CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/mulle-nat/${PROJECT_NAME}")
 # not strictly required
-#set( CPACK_DEBIAN_PACKAGE_DEPENDS "cmake (>= 3.0.0)")
+
+set( CPACK_DEBIAN_PACKAGE_DEPENDS "mulle-bashfunctions, cmake (>= 3.0.0)")
 
 # stuff needed for RPM
 

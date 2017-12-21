@@ -168,12 +168,8 @@ main()
       mkdir -p "${libexec}" || fail "could not create ${libexec}"
    fi
 
-
    install -m "${mode}" "mulle-make" "${bin}/mulle-make" || exit 1
    printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-make" >&2
-
-   install -m "${mode}" "mulle-make-dotdump" "${bin}/mulle-make-dotdump" || exit 1
-   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-make-dotdump" >&2
 
    case `uname` in
       MINGW*)
@@ -203,19 +199,12 @@ main()
       install -v -m "${mode}" "${i}" "${libexec}" || exit 1
    done
 
-   PLUGIN_DIR="${libexec}/mulle-make-build-plugins"
-   for i in src/mulle-make-build-plugins/*.sh
+   PLUGIN_DIR="${libexec}/plugins"
+   for i in src/plugins/*.sh
    do
       mkdir -p "${PLUGIN_DIR}" 2> /dev/null
       install -v -m "${mode}" "${i}" "${PLUGIN_DIR}" || exit 1
    done
-
-   if [ -d "test" ]
-   then
-      # use attractive colors :)
-      printf "${C_GREEN}If you are new to mulle-make I would suggest checking out\n" >&2
-      printf "the ${C_YELLOW}README.md${C_GREEN} in ${C_CYAN}./test${C_GREEN} and doing the examples.\n" >&2
-   fi
 }
 
 main "$@"

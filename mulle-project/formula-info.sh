@@ -3,7 +3,11 @@
 # formula operations.
 #
 PROJECT="mulle-make"      # your project/repository name
-DESC="👢 Cross platform dependency manager for developers"
+DESC="🤖 Build projects using a variety of build systems"
 LANGUAGE="bash"                # c,cpp, objc, bash ...
 # NAME="${PROJECT}"        # formula filename without .rb extension
 
+DEPENDENCIES='${BOOTSTRAP_TAP}mulle-bashfunctions
+cmake'
+
+DEBIAN_DEPENDENCIES="mulle-bashfunctions, cmake (>= 3.0.0), make"
