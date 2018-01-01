@@ -1,0 +1,15 @@
+language: c
+
+dist: trusty
+sudo: required
+
+before_install:
+  - curl -sS "https://www.mulle-kybernetik.com/dists/debian-admin-pub.asc" | sudo apt-key add -
+  - sudo sh -c '( echo "deb [arch=all] http://www.mulle-kybernetik.com `lsb_release -c -s` main" > "/etc/apt/sources.list.d/mulle-nat.mulle-kybernetik.com.list" )'
+  - sudo apt-get update
+  - sudo apt-get -y install mulle-bashfunctions
+
+script:
+  - ./install.sh /tmp
+  - cd tests ;  ./run-test -v 
+

@@ -74,6 +74,13 @@ main()
 
    _options_mini_main "$@"
 
+
+   if [ -z "`command -v "xcodebuild"`" ]
+   then
+      log_info "xcodebuild not installed, so skipping this test"
+      return 
+   fi
+
    local directory
    local dstdir
    local builddir

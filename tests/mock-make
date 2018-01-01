@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /usr/bin/env bash
 
 [ "${TRACE}" = YES ] && set -x
 
@@ -44,9 +44,9 @@ main()
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
-      emit_defines "$@" | sort > "${filename}"
+      emit_defines "$@" | LC_ALL=C sort > "${filename}"
    else
-      emit_defines "$@" | sort
+      emit_defines "$@" | LC_ALL=C sort
    fi
 }
 
