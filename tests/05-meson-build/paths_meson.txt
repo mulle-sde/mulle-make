@@ -1,0 +1,5 @@
+--backend mock-ninja
+--buildtype release
+[CPPFLAGS=-isystem /usr/local/include -isystem /usr/include -I/usr/local/include -I/usr/include]
+[LDFLAGS=-L/usr/local/lib -L/usr/lib -F/Network/Library/Frameworks -F/Library/Frameworks]
+build

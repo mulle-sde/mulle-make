@@ -131,6 +131,52 @@ tools_environment_make()
 }
 
 
+#
+# modifies quasi-global
+#
+# cflags
+# cppflags
+# cxxflags
+# ldflags
+#
+__add_path_tool_flags()
+{
+   local sdkpath
+
+   sdkpath="`compiler_sdk_parameter "${sdk}"`"
+   sdkpath="`echo "${sdkpath}" | "${SED}" -e 's/ /\\ /g'`"
+
+   if [ ! -z "${sdkpath}" ]
+   then
+      cppflags="`concat "-isysroot ${sdkpath}" "${cppflags}"`"
+      ldflags="`concat "-isysroot ${sdkpath}" "${ldflags}"`"
+   fi
+
+   local headersearchpaths
+
+   case "${OPTION_CC}" in
+      *clang*|*gcc)
+         headersearchpaths="`convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-isystem " "'"`"
+      ;;
+
+      *)
+         headersearchpaths="`convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-I" "'"`"
+      ;;
+   esac
+   cppflags="`concat "${cppflags}" "${headersearchpaths}"`"
+
+   local librarysearchpaths
+
+   librarysearchpaths="`convert_path_to_flag "${OPTION_LIB_PATH}" "-L" "'"`"
+   ldflags="`concat "${ldflags}" "${librarysearchpaths}"`"
+
+   local frameworksearchpaths
+
+   frameworksearchpaths="`convert_path_to_flag "${OPTION_FRAMEWORKS_PATH}" "-F" "'"`"
+   ldflags="`concat "${ldflags}" "${frameworksearchpaths}"`"
+}
+
+
 build_fail()
 {
    log_entry "build_fail" "$@"

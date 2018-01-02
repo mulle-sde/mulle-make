@@ -38,17 +38,22 @@ convert_path_to_flag()
    local quote="$3"
 
    local output
-   local component
+   local munged
 
    IFS=":"
    for component in ${path}
    do
+      if [ -z "${quote}" ]
+      then
+         component="$(sed -e 's/ /\\ /g' <<< "${component}")"
+      fi
       output="`concat "${output}" "${flag}${quote}${component}${quote}"`"
    done
    IFS="${DEFAULT_IFS}"
 
    printf "%s" "${output}"
 }
+
 
 #
 # remove old builddir, create a new one
@@ -89,6 +94,9 @@ build_configure()
    cppflags="`compiler_cppflags_value`"
    ldflags="`compiler_ldflags_value`"
 
+   # hackish! changes cflags and friends
+   __add_path_tool_flags
+
    local maketarget
    local arguments
 
@@ -108,78 +116,45 @@ build_configure()
       ;;
    esac
 
-   local sdkpath
-
-   sdkpath="`compiler_sdk_parameter "${sdk}"`"
-   sdkpath="`echo "${sdkpath}" | "${SED}" -e 's/ /\\ /g'`"
-
-   if [ ! -z "${sdkpath}" ]
-   then
-      cppflags="`concat "-isysroot ${sdkpath}" "${cppflags}"`"
-      ldflags="`concat "-isysroot ${sdkpath}" "${ldflags}"`"
-   fi
-
-   local headersearchpaths
-
-   case "${OPTION_CC}" in
-      *clang*|*gcc)
-         headersearchpaths="`convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-isystem " "'"`"
-      ;;
-
-      *)
-         headersearchpaths="`convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-I" "'"`"
-      ;;
-   esac
-   cppflags="`concat "${cppflags}" "${headersearchpaths}"`"
-
-   local librarysearchpaths
-
-   librarysearchpaths="`convert_path_to_flag "${OPTION_LIB_PATH}" "-L" "'"`"
-   ldflags="`concat "${ldflags}" "${librarysearchpaths}"`"
-
-   local frameworksearchpaths
-
-   frameworksearchpaths="`convert_path_to_flag "${OPTION_FRAMEWORKS_PATH}" "-F" "'"`"
-   ldflags="`concat "${ldflags}" "${frameworksearchpaths}"`"
-
-
-   local configure_defines
    local env_flags
    local passed_keys
 
+   env_flags=
+   passed_keys=
+
    if [ ! -z "${OPTION_CC}" ]
    then
-      configure_defines="`concat "${configure_defines}" "CC='${OPTION_CC}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "${CC}"`"
+      env_flags="`concat "${env_flags}" "CC='${OPTION_CC}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CC"`"
    fi
    if [ ! -z "${OPTION_CXX}" ]
    then
-      configure_defines="`concat "${configure_defines}" "CXX='${OPTION_CXX}'"`"
-      configure_defines="`colon_concat "${passed_keys}" "${CXX}"`"
+      env_flags="`concat "${env_flags}" "CXX='${OPTION_CXX}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CXX"`"
    fi
    if [ ! -z "${cppflags}" ]
    then
-      configure_defines="`concat "${configure_defines}" "CPPFLAGS='${cppflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "${CPPFLAGS}"`"
+      env_flags="`concat "${env_flags}" "CPPFLAGS='${cppflags}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CPPFLAGS"`"
    fi
    if [ ! -z "${cflags}" ]
    then
-      configure_defines="`concat "${configure_defines}" "CFLAGS='${cflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "${CFLAGS}"`"
+      env_flags="`concat "${env_flags}" "CFLAGS='${cflags}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CFLAGS"`"
    fi
    if [ ! -z "${cxxflags}" ]
    then
-      configure_defines="`concat "${configure_defines}" "CXXFLAGS='${cxxflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "${CXXFLAGS}"`"
+      env_flags="`concat "${env_flags}" "CXXFLAGS='${cxxflags}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CXXFLAGS"`"
    fi
    if [ ! -z "${ldflags}" ]
    then
-      configure_defines="`concat "${configure_defines}" "LDFLAGS='${ldflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "${LDFLAGS}"`"
+      env_flags="`concat "${env_flags}" "LDFLAGS='${ldflags}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "LDFLAGS"`"
    fi
 
-   # always add at least ':' for tests
-   env_flags="`concat "${env_flags}" "__MULLE_MAKE_ARGS='${passed_keys}:'"`"
+   # always pass at least a trailing :
+   env_flags="`concat "${env_flags}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"`"
 
    local absprojectdir
    local projectdir
@@ -195,32 +170,30 @@ build_configure()
    logfile1="`build_log_name "${logsdir}" "configure" "${srcdir}" "${configuration}" "${sdk}"`"
    logfile2="`build_log_name "${logsdir}" "make" "${srcdir}" "${configuration}" "${sdk}"`"
 
+   if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+   then
+      logfile1="`safe_tty`"
+      logfile2="${logfile1}"
+   fi
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   then
+      logfile1="/dev/null"
+      logfile2="/dev/null"
+   fi
+   log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+
    (
-      exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
-
-      if [ "$MULLE_FLAG_VERBOSE_BUILD" = "YES" ]
-      then
-         logfile1="`safe_tty`"
-         logfile2="${logfile1}"
-      fi
-      if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
-      then
-         logfile1="/dev/null"
-         logfile2="/dev/null"
-      fi
-      log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
-
-
       PATH="${BUILDPATH}"
       log_fluff "PATH temporarily set to $PATH"
+
+      exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
 
        # use absolute paths for configure, safer (and easier to read IMO)
       if ! logging_redirect_eval_exekutor "${logfile1}" \
                                           "${env_flags}" \
-                                       "'${absprojectdir}/configure'" \
-                                          "${configure_flags}" \
-                                          "${arguments}" \
-                                          "${configure_defines}"
+                                             "'${absprojectdir}/configure'" \
+                                                "${configure_flags}" \
+                                                "${arguments}"
       then
          build_fail "${logfile1}" "configure"
       fi
@@ -230,8 +203,6 @@ build_configure()
       then
          build_fail "${logfile2}" "make"
       fi
-      set +f
-
    ) || exit 1
 }
 

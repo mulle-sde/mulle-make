@@ -2,6 +2,7 @@
 
 [ "${TRACE}" = YES ] && set -x
 
+
 emit_args()
 {
    local argument
@@ -13,6 +14,7 @@ emit_args()
 
    prefix="`eval echo \$MOCK_TEST_DIR`"
    prefix="`escaped_sed_pattern "${prefix}"`"
+
    while [ "$#" -ne 0 ]
    do
       argument="$1"

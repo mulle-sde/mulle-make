@@ -15,16 +15,32 @@ emit_args()
             echo "${key}"
          ;;
 
-         --prefix|--*dir)
+         --backend|--prefix)
+            shift
+            echo "${key} `basename -- "$1"`"
+         ;;
+
+         --buildtype|--*dir)
             shift
             echo "${key} $1"
          ;;
 
-         *)
+         -*)
             echo "${key}"
+         ;;
+
+         *)
+            break
          ;;
       esac
 
+      shift
+   done
+
+   while [ "$#" -ne 0 ]
+   do
+      # just emit directory names
+      basename -- "$1"
       shift
    done
 }
@@ -60,7 +76,7 @@ main()
    local envvar
    local filename
 
-   [ -z "${__MULLE_MAKE_ENV_ARGS}" ] && \
+   [ -z "${__MULLE_MAKE_ENV_ARGS}" ] &&
       fail "not called by mulle-make (__MULLE_MAKE_ENV_ARGS is missing)"
 
    envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z|'`_REDIRECT_FILE"

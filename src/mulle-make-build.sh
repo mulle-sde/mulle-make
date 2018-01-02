@@ -394,22 +394,28 @@ There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERE
 # grep through project to get the options:_
 # egrep -h -o -w 'OPTION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | sort -u
 #
-KNOWN_XCODEBUILD_PLUGIN_OPTIONS="\
-OPTION_XCODEBUILD"
-
-KNOWN_CMAKE_PLUGIN_OPTIONS="\
-OPTION_CMAKE
-OPTION_CMAKEFLAGS
-OPTION_CMAKE_GENERATOR"
-
 KNOWN_AUTOCONF_PLUGIN_OPTIONS="\
 OPTION_AUTOCONF
 OPTION_AUTORECONF
 OPTION_AUTOCONFFLAGS
 OPTION_AUTORECONFFLAGS"
 
+KNOWN_CMAKE_PLUGIN_OPTIONS="\
+OPTION_CMAKE
+OPTION_CMAKEFLAGS
+OPTION_CMAKE_GENERATOR"
+
 KNOWN_CONFIGURE_PLUGIN_OPTIONS="\
 OPTION_CONFIGUREFLAGS"
+
+KNOWN_MESON_PLUGIN_OPTIONS="\
+OPTION_MESON
+OPTION_MESONFLAGS
+OPTION_MESON_BACKEND"
+
+KNOWN_XCODEBUILD_PLUGIN_OPTIONS="\
+OPTION_XCODEBUILD"
+
 
 KNOWN_GENERAL_OPTIONS="\
 OPTION_BUILD_DIR
@@ -445,6 +451,7 @@ KNOWN_OPTIONS="${KNOWN_GENERAL_OPTIONS}
 ${KNOWN_AUTOCONF_PLUGIN_OPTIONS}
 ${KNOWN_CMAKE_PLUGIN_OPTIONS}
 ${KNOWN_CONFIGURE_PLUGIN_OPTIONS}
+${KNOWN_MESON_PLUGIN_OPTIONS}
 ${KNOWN_XCODEBUILD_PLUGIN_OPTIONS}"
 
 
@@ -712,23 +719,17 @@ read_info_dir()
 {
    log_entry "read_info_dir" "$@"
 
-   local projectdir="$1"
+   local infodir="$1"
 
-   if [ "${OPTION_LOG_DIR}" = "NO" ]
+   if [ ! -e "${infodir}" ]
    then
+      log_verbose "There is no \"${infodir}\" ($PWD)"
       return
    fi
 
-   local infodir
-
-   infodir="${projectdir}/.mulle-make"  # default, optional
-   if [ ! -z "${OPTION_LOG_DIR}" ]
+   if [ ! -d "${infodir}" ]  # now required
    then
-      infodir="${OPTION_LOG_DIR}"
-      if [ ! -d "${infodir}" ]  # now required
-      then
-         fail "infodir \"${infodir}\" is missing ($PWD)"
-      fi
+      fail "Infodir \"${infodir}\" must be a directory ($PWD)"
    fi
 
    read_defines_dir "${infodir}" "make_define_option"
@@ -746,6 +747,7 @@ _make_build_main()
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
    local OPTION_TOOL_PREFERENCES="cmake
+meson
 autoconf
 configure"
    case "${UNAME}" in
@@ -951,7 +953,10 @@ xcodebuild"
             fail "Source directory \"${srcdir}\" is missing"
          fi
 
-         read_info_dir "${srcdir}"
+         local infodir
+
+         infodir="${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
+         read_info_dir "${infodir}"
 
          build "${cmd}" "${srcdir}"
       ;;
@@ -975,7 +980,10 @@ xcodebuild"
             fail "Source directory \"${srcdir}\" is missing"
          fi
 
-         read_info_dir "${srcdir}"
+         local infodir
+
+         infodir="${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
+         read_info_dir "${infodir}"
 
          build "install" "${srcdir}" "${dstdir}"
       ;;

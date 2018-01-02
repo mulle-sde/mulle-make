@@ -11,5 +11,4 @@ before_install:
 
 script:
   - ./install.sh /tmp
-  - cd tests ;  ./run-test -v 
-
+  - cd tests ; ./run-test -v

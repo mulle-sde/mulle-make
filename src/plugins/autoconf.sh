@@ -98,13 +98,13 @@ build_autoconf()
    (
       exekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
 
-      if [ "$MULLE_FLAG_VERBOSE_BUILD" = "YES" ]
+      if [ "${MULLE_FLAG_VERBOSE_BUILD}" = "YES" ]
       then
          logfile1="`safe_tty`"
          logfile2="`safe_tty`"
       fi
 
-      if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+      if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
       then
          logfile1="/dev/null"
          logfile2="/dev/null"

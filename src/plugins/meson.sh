@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 #
-#   Copyright (c) 2015 Nat! - Mulle kybernetiK
+#   Copyright (c) 2018 Nat! - Mulle kybernetiK
 #   All rights reserved.
 #
 #   Redistribution and use in source and binary forms, with or without
@@ -28,67 +28,47 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_PLUGIN_CMAKE_SH="included"
+MULLE_MAKE_PLUGIN_MESON_SH="included"
 
 
 
-platform_cmake_generator()
+#
+# Meson can work with several backends.
+# Let's do only ninja at first and add xcodebuild or vs later.
+#
+platform_meson_backend()
 {
    local makepath="$1"
 
-   local name
+   local toolname
 
-   name="`basename -- "${makepath}"`"
-   case "${name%.*}" in
-      nmake)
-         echo "NMake Makefiles"
-      ;;
-
-      mingw*|MINGW*)
-         echo "MinGW Makefiles"
-      ;;
-
-      ninja)
-         echo "Ninja"
-      ;;
-
-      *)
-         case "${UNAME}" in
-            mingw*)
-               echo "MSYS Makefiles"
-            ;;
-
-            *)
-               echo "Unix Makefiles"
-            ;;
-         esac
-      ;;
-   esac
+   toolname="${OPTION_NINJA:-${NINJA:-ninja}}"
+   verify_binary "${toolname}" "ninja" "ninja"
 }
 
 
-find_cmake()
+find_meson()
 {
    local toolname
 
-   toolname="${OPTION_CMAKE:-${CMAKE:-cmake}}"
-   verify_binary "${toolname}" "cmake" "cmake"
+   toolname="${OPTION_MESON:-${MESON:-meson}}"
+   verify_binary "${toolname}" "meson" "meson"
 }
 
 
-tools_environment_cmake()
+tools_environment_meson()
 {
    tools_environment_make
 
-   local defaultgenerator
+   local defaultbackend
 
-   defaultgenerator="`platform_cmake_generator "${MAKE}"`"
-   CMAKE="`find_cmake`"
-   CMAKE_GENERATOR="${OPTION_CMAKE_GENERATOR:-${defaultgenerator}}"
+   defaultbackend="`platform_meson_backend "${NINJA}"`"
+   MESON="`find_meson`"
+   MESON_BACKEND="${OPTION_MESON_BACKEND:-${defaultbackend}}"
 }
 
 
-cmake_sdk_parameter()
+meson_sdk_parameter()
 {
    local sdk="$1"
 
@@ -99,8 +79,8 @@ cmake_sdk_parameter()
          sdkpath=`compiler_sdk_parameter "${sdk}"`
          if [ ! -z "${sdkpath}" ]
          then
-            log_fluff "Set cmake -DCMAKE_OSX_SYSROOT to \"${sdkpath}\""
-            echo "-DCMAKE_OSX_SYSROOT='${sdkpath}'"
+            log_fluff "Set meson sdk to \"${sdkpath}\""
+            echo "-isysroot '${sdkpath}'"
          fi
       ;;
    esac
@@ -109,13 +89,13 @@ cmake_sdk_parameter()
 
 #
 # remove old builddir, create a new one
-# depending on configuration cmake with flags
+# depending on configuration meson with flags
 # build stuff into dependencies
 # TODO: cache commandline in a file $ and emit instead of rebuilding it every time
 #
-build_cmake()
+build_meson()
 {
-   log_entry "build_cmake" "$@"
+   log_entry "build_meson" "$@"
 
    [ $# -eq 8 ] || internal_fail "api error"
 
@@ -146,14 +126,10 @@ build_cmake()
 
    cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO" `"
    cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO" `"
-   cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `" # only cmake does OPTION_INCLUDE_PATH here
+   cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `" # only meson does OPTION_INCLUDE_PATH here
    ldflags="`compiler_ldflags_value`"
 
-   if [ ! -z "${cppflags}" ]
-   then
-      cflags="`concat "${cflags}" "${cppflags}"`"
-      cxxflags="`concat "${cxxflags}" "${cppflags}"`"
-   fi
+   __add_path_tool_flags
 
    local rel_project_dir
    local absbuilddir
@@ -173,9 +149,13 @@ build_cmake()
    log_debug "rel_project_dir: ${rel_project_dir}"
    log_debug "PWD:             ${PWD}"
 
-   local cmake_flags
+   local meson_flags
+   local meson_env
+   local passed_keys
 
-   cmake_flags="${OPTION_CMAKEFLAGS}"
+   passed_keys=
+   meson_env=
+   meson_flags="${OPTION_MESONFLAGS}"
 
    local maketarget
 
@@ -184,78 +164,80 @@ build_cmake()
          maketarget=
          if [ ! -z "${OPTION_PREFIX}" ]
          then
-            cmake_flags="`concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${OPTION_PREFIX}'"`"
+            meson_flags="`concat "${meson_flags}" "--prefix '${OPTION_PREFIX}'"`"
          fi
       ;;
 
       install)
          [ -z "${dstdir}" ] && internal_fail "srcdir is empty"
          maketarget="install"
-         cmake_flags="`concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${dstdir}'"`"
+         meson_flags="`concat "${meson_flags}" "--prefix '${dstdir}'"`"
       ;;
    esac
 
    if [ ! -z "${configuration}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_BUILD_TYPE='${configuration}'"`"
-   fi
-
-   local sdkparameter
-
-   sdkparameter="`cmake_sdk_parameter "${sdk}"`"
-
-   if [ -z "${sdkparameter}" ]
-   then
-      cmake_flags="`concat "${cmake_flags}" "${sdkparameter}"`"
+      configuration="$(tr 'A-Z' 'a-z' <<< "${configuration}" )"
+      meson_flags="`concat "${meson_flags}" "--buildtype '${configuration}'"`"
    fi
 
    if [ ! -z "${OPTION_CC}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_C_COMPILER='${OPTION_CC}'"`"
+      meson_env="`concat "${meson_env}" "CC='${OPTION_CC}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CC"`"
    fi
 
    if [ ! -z "${OPTION_CXX}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_CXX_COMPILER='${OPTION_CXX}'"`"
+      meson_env="`concat "${meson_env}" "CXX='${OPTION_CXX}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CXX"`"
    fi
 
+   local sdkparameter
+
+   sdkparameter="`meson_sdk_parameter "${sdk}"`"
+
+   if [ ! -z "${sdkparameter}" ]
+   then
+      cppflags="`concat "${cppflags}" "${sdkparameter}"`"
+   fi
+
+   if [ ! -z "${cppflags}" ]
+   then
+      meson_env="`concat "${meson_env}" "CPPFLAGS='${cppflags}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CPPFLAGS"`"
+   fi
    if [ ! -z "${cflags}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_C_FLAGS='${cflags}'"`"
+      meson_env="`concat "${meson_env}" "CFLAGS='${cflags}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CFLAGS"`"
    fi
    if [ ! -z "${cxxflags}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_CXX_FLAGS='${cxxflags}'"`"
+      meson_env="`concat "${meson_env}" "CXXFLAGS='${cxxflags}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "CXXFLAGS"`"
    fi
-
    if [ ! -z "${ldflags}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_SHARED_LINKER_FLAGS='${ldflags}'"`"
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_EXE_LINKER_FLAGS='${ldflags}'"`"
+      meson_env="`concat "${meson_env}" "LDFLAGS='${ldflags}'"`"
+      passed_keys="`colon_concat "${passed_keys}" "LDFLAGS"`"
    fi
 
-   #
-   # CMAKE_INCLUDE_PATH doesn't really do what one expects it would
-   # it's a setting for the rarely used find_file
-   #
-   #if [ ! -z "${includelines}" ]
-   #then
-   #   cmake_dirs="`concat "${cmake_dirs}" "-DCMAKE_INCLUDE_PATH='${includelines}'"`"
-   #fi
-   if [ ! -z "${OPTION_LIB_PATH}" ]
-   then
-      local munged
+   # always pass at least a trailing :
+   meson_env="`concat "${meson_env}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"`"
 
-      munged="$(tr ':' ';' <<< "${OPTION_LIB_PATH}")"
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_LIBRARY_PATH='${munged}'"`"
+   local ninja_flags
+
+   ninja_flags="${OPTION_NINJAFLAGS}"
+
+   if [ ! -z "${OPTION_CORES}" ]
+   then
+      ninja_flags="-j '${OPTION_CORES}'"
    fi
 
-   if [ ! -z "${OPTION_FRAMEWORKS_PATH}" ]
+   if [ "${MULLE_FLAG_VERBOSE_MAKE}" = "YES" ]
    then
-      local munged
-
-      munged="$(tr ':' ';' <<< "${OPTION_FRAMEWORKS_PATH}")"
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_FRAMEWORK_PATH='${munged}'"`"
+      ninja_flags="`concat "${ninja_flags}" "-v"`"
    fi
 
    local other_buildsettings
@@ -263,76 +245,76 @@ build_cmake()
    other_buildsettings="`emit_userdefined_definitions "-D " "=" "=" ""`"
    if [ ! -z "${other_buildsettings}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "${other_buildsettings}"`"
+      meson_flags="`concat "${meson_flags}" "${other_buildsettings}"`"
    fi
 
-   local make_flags
+   local env_common
 
-   make_flags="${OPTION_MAKEFLAGS}"
-
-   if [ ! -z "${OPTION_CORES}" ]
-   then
-      make_flags="-j '${OPTION_CORES}'"
-   fi
-
-   if [ "${MULLE_FLAG_VERBOSE_MAKE}" = "YES" ]
-   then
-      make_flags="`concat "${make_flags}" "VERBOSE=1"`"
-   fi
-
-   local env_flags
-
-   env_flags="`concat "${env_flags}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"`"
+   env_common="`concat "${env_common}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"`"
 
    local logfile1
    local logfile2
 
    mkdir_if_missing "${logsdir}"
 
-   logfile1="`build_log_name "${logsdir}" "cmake" "${srcdir}" "${configuration}" "${sdk}"`"
-   logfile2="`build_log_name "${logsdir}" "make" "${srcdir}" "${configuration}" "${sdk}"`"
+   logfile1="`build_log_name "${logsdir}" "meson" "${srcdir}" "${configuration}" "${sdk}"`"
+   logfile2="`build_log_name "${logsdir}" "ninja" "${srcdir}" "${configuration}" "${sdk}"`"
+
+   if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+   then
+      logfile1="`safe_tty`"
+      logfile2="$logfile1"
+   fi
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   then
+      logfile1="/dev/null"
+      logfile2="/dev/null"
+   fi
+   log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
 
    (
-      exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
-
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
-      then
-         logfile1="`safe_tty`"
-         logfile2="$logfile1"
-      fi
-      if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
-      then
-         logfile1="/dev/null"
-         logfile2="/dev/null"
-      fi
-      log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
-
       [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
       PATH="${BUILDPATH}"
+
       log_fluff "PATH temporarily set to $PATH"
 
-      if ! logging_redirect_eval_exekutor "${logfile1}" \
-               "${env_flags}" \
-               "'${CMAKE}'" -G "'${CMAKE_GENERATOR}'" \
-                            "${cmake_flags}" \
-                            "'${rel_project_dir}'"
+      #
+      # If there is already something built and we changed environment vars,
+      # we should call `meson configure`.
+      # But then we would need to do the checking if
+      # something changed ourselves instead of meson doing it. Stupid IMO.
+      # Let's just force clean...
+      #
+      if [ -e "${builddir}/meson-private" ]
       then
-         build_fail "${logfile1}" "cmake"
+         rmdir_safer "${builddir}"
       fi
 
-      if ! logging_redirect_eval_exekutor "${logfile2}" \
-               "${env_flags}" \
-               "'${MAKE}'" "${make_flags}" ${maketarget}
+      if ! logging_redirect_eval_exekutor "${logfile1}" \
+               "${env_common}" \
+               "${meson_env}" \
+               "'${MESON}'" --backend "'${MESON_BACKEND}'" \
+                            "${meson_flags}" \
+                            "'${builddir}'"
       then
-         build_fail "${logfile2}" "make"
+         build_fail "${logfile1}" "meson"
+      fi
+
+      exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
+
+      if ! logging_redirect_eval_exekutor "${logfile2}" \
+               "${env_common}" \
+               "'${NINJA}'" "${ninja_flags}" ${maketarget}
+      then
+         build_fail "${logfile2}" "ninja"
       fi
    ) || exit 1
 }
 
 
-test_cmake()
+test_meson()
 {
-   log_entry "test_cmake" "$@"
+   log_entry "test_meson" "$@"
 
    [ $# -eq 2 ] || internal_fail "api error"
 
@@ -342,27 +324,32 @@ test_cmake()
    local projectfile
    local projectdir
 
-   projectfile="`find_nearest_matching_pattern "${srcdir}" "CMakeLists.txt"`"
+   projectfile="`find_nearest_matching_pattern "${srcdir}" "meson.build"`"
    if [ ! -f "${projectfile}" ]
    then
-      log_fluff "There is no CMakeLists.txt file in \"${srcdir}\""
+      log_fluff "There is no meson.build file in \"${srcdir}\""
       return 1
    fi
 
-   tools_environment_cmake
+   tools_environment_meson
 
-   if [ -z "${CMAKE}" ]
+   if [ -z "${MESON}" ]
    then
-      log_warning "Found a CMakeLists.txt, but ${C_RESET}${C_BOLD}cmake${C_WARNING} is not installed"
+      log_warning "Found a meson.build, but ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
       return 1
    fi
 
-   if [ -z "${MAKE}" ]
+   if [ -z "${MESON_BACKEND}" ]
    then
-      fail "No make available"
+      fail "No meson backend available"
    fi
 
-   log_verbose "Found cmake project file \"${projectfile}\""
+   #
+   # ugly hackage
+   #
+   NINJA="${MESON_BACKEND}"
+
+   log_verbose "Found meson project file \"${projectfile}\""
 
    PROJECTFILE="${projectfile}"
 
@@ -370,9 +357,9 @@ test_cmake()
 }
 
 
-cmake_plugin_initialize()
+meson_plugin_initialize()
 {
-   log_entry "cmake_plugin_initialize"
+   log_entry "meson_plugin_initialize"
 
    if [ -z "${MULLE_STRING_SH}" ]
    then
@@ -388,7 +375,7 @@ cmake_plugin_initialize()
    fi
 }
 
-cmake_plugin_initialize
+meson_plugin_initialize
 
 :
 

@@ -303,7 +303,7 @@ EOF
       exekutor cd "${projectdir}" || exit 1
 
       # DONT READ CONFIG SETTING IN THIS INDENT
-      if [ "${MULLE_FLAG_VERBOSE_BUILD}" = "YES" ]
+      if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
       then
          logfile="`safe_tty`"
       fi

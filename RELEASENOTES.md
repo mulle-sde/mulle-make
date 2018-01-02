@@ -1,3 +1,9 @@
+## 0.2.0
+
+* fix configure environment flag passing
+* add experimental support for meson
+
+
 ### 0.1.2
 
 * fix tests for linux

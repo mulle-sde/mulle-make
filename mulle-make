@@ -35,8 +35,8 @@ then
 fi
 
 MULLE_EXECUTABLE_VERSION_MAJOR=0
-MULLE_EXECUTABLE_VERSION_MINOR=1
-MULLE_EXECUTABLE_VERSION_PATCH=2
+MULLE_EXECUTABLE_VERSION_MINOR=2
+MULLE_EXECUTABLE_VERSION_PATCH=0
 
 MULLE_EXECUTABLE_VERSION="${MULLE_EXECUTABLE_VERSION_MAJOR}.${MULLE_EXECUTABLE_VERSION_MINOR}.${MULLE_EXECUTABLE_VERSION_PATCH}"
 
@@ -84,6 +84,7 @@ print_flags()
 {
    cat <<EOF
    -f            : force operation
+   -V            : verbose make
    --args <file> : read the commandline from <file>. Must be only option.
 EOF
 
@@ -222,6 +223,7 @@ _main()
    local MULLE_FLAG_LOG_VERBOSE="NO"
    local MULLE_FLAG_LOG_MERGE="NO"
    local MULLE_TRACE_POSTPONE="NO"
+   local MULLE_FLAG_VERBOSE_MAKE="NO"
 
    #
    # simple option handling
@@ -242,6 +244,10 @@ _main()
 
          -h|--help)
             usage "${MULLE_TRACE}"
+         ;;
+
+         -V|--verbose-make)
+            MULLE_FLAG_VERBOSE_MAKE="YES"
          ;;
 
          --version)
