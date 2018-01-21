@@ -42,9 +42,6 @@ case "$PATH" in
 esac
 
 
-PATH="/usr/local/libexec/mulle-bootstrap:/usr/bin:$PATH"
-export PATH
-
 INDENT="${INDENT:-"   "}"
 DATA="${DATA:-"DATA"}"
 

@@ -1,3 +1,7 @@
+### 0.2.1
+
+* libexec-dir is now used properly instead of library-path
+
 ## 0.2.0
 
 * fix configure environment flag passing

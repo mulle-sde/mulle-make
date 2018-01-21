@@ -30,10 +30,11 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
-PATH="/usr/local/libexec/mulle-bootstrap:$PATH"
-export PATH
-
-[ -z "${MULLE_BOOTSTRAP_MINGW_SH}" ] && . mulle-bootstrap-mingw.sh
+if [ -z "${MULLE_MAKE_MINGW_SH}" ]
+then
+   MULLE_MAKE_LIBEXEC_DIR="`mulle-make libexec-dir`"
+   . "${MULLE_MAKE_LIBEXEC_DIR:-mulle-make not in PATH}/mulle-make-mingw.sh"
+fi
 
 #
 # fake up a cpp exe for configure scripts in MINGW
