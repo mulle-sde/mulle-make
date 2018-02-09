@@ -124,9 +124,11 @@ build_load_plugins()
    AVAILABLE_PLUGINS=
    IFS="
 "
+   set -o noglob
    for preference in ${preferences}
    do
       IFS="${DEFAULT_IFS}"
+      set +o noglob
 
       if ! build_load_plugin "${preference}"
       then
@@ -136,6 +138,7 @@ build_load_plugins()
    done
 
    IFS="${DEFAULT_IFS}"
+   set +o noglob
 }
 
 :

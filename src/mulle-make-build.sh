@@ -297,8 +297,10 @@ build_with_configuration_sdk_preferences()
    local rval
    local preference
 
+   set -o noglob
    for preference in ${preferences}
    do
+      set +o noglob
       # pass local context w/o arguments
       build_with_preference_if_possible
 
@@ -308,6 +310,7 @@ build_with_configuration_sdk_preferences()
          return "${rval}"
       fi
    done
+   set +o noglob
 
    return 255
 }

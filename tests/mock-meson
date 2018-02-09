@@ -52,8 +52,10 @@ emit_env()
    local value
 
    IFS=":"
+   set -o noglob
    for key in ${__MULLE_MAKE_ENV_ARGS}
    do
+      set +o noglob
       if [ ! -z "${key}" ]
       then
          value="`eval echo "\\\$$key"`" || fail "eval failed"
@@ -61,6 +63,7 @@ emit_env()
       fi
    done
    IFS="${DEFAULTIFS}"
+   set +o noglob
 }
 
 

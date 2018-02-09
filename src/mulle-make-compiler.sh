@@ -178,11 +178,13 @@ _compiler_cflags_value()
    case "${compiler%.*}" in
       c++|cc|gcc*|*clang*|"")
          IFS=","
+         set -o noglob
          for i in ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}
          do
             result="`concat "$result" "-D${i}"`"
          done
          IFS="${DEFAULT_IFS}"
+         set +o noglob
       ;;
    esac
 

@@ -8,6 +8,8 @@
 be build via `configure`, `autoconf`, `cmake` or some other build tool.
 It will then proceed to build the project using that tool.
 
+![](dox/mulle-sde-overview.png)
+
 
 Executable   | Description
 -------------|--------------------------------
@@ -22,6 +24,8 @@ macos | `brew install mulle-kybernetik/software/mulle-make`
 other | ./install.sh  (Requires: [mulle-bashfunctions](https://github.com/mulle-nat/mulle-bashfunctions))
 
 ## What **mulle-make** does
+
+![](dox/overview.png)
 
 Essentially, **mulle-make** does:
 

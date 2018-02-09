@@ -71,9 +71,11 @@ find_library_in_directories()
 
    IFS="
 "
+   set -o noglob
    for directory in ${directories}
    do
       IFS="${DEFAULT_IFS}"
+      set +o noglob
 
       path="${directory}/${filename}"
 
@@ -85,6 +87,7 @@ find_library_in_directories()
    done
 
    IFS="${DEFAULT_IFS}"
+   set +o noglob
 }
 
 

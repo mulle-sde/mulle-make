@@ -41,15 +41,20 @@ convert_path_to_flag()
    local munged
 
    IFS=":"
+   set -o noglob
    for component in ${path}
    do
+      set +o noglob
+
       if [ -z "${quote}" ]
       then
          component="$(sed -e 's/ /\\ /g' <<< "${component}")"
       fi
       output="`concat "${output}" "${flag}${quote}${component}${quote}"`"
    done
+
    IFS="${DEFAULT_IFS}"
+   set +o noglob
 
    printf "%s" "${output}"
 }

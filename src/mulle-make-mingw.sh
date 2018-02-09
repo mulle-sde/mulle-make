@@ -42,9 +42,11 @@ find_msvc_executable()
    local compiler
 
    IFS=":"
+   set -o noglob
    for path in ${searchpath}
    do
       IFS="${DEFAULT_IFS}"
+      set +o noglob
 
       case "${path}" in
          /usr/*|/bin)
@@ -62,6 +64,7 @@ find_msvc_executable()
          ;;
       esac
    done
+   set +o noglob
 
    IFS="${DEFAULT_IFS}"
 }
@@ -212,9 +215,11 @@ mingw_buildpath()
    local vspath
 
    IFS=":"
+   set -o noglob
    for i in $PATH
    do
       IFS="${DEFAULT_IFS}"
+      set +o noglob
 
       if [ -x "${i}/sh.exe" ]
       then
@@ -229,6 +234,9 @@ mingw_buildpath()
          buildpath="${buildpath}:${i}"
       fi
    done
+
+   IFS="${DEFAULT_IFS}"
+   set +o noglob
 
    echo "${buildpath}"
 }

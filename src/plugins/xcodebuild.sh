@@ -79,11 +79,13 @@ convert_path_to_value()
    local component
 
    IFS=":"
+   set -o noglob
    for component in ${path}
    do
       output="`concat "${output}" "${component}" `"
    done
    IFS="${DEFAULT_IFS}"
+   set +o noglob
 
    if [ "${inherit}" = "YES" -a ! -z "${inherit}" ]
    then
@@ -338,13 +340,17 @@ build_xcodebuild()
    schemes="${OPTION_SCHEMES}"
    IFS="
 "
+   set -o noglob
    for scheme in $schemes
    do
       IFS="${DEFAULT_IFS}"
+      set +o noglob
+
       log_fluff "Building scheme \"${scheme}\" of \"${project}\" ..."
       _build_xcodebuild "$@" "${scheme}" ""
    done
    IFS="${DEFAULT_IFS}"
+   set +o noglob
 
    local target
    local targets
@@ -353,13 +359,17 @@ build_xcodebuild()
 
    IFS="
 "
+   set -o noglob
    for target in $targets
    do
       IFS="${DEFAULT_IFS}"
+      set +o noglob
+
       log_fluff "Building target \"${target}\" of \"${project}\" ..."
       _build_xcodebuild "$@" "" "${target}"
    done
    IFS="${DEFAULT_IFS}"
+   set +o noglob
 
    if [ -z "${targets}" -a -z "${schemes}" ]
    then
