@@ -34,8 +34,8 @@ then
    set -x
 fi
 
-MULLE_EXECUTABLE_VERSION=0.2.2
-MULLE_EXECUTABLE_BASHFUNCTIONS="1"
+MULLE_EXECUTABLE_VERSION=0.3.0
+MULLE_EXECUTABLE_BASHFUNCTIONS="1.3"
 
 
 #
@@ -121,83 +121,6 @@ Options are command specific. Use ${MULLE_EXECUTABLE_NAME} <command> -h for help
 EOF
 
    exit 1
-}
-
-
-#
-# stolen from:
-# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
-# ----
-#
-_prepend_path_if_relative()
-{
-   case "$2" in
-      /*)
-         echo "$2"
-      ;;
-      *)
-         echo "$1/$2"
-      ;;
-   esac
-}
-
-
-resolve_symlinks()
-{
-   local dir_context
-   local linkpath
-
-   if linkpath="`readlink "$1"`"
-   then
-      dir_context=`dirname -- "$1"`
-      resolve_symlinks "`_prepend_path_if_relative "${dir_context}" "${linkpath}"`"
-   else
-      echo "$1"
-   fi
-}
-
-
-fetch_libexec_path()
-{
-   local executablepath="$1"
-
-   local exedir
-   local exedirpath
-   local prefix
-   local libexecpath
-
-   case "${executablepath}" in
-      \.*|/*|~*)
-      ;;
-
-      *)
-         executablepath="`command -v "${executablepath}"`"
-      ;;
-   esac
-
-   executablepath="`resolve_symlinks "${executablepath}"`"
-   exedirpath="`dirname "${executablepath}"`"
-   prefix="`dirname "${exedirpath}"`"
-   libexecpath="${prefix}/libexec/mulle-make"
-
-   if [ ! -x "${libexecpath}/mulle-make-build.sh" ]
-   then
-      libexecpath="${exedirpath}/src"
-   fi
-
-   case "$libexecpath" in
-      /*|~*)
-      ;;
-
-      *)
-         libexecpath="$PWD/$libexecpath"
-      ;;
-   esac
-
-   if [ -x "${libexecpath}/mulle-make-build.sh" ]
-   then
-      echo "${libexecpath}"
-   fi
 }
 
 
@@ -317,68 +240,6 @@ _main()
 }
 
 
-_init()
-{
-   #
-   # minimal setup exit
-   #
-   if [ "$1" = "version" ]
-   then
-      echo "${MULLE_EXECUTABLE_VERSION}"
-      exit 0
-   fi
-
-   MULLE_MAKE_LIBEXEC_DIR="`fetch_libexec_path "$0"`"
-   if [ -z "${MULLE_MAKE_LIBEXEC_DIR}" ]
-   then
-      echo "$0 fatal error: Could not find libexec ($PWD)" >&2
-      exit 1
-   fi
-
-   #
-   # minimal setup exit
-   #
-   case "$1" in
-      "libexec-dir"|"library-path")
-         echo "${MULLE_MAKE_LIBEXEC_DIR}"
-         exit 0
-      ;;
-   esac
-
-   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir 2> /dev/null`"
-   if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
-   then
-      if [ -z "`command -v "${executablepath}"`" ]
-      then
-          echo "$0 fatal Error: Could not find mulle-bashfunctions-env in PATH (not installed ?)" >&2
-      else
-         echo "$0 fatal Error: Could not find libexec of mulle-bashfunctions-env ($PWD)" >&2
-      fi
-      exit 1
-   fi
-
-   local failmsg
-
-   failmsg="failed to load bashfunctions from ${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
-
-      # shellcheck source=../mulle-bashfunctions/src/mulle-logging.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"
-      # shellcheck source=../mulle-bashfunctions/src/mulle-exekutor.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" || fail "${failmsg}"
-      # shellcheck source=../mulle-bashfunctions/src/mulle-string.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"   || fail "${failmsg}"
-      # shellcheck source=../mulle-bashfunctions/src/mulle-options.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"  || fail "${failmsg}"
-
-
-   #  set -e # more pain then gain in the end
-   #  set -u # doesn't work with my style
-
-   trap trap_fail INT
-   set -o pipefail
-}
-
-
 print_arguments()
 {
    while [ $# -ne 0 ]
@@ -412,6 +273,73 @@ main()
       print_arguments "$@" | _main
    fi
 }
+
+
+########
+###
+### INIT
+###
+_init()
+{
+   #
+   # minimal setup exit
+   #
+   if [ "$1" = "version" ]
+   then
+      echo "${MULLE_EXECUTABLE_VERSION}"
+      exit 0
+   fi
+
+   if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+   then
+      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir 2> /dev/null`"
+      if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+      then
+         if [ -z "`command -v "${executablepath}"`" ]
+         then
+             echo "Fatal Error: Could not find mulle-bashfunctions-env in PATH (not installed ?)" >&2
+         else
+            echo "Fatal Error: Could not find libexec of mulle-bashfunctions-env ($PWD)" >&2
+         fi
+         exit 1
+      fi
+   fi
+
+      # shellcheck source=../mulle-bashfunctions/src/mulle-string.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" "minimal" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" ||
+      fail "failed to load bashfunctions from ${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+
+   local _libexec_dir
+
+   _get_libexec_dir "$0" "mulle-make" "mulle-make-build.sh"
+
+   MULLE_MAKE_LIBEXEC_DIR="${_libexec_dir}"
+
+   #
+   # minimal setup exit
+   #
+   case "$1" in
+      "libexec-dir"|"library-path")
+         echo "${MULLE_MAKE_LIBEXEC_DIR}"
+         exit 0
+      ;;
+   esac
+
+   #  set -e # more pain then gain in the end
+   #  set -u # doesn't work with my style
+
+   trap trap_fail INT
+   set -o pipefail
+
+   MULLE_ARGUMENTS="$*"
+}
+###
+### INIT
+###
+########
+
 
 #
 # leading backslash ? looks like we're getting called from

@@ -1,3 +1,8 @@
+## 0.3.0
+
+* use new mulle-init from mulle-bashfunctions to reduce init size
+
+
 ### 0.2.2
 
 * Various small improvements
