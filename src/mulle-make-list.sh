@@ -34,9 +34,9 @@ list_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE_NAME} list
+   ${MULLE_USAGE_NAME} list
 
-   List build tools known to ${MULLE_EXECUTABLE_NAME}.
+   List build tools known to ${MULLE_USAGE_NAME}.
 
 EOF
    exit 1

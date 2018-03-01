@@ -97,7 +97,7 @@ build_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE_NAME} build [options] [directory]
+   ${MULLE_USAGE_NAME} build [options] [directory]
 
    Build the project in directory. If directory is omitted, the current
    directory is used.
@@ -109,11 +109,12 @@ EOF
    exit 1
 }
 
+
 install_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE_NAME} install [options] <src> [dst]
+   ${MULLE_USAGE_NAME} install [options] <src> [dst]
 
    Build the project in src. Then the build results are installed in
    dst.  If dst is omitted '/tmp' is used.
@@ -124,8 +125,6 @@ EOF
 
    exit 1
 }
-
-
 
 
 mkdir_build_directories()

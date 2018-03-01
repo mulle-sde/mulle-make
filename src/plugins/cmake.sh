@@ -270,15 +270,27 @@ build_cmake()
 
    make_flags="${OPTION_MAKEFLAGS}"
 
-   if [ ! -z "${OPTION_CORES}" ]
-   then
-      make_flags="-j '${OPTION_CORES}'"
-   fi
+   # hackish
+   case "${MAKE}" in
+      *ninja)
+         if [ "${MULLE_FLAG_VERBOSE_MAKE}" = "YES" ]
+         then
+            make_flags="`concat "${make_flags}" "-v"`"
+         fi
+      ;;
 
-   if [ "${MULLE_FLAG_VERBOSE_MAKE}" = "YES" ]
-   then
-      make_flags="`concat "${make_flags}" "VERBOSE=1"`"
-   fi
+      *make)
+         if [ ! -z "${OPTION_CORES}" ]
+         then
+            make_flags="-j '${OPTION_CORES}'"
+         fi
+
+         if [ "${MULLE_FLAG_VERBOSE_MAKE}" = "YES" ]
+         then
+            make_flags="`concat "${make_flags}" "VERBOSE=1"`"
+         fi
+      ;;
+   esac
 
    local env_flags
 
