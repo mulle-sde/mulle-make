@@ -776,7 +776,7 @@ xcodebuild"
    while read -r argument
    do
       case "${argument}" in
-         -h*|--h*)
+         -h*|--help|help)
             "${usage}"
          ;;
 

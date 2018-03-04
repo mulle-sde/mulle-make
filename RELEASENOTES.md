@@ -1,3 +1,7 @@
+### 0.3.2
+
+* * make help command/options more uniform
+
 ## 0.3.0
 
 * use new mulle-init from mulle-bashfunctions to reduce init size
