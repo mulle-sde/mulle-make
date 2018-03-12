@@ -104,7 +104,7 @@ main()
    if [ -z "`command -v "xcodebuild"`" ]
    then
       log_info "xcodebuild not installed, so skipping this test"
-      return 
+      return
    fi
 
    local directory
@@ -152,7 +152,7 @@ main()
 
 init()
 {
-   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env library-path`" || exit 1
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`" || exit 1
 
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 
