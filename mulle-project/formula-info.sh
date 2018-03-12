@@ -3,7 +3,7 @@
 # formula operations.
 #
 PROJECT="mulle-make"      # your project/repository name
-DESC="🤖 Build projects with tools like cmake, meson, autoconf "
+DESC="👨‍👩‍👧‍👦 Build projects with tools like cmake, meson, autoconf"
 LANGUAGE="bash"                # c,cpp, objc, bash ...
 # NAME="${PROJECT}"        # formula filename without .rb extension
 
