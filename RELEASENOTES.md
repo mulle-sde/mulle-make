@@ -1,3 +1,7 @@
+### 0.3.4
+
+* small clean up
+
 ### 0.3.3
 
 * unify mulle-bashfunctions-env usage
