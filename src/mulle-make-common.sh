@@ -64,26 +64,30 @@ platform_make()
 find_make()
 {
    local defaultname="${1:-make}"
+   local noninja="$2"
 
    local toolname
 
-   #
-   # Ninja is preferable if installed
-   #
-   case "${OPTION_NINJA}" in
-      "YES"|"DEFAULT")
-         if [ ! -z "`command -v ninja`" ]
-         then
-            echo "ninja"
-            return
-         fi
+   if [ -z "${noninja}"  ]
+   then
+      #
+      # Ninja is preferable if installed for cmake but not else
+      #
+      case "${OPTION_NINJA}" in
+         "YES"|"DEFAULT")
+            if [ ! -z "`command -v ninja`" ]
+            then
+               echo "ninja"
+               return
+            fi
 
-         if [ "${OPTION_NINJA}" = "YES" ]
-         then
-            fail "ninja not found"
-         fi
-      ;;
-   esac
+            if [ "${OPTION_NINJA}" = "YES" ]
+            then
+               fail "ninja not found"
+            fi
+         ;;
+      esac
+   fi
 
    toolname="${OPTION_MAKE:-${MAKE:-make}}"
    verify_binary "${toolname}" "make" "${defaultname}"
@@ -115,6 +119,8 @@ tools_environment_common()
 
 tools_environment_make()
 {
+   local noninja="$1"
+
    tools_environment_common
 
    #
@@ -126,7 +132,7 @@ tools_environment_make()
       local defaultmake
 
       defaultmake="`platform_make "${CC}"`"
-      MAKE="`find_make "${defaultmake}"`"
+      MAKE="`find_make "${defaultmake}" "${noninja}"`"
    fi
 }
 

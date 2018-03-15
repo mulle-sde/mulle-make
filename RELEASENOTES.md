@@ -1,3 +1,7 @@
+### 0.3.5
+
+* don't use ninja for autoconf projects
+
 ### 0.3.4
 
 * small clean up

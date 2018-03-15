@@ -238,7 +238,7 @@ test_configure()
       return 1
    fi
 
-   tools_environment_make
+   tools_environment_make "no-ninja"
 
    if [ -z "${MAKE}" ]
    then
