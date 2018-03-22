@@ -813,7 +813,7 @@ xcodebuild"
             OPTION_DETERMINE_XCODE_SDK="NO"
          ;;
 
-         --project-name)
+         -n|--name|--project-name)
             read -r OPTION_PROJECT_NAME || fail "missing argument to \"${argument}\""
          ;;
 

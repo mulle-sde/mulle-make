@@ -1,3 +1,7 @@
+### 0.3.6
+
+* use -n as shortcut for --project-name in all mulle- tools
+
 ### 0.3.5
 
 * don't use ninja for autoconf projects
