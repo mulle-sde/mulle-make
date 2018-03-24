@@ -1,3 +1,7 @@
+### 0.3.7
+
+* Various small improvements
+
 ### 0.3.6
 
 * use -n as shortcut for --project-name in all mulle- tools

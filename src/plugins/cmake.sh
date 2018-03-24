@@ -191,7 +191,12 @@ build_cmake()
       install)
          [ -z "${dstdir}" ] && internal_fail "srcdir is empty"
          maketarget="install"
-         cmake_flags="`concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${dstdir}'"`"
+         if [ ! -z "${OPTION_PREFIX}" ]
+         then
+            cmake_flags="`concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${OPTION_PREFIX}'"`"
+         else
+            cmake_flags="`concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${dstdir}'"`"
+         fi
       ;;
    esac
 
