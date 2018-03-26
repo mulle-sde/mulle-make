@@ -197,7 +197,7 @@ test_autoconf()
       configurefile="`dirname -- "${projectfile}"`/configure"
       if [ "${configurefile}" -nt "${projectfile}" ]
       then
-         log_verbose "Autoconf has already run once, skip to configure..."
+         log_fluff "Autoconf has already run once, skip to configure..."
          return 1
       fi
    fi

@@ -36,19 +36,24 @@ _emit_common_options()
    cat <<EOF
    -D<key>=<value>            : set definition (can't mix with += definitions)
    -D<key>+=<value>           : add to definition
-   --debug                    : build with configuration Debug
-   --release                  : build with configuration Release (Default)
    --build-dir <dir>          : specify build directory
-   --log-dir <dir>            : specify log directory
+   --info-dir <path>          : specify info directory
+   --debug                    : build with configuration Debug
    --include-path <path>      : specify header search PATH, separated by :
    --lib-path <path>          : specify library search PATH, separated by :
-   --frameworks-path <path>   : specify Frameworks search PATH, separated by :
+   --release                  : build with configuration Release (Default)
+   --verbose-make             : verbose make output
 EOF
 
    case "${UNAME}" in
-
       mingw*)
-         :
+      ;;
+
+      darwin)
+         cat <<EOF
+   --frameworks-path <path>   : specify Frameworks search PATH, separated by :
+   -j                         : number of cores parameter for make (${CORES})
+EOF
       ;;
 
       *)
@@ -66,12 +71,12 @@ _emit_uncommon_options()
    --configuration <name>     : configuration to build like Debug or Release
    -K                         : always clean before building
    -k                         : don't clean before building
-   --info-dir <path>          : specify info directory
-   --tool-preferences <list>  : tool preference order. Tools are separated by ','
+   --no-ninja                 : prefer make over ninja
+   --log-dir <dir>            : specify log directory
    --prefix <prefix>          : prefix to use for build products e.g. /usr/local
    --project-name <name>      : explicitly set project name
    --sdk <name>               : SDK to use (Default)
-   --no-ninja                 : prefer make over ninja
+   --tool-preferences <list>  : tool preference order. Tools are separated by ','
 EOF
    case "${UNAME}" in
       darwin)
@@ -582,8 +587,8 @@ check_option_key_without_prefix()
       fi
    fi
 
-   if fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
-      fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
+   if LC_ALL=C fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
+      LC_ALL=C fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
    then
       fail "OPTION \"${key}\" has already been defined"
    fi
@@ -723,6 +728,8 @@ read_info_dir()
 
    local infodir="$1"
 
+   [ -z "${infodir}" ] && return
+
    if [ ! -e "${infodir}" ]
    then
       log_verbose "There is no \"${infodir}\" ($PWD)"
@@ -799,7 +806,6 @@ xcodebuild"
          --ninja)
             OPTION_NINJA="YES"
          ;;
-
 
          --no-ninja)
             OPTION_NINJA="NO"
@@ -892,6 +898,11 @@ xcodebuild"
             make_define_option_keyvalue "`echo "${argument}" | sed s'/^-D[ ]*//'`"
          ;;
 
+         # as in /Library/Frameworks:Frameworks etc.
+         -F|--frameworks-path)
+            read -r OPTION_FRAMEWORKS_PATH || fail "missing argument to \"${argument}\""
+         ;;
+
          # as in /usr/include:/usr/local/include
          -I|--include-path)
             read -r OPTION_INCLUDE_PATH || fail "missing argument to \"${argument}\""
@@ -902,9 +913,8 @@ xcodebuild"
             read -r OPTION_LIB_PATH || fail "missing argument to \"${argument}\""
          ;;
 
-         # as in /Library/Frameworks:Frameworks etc.
-         -F|--frameworks-path)
-            read -r OPTION_FRAMEWORKS_PATH || fail "missing argument to \"${argument}\""
+         -V|--verbose-make)
+            MULLE_FLAG_VERBOSE_MAKE="YES"
          ;;
 
          -*)
@@ -957,7 +967,7 @@ xcodebuild"
 
          local infodir
 
-         infodir="${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
+         infodir="${OPTION_INFO_DIR}"
          read_info_dir "${infodir}"
 
          build "${cmd}" "${srcdir}"
@@ -984,7 +994,7 @@ xcodebuild"
 
          local infodir
 
-         infodir="${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
+         infodir="${OPTION_INFO_DIR}"
          read_info_dir "${infodir}"
 
          build "install" "${srcdir}" "${dstdir}"

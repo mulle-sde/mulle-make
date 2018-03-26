@@ -1,3 +1,7 @@
+### 0.3.8
+
+* mulle-make does not look for a default .mulle-make folder anymore
+
 ### 0.3.7
 
 * Various small improvements

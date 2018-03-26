@@ -32,7 +32,7 @@
 [ "${TRACE}" = "YES" ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.3.7
+MULLE_EXECUTABLE_VERSION=0.3.8
 MULLE_EXECUTABLE_BASHFUNCTIONS="1.3"
 
 
@@ -76,7 +76,6 @@ print_flags()
 {
    cat <<EOF
    -f            : force operation
-   -V            : verbose make
    --args <file> : read the commandline from <file>. Must be only option.
 EOF
 
@@ -159,10 +158,6 @@ _main()
 
          -h*|--help|help)
             usage "${MULLE_TRACE}"
-         ;;
-
-         -V|--verbose-make)
-            MULLE_FLAG_VERBOSE_MAKE="YES"
          ;;
 
          --version)

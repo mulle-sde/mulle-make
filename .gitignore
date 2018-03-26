@@ -12,3 +12,4 @@ mulle-make.sublime-workspace
 mulle-project/publisher-info.sh
 *.build
 test/05-meson-build/src/
+tests/05-meson-build/src/

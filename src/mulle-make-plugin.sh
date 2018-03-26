@@ -88,7 +88,7 @@ build_load_plugin()
       pluginpath="${MULLE_MAKE_LIBEXEC_DIR}/plugins/${preference}.sh"
       if [ ! -f "${pluginpath}" ]
       then
-         log_verbose "No Build plugin for \"${preference}\" found"
+         log_warning "No Build plugin for \"${preference}\" found"
          return 1
       fi
 
@@ -104,7 +104,7 @@ build_load_plugin()
          internal_fail "Build plugin \"${pluginpath}\" has no \"build_${preference}\" function"
       fi
 
-      log_verbose "Build plugin for \"${preference}\" loaded"
+      log_fluff "Build plugin for \"${preference}\" loaded"
    fi
 
    return 0

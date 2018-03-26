@@ -4,7 +4,7 @@ digraph G {
     node[ shape=folder];
 
     "--info-dir <dir>"                  [ shape="none", fontcolor="#3867d6" ]
-    "--info-dir <dir>" -> ".mulle-make" [ style="dotted"]
+    "--info-dir <dir>" -> "info.darwin" [ style="dotted"]
 
     "--build-dir <dir>"                  [ shape="none", fontcolor="#3867d6" ]
     "--build-dir <dir>" -> "build"       [ style="dotted"]
@@ -19,22 +19,22 @@ digraph G {
     "--library-path <path>" -> "lib"     [ style="dotted"]
 
     ".logs"                          [ color="#eb3b5a", fontcolor="#eb3b5a" ]
-    ".mulle-make"                    [ color="#16a085", fontcolor="#16a085" ]
+    "info.darwin"                    [ color="#16a085", fontcolor="#16a085" ]
     "build"                          [ color="#16a085", fontcolor="#16a085" ]
     "build"                          [ color="#eb3b5a", fontcolor="#eb3b5a" ]
-    "dependencies"                   [ color="#8854d0", fontcolor="#8854d0" ]
+    "dependency"                     [ color="#8854d0", fontcolor="#8854d0" ]
     "include"                        [ color="#8854d0", fontcolor="#8854d0" ]
     "lib"                            [ color="#8854d0", fontcolor="#8854d0" ]
     "project"                        [ color="#7f8c8d", fontcolor="#7f8c8d" ]
 
-    "project"      -> ".mulle-make"   [ arrowhead="none", color="#7f8c8d" ]
-    "project"      -> "build"         [ arrowhead="none", color="#7f8c8d" ]
-    "project"      -> "dependencies"  [ arrowhead="none", color="#7f8c8d" ]
-    "dependencies" -> "lib"           [ arrowhead="none", color="#8854d0" ]
-    "dependencies" -> "include"       [ arrowhead="none", color="#8854d0" ]
-    "build" -> ".logs"                [ arrowhead="none", color="#eb3b5a" ]
+    "project"    -> ".mulle-make"   [ arrowhead="none", color="#7f8c8d" ]
+    "project"    -> "build"         [ arrowhead="none", color="#7f8c8d" ]
+    "project"    -> "dependency"    [ arrowhead="none", color="#7f8c8d" ]
+    "dependency" -> "lib"           [ arrowhead="none", color="#8854d0" ]
+    "dependency" -> "include"       [ arrowhead="none", color="#8854d0" ]
+    "build" -> ".logs"              [ arrowhead="none", color="#eb3b5a" ]
 
-    ".mulle-make" -> "CC"            [ arrowhead="none", color="#16a085" ]
+    "info.darwin" -> "CC"             [ arrowhead="none", color="#16a085" ]
 
     "CC"            [ shape="note", color="#16a085", fontcolor="#16a085" ]
 }
