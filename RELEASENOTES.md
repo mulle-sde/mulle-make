@@ -1,3 +1,7 @@
+### 0.3.9
+
+* And back to .mulle-make being used ...
+
 ### 0.3.8
 
 * mulle-make does not look for a default .mulle-make folder anymore

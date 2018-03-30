@@ -37,7 +37,7 @@ platform_c_compiler()
 
    name="${OPTION_CC}"
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       mingw)
          echo "${name:-cl}"
       ;;
@@ -55,7 +55,7 @@ platform_cxx_compiler()
 
    name="${OPTION_CXX}"
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       mingw)
          echo "${name:-cl}"
       ;;
@@ -92,7 +92,7 @@ compiler_sdk_parameter()
 {
    local sdk="$1"
 
-   if [ "${UNAME}" = "darwin" -a "${OPTION_DETERMINE_XCODE_SDK}" != "NO" ]
+   if [ "${MULLE_UNAME}" = "darwin" -a "${OPTION_DETERMINE_XCODE_SDK}" != "NO" ]
    then
       local sdkpath
 

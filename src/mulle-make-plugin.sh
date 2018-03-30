@@ -46,7 +46,7 @@ build_list_plugins()
       pluginname="`basename -- "${pluginpath}" .sh`"
 
       # don't load xcodebuild on non macos platforms
-      case "${UNAME}" in
+      case "${MULLE_UNAME}" in
          darwin)
          ;;
 

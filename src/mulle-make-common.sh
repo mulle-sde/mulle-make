@@ -39,7 +39,7 @@ platform_make()
 
    name="`basename -- "${compilerpath}"`"
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       mingw)
          case "${name%.*}" in
             ""|cl|clang-cl|mulle-clang-cl)
@@ -349,7 +349,7 @@ find_nearest_matching_pattern()
    #
    # allow user to specify directory to use for building
    #
-   found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir.${UNAME}" `"
+   found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir.${MULLE_UNAME}" `"
    if [  -z "${found}" ]
    then
       found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir" `"
@@ -429,7 +429,7 @@ projectdir_relative_to_builddir()
    local directory
 
    directory="`relative_path_between "${projectdir}" "${builddir}"`"
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       mingw)
          echo "${directory}" | "${TR}" '/' '\\'  2> /dev/null
       ;;

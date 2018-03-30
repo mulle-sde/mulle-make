@@ -53,7 +53,7 @@ platform_cmake_generator()
       ;;
 
       *)
-         case "${UNAME}" in
+         case "${MULLE_UNAME}" in
             mingw*)
                echo "MSYS Makefiles"
             ;;
@@ -94,7 +94,7 @@ cmake_sdk_parameter()
 
    local sdkpath
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       "darwin")
          sdkpath=`compiler_sdk_parameter "${sdk}"`
          if [ ! -z "${sdkpath}" ]
@@ -379,7 +379,7 @@ test_cmake()
       fail "No make available"
    fi
 
-   log_verbose "Found cmake project file \"${projectfile}\""
+   log_fluff "Found cmake project file \"${projectfile}\""
 
    PROJECTFILE="${projectfile}"
 

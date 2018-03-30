@@ -40,7 +40,7 @@ suggest_binary_install()
 
    case "${toolname}" in
       mulle-cl*)
-         case "${UNAME}" in
+         case "${MULLE_UNAME}" in
             darwin)
                echo "brew install mulle-objc-developer"
             ;;
@@ -52,7 +52,7 @@ suggest_binary_install()
       ;;
 
       *)
-         case "${UNAME}" in
+         case "${MULLE_UNAME}" in
             darwin)
                echo "brew install ${toolname}"
             ;;
@@ -100,7 +100,7 @@ which_binary()
 
    local toolname="$1"
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       mingw)
          case "${toolname}" in
             *.exe)

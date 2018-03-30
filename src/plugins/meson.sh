@@ -74,7 +74,7 @@ meson_sdk_parameter()
 
    local sdkpath
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       "darwin")
          sdkpath=`compiler_sdk_parameter "${sdk}"`
          if [ ! -z "${sdkpath}" ]

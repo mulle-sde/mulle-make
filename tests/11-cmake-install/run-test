@@ -32,9 +32,9 @@ expect_content()
       fi
    fi
 
-   if [ -f "${expect}.${UNAME}" ]
+   if [ -f "${expect}.${MULLE_UNAME}" ]
    then
-      expect="${expect}.${UNAME}"
+      expect="${expect}.${MULLE_UNAME}"
    fi
 
    if [ ! -f "${expect}" ]
@@ -94,7 +94,7 @@ main()
       exit 1
    fi
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       mingw)
          [ -x "${dstdir}/bin/myexe.exe" ]   || fail "myexe.exe failed"
          [ -f "${dstdir}/lib/mylib.lib" ]   || fail "mylib.lib failed"

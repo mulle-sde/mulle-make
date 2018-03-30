@@ -32,9 +32,9 @@ expect_content()
       fi
    fi
 
-   if [ -f "${expect}.${UNAME}" ]
+   if [ -f "${expect}.${MULLE_UNAME}" ]
    then
-      expect="${expect}.${UNAME}"
+      expect="${expect}.${MULLE_UNAME}"
    fi
 
    if [ ! -f "${expect}" ]

@@ -45,7 +45,7 @@ _emit_common_options()
    --verbose-make             : verbose make output
 EOF
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       mingw*)
       ;;
 
@@ -78,7 +78,7 @@ _emit_uncommon_options()
    --sdk <name>               : SDK to use (Default)
    --tool-preferences <list>  : tool preference order. Tools are separated by ','
 EOF
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       darwin)
          echo "\
    --no-determine-xcode-sdk   : don't use xcrun to figure out Xcode SDK to use
@@ -338,7 +338,7 @@ build()
 There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERENCES}`\""
    fi
 
-   log_fluff "Actually available plugins for ${UNAME} are: `echo ${AVAILABLE_PLUGINS}`"
+   log_fluff "Actually available plugins for ${MULLE_UNAME} are: `echo ${AVAILABLE_PLUGINS}`"
 
    local sdk
 
@@ -349,7 +349,7 @@ There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERE
       ;;
 
       maosx)
-         case "${UNAME}" in
+         case "${MULLE_UNAME}" in
             darwin)
                sdk="Default"
             ;;
@@ -728,18 +728,18 @@ read_info_dir()
 
    local infodir="$1"
 
-   [ -z "${infodir}" ] && return
+   [ "${infodir}" = "NONE" ] && return
 
-   if [ ! -e "${infodir}" ]
+   if [ ! -d "${infodir:-.mulle-make}" ]
    then
-      log_verbose "There is no \"${infodir}\" ($PWD)"
+      if [ ! -z "${infodir}" ]
+      then
+         log_verbose "There is no \"${infodir}\" ($PWD)"
+      fi
       return
    fi
 
-   if [ ! -d "${infodir}" ]  # now required
-   then
-      fail "Infodir \"${infodir}\" must be a directory ($PWD)"
-   fi
+   infodir="${infodir:-.mulle-make}"
 
    read_defines_dir "${infodir}" "make_define_option"
    read_defines_dir "${infodir}/plus" "make_define_plus_option"
@@ -759,7 +759,7 @@ _make_build_main()
 meson
 autoconf
 configure"
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       darwin)
          OPTION_TOOL_PREFERENCES="${OPTION_TOOL_PREFERENCES}
 xcodebuild"
@@ -855,7 +855,7 @@ xcodebuild"
          -j|--cores)
             read -r OPTION_CORES || fail "missing argument to \"${argument}\""
 
-            case "${UNAME}" in
+            case "${MULLE_UNAME}" in
                mingw)
                    "${usage}"
                ;;
