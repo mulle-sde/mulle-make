@@ -1,3 +1,7 @@
+### 0.3.10
+
+* mulle-make gains a print command
+
 ### 0.3.9
 
 * And back to .mulle-make being used ...

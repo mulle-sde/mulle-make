@@ -328,6 +328,16 @@ build()
    local srcdir="$2"
    local dstdir="$3"
 
+   if [ "${cmd}" = "print" ]
+   then
+      emit_definitions "${DEFINED_OPTIONS}" "${DEFINED_PLUS_OPTIONS}" \
+                       "" "=" "+=" "" "
+"
+
+      echo
+      return
+   fi
+
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
 
@@ -505,6 +515,55 @@ all_userdefined_unknown_plus_keys()
 #
 # defined for xcodebuild by default
 #
+emit_definitions()
+{
+   log_entry "emit_definitions" "$@"
+
+   local keys="$1"
+   local pluskeys="$2"
+
+   local prefix="$3"
+   local sep="$4"
+   local plussep="$5"
+   local pluspref="$6"
+   local concatsep="$7"
+
+   local s
+   local key
+   local value
+
+   IFS="
+"
+   for key in ${keys}
+   do
+      IFS="${DEFAULT_IFS}"
+
+      value="`eval echo "\\\$$key"`"
+      s="`concat "${s}" "${prefix}${key#OPTION_}${sep}'${value}'" "${concatsep}"`"
+   done
+   IFS="${DEFAULT_IFS}"
+
+   #
+   # emit plus definitions if they are distinguishable
+   #
+   IFS="
+"
+   for key in ${pluskeys}
+   do
+      IFS="${DEFAULT_IFS}"
+
+      value="`eval echo "\\\$$key"`"
+      s="`concat "${s}" "${prefix}${key#OPTION_}${plussep}'${pluspref}${value}'"`"
+   done
+   IFS="${DEFAULT_IFS}"
+
+   printf "%s" "${s}"
+}
+
+
+#
+# defined for xcodebuild by default
+#
 emit_userdefined_definitions()
 {
    log_entry "emit_userdefined_definitions" "$@"
@@ -518,32 +577,23 @@ emit_userdefined_definitions()
    local buildsettings
    local value
 
-   IFS="
-"
-   for key in `all_userdefined_unknown_keys`
-   do
-      IFS="${DEFAULT_IFS}"
-      value="`eval echo "\\\$$key"`"
-      buildsettings="`concat "${buildsetting}" "${prefix}${key#OPTION_}${sep}'${value}'"`"
-   done
+   if [ "${pluspref}" = "-" ]
+   then
+      pluspref=""
+   fi
+
+   keys=`all_userdefined_unknown_keys`
 
    #
    # emit plus definitions if they are distinguishable
    #
    if [ "${plussep}" != "${sep}" -o ! -z "${pluspref}" ]
    then
-      IFS="
-"
-      for key in `all_userdefined_unknown_plus_keys`
-      do
-         IFS="${DEFAULT_IFS}"
-         value="`eval echo "\\\$$key"`"
-         buildsettings="`concat "${buildsetting}" "${prefix}${key#OPTION_}${plussep}'${pluspref}${value}'"`"
-      done
+      pluskeys="`all_userdefined_unknown_plus_keys`"
    fi
-   IFS="${DEFAULT_IFS}"
 
-   printf "%s" "${buildsettings}"
+   emit_definitions "${keys}" "${pluskeys}" \
+                     "${prefix}" "${sep}" "${plussep}" "${pluspref}" " "
 }
 
 
@@ -581,7 +631,7 @@ check_option_key_without_prefix()
       message="\"${key}\" is not a known option"
       if [ "${OPTION_ALLOW_UNKNOWN_OPTION}" != "NO" ]
       then
-         log_fluff "${message}. Maybe OK, especially with xcode."
+         log_fluff "${message}. Maybe OK, especially with cmake and xcode."
       else
          fail "${message}${hint}"
       fi
@@ -696,17 +746,21 @@ read_defines_dir()
    local value
    local filename
 
-   IFS="
-"
-   for filename in `ls -1 "${directory}"/[A-Z_][A-Z0-9_]* 2> /dev/null`
+   shopt -s nullglob
+   for filename in "${directory}"/[A-Z_][A-Z0-9_]*
    do
-      IFS="${DEFAULT_IFS}"
+      shopt -u nullglob
 
-      value="`egrep -v '^#' "${filename}"`"
-      if [ -z "${value}" ]
+      if [ ! -f "${filename}" ]
       then
          continue
       fi
+
+      value="`egrep -v '^#' "${filename}"`"
+#      if [ -z "${value}" ]
+#      then
+#         continue
+#      fi
 
       # case insensitive fs needs this
       key="`basename -- "${filename}"`"
@@ -714,8 +768,7 @@ read_defines_dir()
 
       "${callback}" "${key}" "${value}"
    done
-
-   IFS="${DEFAULT_IFS}"
+   shopt -u nullglob
 }
 
 
@@ -730,19 +783,19 @@ read_info_dir()
 
    [ "${infodir}" = "NONE" ] && return
 
-   if [ ! -d "${infodir:-.mulle-make}" ]
+   if [ ! -d "${infodir}" ]
    then
       if [ ! -z "${infodir}" ]
       then
-         log_verbose "There is no \"${infodir}\" ($PWD)"
+         log_verbose "There is no \"${infodir}\" here ($PWD)"
       fi
       return
    fi
 
-   infodir="${infodir:-.mulle-make}"
+   infodir="${infodir}"
 
-   read_defines_dir "${infodir}" "make_define_option"
-   read_defines_dir "${infodir}/plus" "make_define_plus_option"
+   read_defines_dir "${infodir}/set" "make_define_option"
+   read_defines_dir "${infodir}"     "make_define_plusoption"
 }
 
 
@@ -952,7 +1005,7 @@ xcodebuild"
    local dstdir
 
    case "${cmd}" in
-      build)
+      build|print)
          srcdir="${argument:-$PWD}"
          if read -r argument
          then
@@ -965,10 +1018,7 @@ xcodebuild"
             fail "Source directory \"${srcdir}\" is missing"
          fi
 
-         local infodir
-
-         infodir="${OPTION_INFO_DIR}"
-         read_info_dir "${infodir}"
+         read_info_dir "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
 
          build "${cmd}" "${srcdir}"
       ;;
@@ -992,10 +1042,7 @@ xcodebuild"
             fail "Source directory \"${srcdir}\" is missing"
          fi
 
-         local infodir
-
-         infodir="${OPTION_INFO_DIR}"
-         read_info_dir "${infodir}"
+         read_info_dir "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
 
          build "install" "${srcdir}" "${dstdir}"
       ;;
@@ -1010,6 +1057,16 @@ make_build_main()
    usage="build_usage"
    _make_build_main "build" "$@"
 }
+
+
+make_print_main()
+{
+   log_entry "make_print_main" "$@"
+
+   usage="print_usage"
+   _make_build_main "print" "$@"
+}
+
 
 
 make_install_main()
