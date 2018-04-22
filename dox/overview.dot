@@ -4,13 +4,13 @@ digraph G {
     node[ shape=folder];
 
     "--info-dir <dir>"                  [ shape="none", fontcolor="#3867d6" ]
-    "--info-dir <dir>" -> "info.darwin" [ style="dotted"]
+    "--info-dir <dir>" -> "foo.darwin" [ style="dotted"]
 
     "--build-dir <dir>"                  [ shape="none", fontcolor="#3867d6" ]
     "--build-dir <dir>" -> "build"       [ style="dotted"]
 
-    "--logs-dir <dir>"                   [ shape="none", fontcolor="#3867d6" ]
-    "--logs-dir <dir>" -> ".logs"        [ style="dotted"]
+    "--log-dir <dir>"                    [ shape="none", fontcolor="#3867d6" ]
+    "--log-dir <dir>" -> ".log"          [ style="dotted"]
 
     "--include-path <path>"              [ shape="none", fontcolor="#3867d6" ]
     "--include-path <path>" -> "include" [ style="dotted"]
@@ -18,23 +18,25 @@ digraph G {
     "--library-path <path>"              [ shape="none", fontcolor="#3867d6" ]
     "--library-path <path>" -> "lib"     [ style="dotted"]
 
-    ".logs"                          [ color="#eb3b5a", fontcolor="#eb3b5a" ]
+    ".log"                           [ color="#eb3b5a", fontcolor="#eb3b5a" ]
     "info.darwin"                    [ color="#16a085", fontcolor="#16a085" ]
     "build"                          [ color="#16a085", fontcolor="#16a085" ]
     "build"                          [ color="#eb3b5a", fontcolor="#eb3b5a" ]
     "dependency"                     [ color="#8854d0", fontcolor="#8854d0" ]
     "include"                        [ color="#8854d0", fontcolor="#8854d0" ]
     "lib"                            [ color="#8854d0", fontcolor="#8854d0" ]
-    "project"                        [ color="#7f8c8d", fontcolor="#7f8c8d" ]
+    "foo"                            [ color="#7f8c8d", fontcolor="#7f8c8d" ]
 
-    "project"    -> ".mulle-make"   [ arrowhead="none", color="#7f8c8d" ]
-    "project"    -> "build"         [ arrowhead="none", color="#7f8c8d" ]
-    "project"    -> "dependency"    [ arrowhead="none", color="#7f8c8d" ]
+    "foo"        -> ".mulle-make"   [ arrowhead="none", color="#7f8c8d" ]
+    "foo"        -> "build"         [ arrowhead="none", color="#7f8c8d" ]
+    "foo"        -> "dependency"    [ arrowhead="none", color="#7f8c8d" ]
     "dependency" -> "lib"           [ arrowhead="none", color="#8854d0" ]
     "dependency" -> "include"       [ arrowhead="none", color="#8854d0" ]
-    "build" -> ".logs"              [ arrowhead="none", color="#eb3b5a" ]
+    "dependency" -> "share"         [ arrowhead="none", color="#8854d0" ]
+    "build"      -> ".log"               [ arrowhead="none", color="#eb3b5a" ]
 
-    "info.darwin" -> "CC"             [ arrowhead="none", color="#16a085" ]
+    "share" -> "mulle-craft" -> "foo.darwin"
+    "foo.darwin" -> "set" -> "CC"             [ arrowhead="none", color="#16a085" ]
 
     "CC"            [ shape="note", color="#16a085", fontcolor="#16a085" ]
 }

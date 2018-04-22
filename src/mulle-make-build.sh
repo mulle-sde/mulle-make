@@ -654,7 +654,10 @@ make_define_option()
 
    check_option_key_without_prefix "${key}"
 
-   eval "OPTION_${key}='${value}'"
+   local escaped
+
+   escaped="`escaped_doublequotes "${value}"`"
+   eval "OPTION_${key}=\"${escaped}\""
 
    log_fluff "OPTION_${key} defined as \"${value}\""
 
@@ -671,7 +674,10 @@ make_define_plusoption()
 
    check_option_key_without_prefix "${key}"
 
-   eval "OPTION_${key}='${value}'"
+   local escaped
+
+   escaped="`escaped_doublequotes "${value}"`"
+   eval "OPTION_${key}=\"${escaped}\""
 
    log_fluff "OPTION_${key} defined as \"${value}\""
 

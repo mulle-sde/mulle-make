@@ -1,3 +1,7 @@
+### 0.3.11
+
+* fix quoting problem
+
 ### 0.3.10
 
 * mulle-make gains a print command
