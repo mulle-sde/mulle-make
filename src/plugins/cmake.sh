@@ -312,12 +312,12 @@ build_cmake()
    (
       exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
 
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
       then
          logfile1="`safe_tty`"
          logfile2="$logfile1"
       fi
-      if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+      if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
       then
          logfile1="/dev/null"
          logfile2="/dev/null"

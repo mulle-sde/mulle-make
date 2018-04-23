@@ -1,3 +1,7 @@
+### 0.3.12
+
+* fix potential bug
+
 ### 0.3.11
 
 * fix quoting problem
