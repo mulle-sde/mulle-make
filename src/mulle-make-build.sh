@@ -73,6 +73,7 @@ _emit_uncommon_options()
    -k                         : don't clean before building
    --no-ninja                 : prefer make over ninja
    --log-dir <dir>            : specify log directory
+   --no-determine-sdk         : don't try to figure out the default SDK
    --prefix <prefix>          : prefix to use for build products e.g. /usr/local
    --project-name <name>      : explicitly set project name
    --sdk <name>               : SDK to use (Default)
@@ -81,7 +82,6 @@ EOF
    case "${MULLE_UNAME}" in
       darwin)
          echo "\
-   --no-determine-xcode-sdk   : don't use xcrun to figure out Xcode SDK to use
    --xcode-config-file <file> : specify xcode config file to use"
       ;;
    esac
@@ -119,10 +119,11 @@ install_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} install [options] <src> [dst]
+   ${MULLE_USAGE_NAME} install [options] [srcdir] [dstdir]
 
    Build the project in src. Then the build results are installed in
-   dst.  If dst is omitted '/tmp' is used.
+   dst.  If dst is omitted '/tmp' is used. If --prefix is specified, do not
+   specify dst.
 
 Options:
 EOF
@@ -328,16 +329,6 @@ build()
    local srcdir="$2"
    local dstdir="$3"
 
-   if [ "${cmd}" = "print" ]
-   then
-      emit_definitions "${DEFINED_OPTIONS}" "${DEFINED_PLUS_OPTIONS}" \
-                       "" "=" "+=" "" "
-"
-
-      echo
-      return
-   fi
-
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
 
@@ -407,404 +398,6 @@ There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERE
 
 
 
-#
-# grep through project to get the options:_
-# egrep -h -o -w 'OPTION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | sort -u
-#
-KNOWN_AUTOCONF_PLUGIN_OPTIONS="\
-OPTION_AUTOCONF
-OPTION_AUTORECONF
-OPTION_AUTOCONFFLAGS
-OPTION_AUTORECONFFLAGS"
-
-KNOWN_CMAKE_PLUGIN_OPTIONS="\
-OPTION_CMAKE
-OPTION_CMAKEFLAGS
-OPTION_CMAKE_GENERATOR"
-
-KNOWN_CONFIGURE_PLUGIN_OPTIONS="\
-OPTION_CONFIGUREFLAGS"
-
-KNOWN_MESON_PLUGIN_OPTIONS="\
-OPTION_MESON
-OPTION_MESONFLAGS
-OPTION_MESON_BACKEND"
-
-KNOWN_XCODEBUILD_PLUGIN_OPTIONS="\
-OPTION_XCODEBUILD"
-
-
-KNOWN_GENERAL_OPTIONS="\
-OPTION_BUILD_DIR
-OPTION_CC
-OPTION_CFLAGS
-OPTION_CLEAN_BEFORE_BUILD
-OPTION_CONFIGURATION
-OPTION_CXX
-OPTION_CXXFLAGS
-OPTION_DETERMINE_XCODE_SDK
-OPTION_FRAMEWORKS_PATH
-OPTION_GCC_PREPROCESSOR_DEFINITIONS
-OPTION_INCLUDE_PATH
-OPTION_LDFLAGS
-OPTION_LIB_PATH
-OPTION_LOG_DIR
-OPTION_MAKE
-OPTION_NINJA
-OPTION_MAKETARGET
-OPTION_OTHER_CFLAGS
-OPTION_OTHER_CPPFLAGS
-OPTION_OTHER_CXXFLAGS
-OPTION_OTHER_LDFLAGS
-OPTION_PREFIX
-OPTION_PROJECT_FILE
-OPTION_SCHEMES
-OPTION_SDK
-OPTION_TARGETS
-OPTION_TOOL_PREFERENCES
-OPTION_WARNING_CFLAGS"
-
-KNOWN_OPTIONS="${KNOWN_GENERAL_OPTIONS}
-${KNOWN_AUTOCONF_PLUGIN_OPTIONS}
-${KNOWN_CMAKE_PLUGIN_OPTIONS}
-${KNOWN_CONFIGURE_PLUGIN_OPTIONS}
-${KNOWN_MESON_PLUGIN_OPTIONS}
-${KNOWN_XCODEBUILD_PLUGIN_OPTIONS}"
-
-
-#
-#
-all_userdefined_unknown_keys()
-{
-   log_entry "all_userdefined_unknown_keys" "$@"
-
-   if [ -z "${DEFINED_OPTIONS}" ]
-   then
-      return
-   fi
-
-   local pattern
-
-   pattern="$(tr '\012' '|' <<< "${KNOWN_OPTIONS}")"
-   pattern="$(sed 's/\(.*\)|$/\1/g' <<< "${pattern}")"
-
-   log_debug "${DEFINED_OPTIONS}"
-   egrep -v -x "${pattern}" <<< "${DEFINED_OPTIONS}"
-}
-
-
-all_userdefined_unknown_plus_keys()
-{
-   log_entry "all_userdefined_unknown_plus_keys" "$@"
-
-   if [ -z "${DEFINED_PLUS_OPTIONS}" ]
-   then
-      return
-   fi
-
-   local pattern
-
-   pattern="$(tr '\012' '|' <<< "${KNOWN_OPTIONS}")"
-   pattern="$(sed 's/\(.*\)|$/\1/g' <<< "${pattern}")"
-
-   log_debug "${DEFINED_PLUS_OPTIONS}"
-   egrep -v -x "${pattern}" <<< "${DEFINED_PLUS_OPTIONS}"
-}
-
-
-#
-# defined for xcodebuild by default
-#
-emit_definitions()
-{
-   log_entry "emit_definitions" "$@"
-
-   local keys="$1"
-   local pluskeys="$2"
-
-   local prefix="$3"
-   local sep="$4"
-   local plussep="$5"
-   local pluspref="$6"
-   local concatsep="$7"
-
-   local s
-   local key
-   local value
-
-   IFS="
-"
-   for key in ${keys}
-   do
-      IFS="${DEFAULT_IFS}"
-
-      value="`eval echo "\\\$$key"`"
-      s="`concat "${s}" "${prefix}${key#OPTION_}${sep}'${value}'" "${concatsep}"`"
-   done
-   IFS="${DEFAULT_IFS}"
-
-   #
-   # emit plus definitions if they are distinguishable
-   #
-   IFS="
-"
-   for key in ${pluskeys}
-   do
-      IFS="${DEFAULT_IFS}"
-
-      value="`eval echo "\\\$$key"`"
-      s="`concat "${s}" "${prefix}${key#OPTION_}${plussep}'${pluspref}${value}'"`"
-   done
-   IFS="${DEFAULT_IFS}"
-
-   printf "%s" "${s}"
-}
-
-
-#
-# defined for xcodebuild by default
-#
-emit_userdefined_definitions()
-{
-   log_entry "emit_userdefined_definitions" "$@"
-
-   local prefix="$1"
-   local sep="${2:-=}"
-   local plussep="${3:-=}"
-   local pluspref="${4:-\$(inherited) }"
-
-   local key
-   local buildsettings
-   local value
-
-   if [ "${pluspref}" = "-" ]
-   then
-      pluspref=""
-   fi
-
-   keys=`all_userdefined_unknown_keys`
-
-   #
-   # emit plus definitions if they are distinguishable
-   #
-   if [ "${plussep}" != "${sep}" -o ! -z "${pluspref}" ]
-   then
-      pluskeys="`all_userdefined_unknown_plus_keys`"
-   fi
-
-   emit_definitions "${keys}" "${pluskeys}" \
-                     "${prefix}" "${sep}" "${plussep}" "${pluspref}" " "
-}
-
-
-#
-# this defines a non-exported variable with prefix
-# OPTION_
-#
-check_option_key_without_prefix()
-{
-   log_entry "check_option_key_without_prefix" "$@"
-
-   local key="$1"
-
-   case "${key}" in
-      OPTION_*)
-         fail "Key \"${key}\" must not have OPTION_ prefix"
-      ;;
-   esac
-
-   local match
-
-   if ! fgrep -q -s -x "OPTION_${key}" <<< "${KNOWN_OPTIONS}"
-   then
-      local message
-      local hint
-
-      message="\"${key}\" is not a known option"
-
-      case "${key}" in
-         OPTION_*)
-            hint="\n(Hint: Do not specify the OPTION_ prefix yourself)"
-         ;;
-      esac
-
-      message="\"${key}\" is not a known option"
-      if [ "${OPTION_ALLOW_UNKNOWN_OPTION}" != "NO" ]
-      then
-         log_fluff "${message}. Maybe OK, especially with cmake and xcode."
-      else
-         fail "${message}${hint}"
-      fi
-   fi
-
-   if LC_ALL=C fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
-      LC_ALL=C fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
-   then
-      fail "OPTION \"${key}\" has already been defined"
-   fi
-}
-
-
-make_define_option()
-{
-   log_entry "make_define_option" "$@"
-
-   local key="$1"
-   local value="$2"
-
-   check_option_key_without_prefix "${key}"
-
-   local escaped
-
-   escaped="`escaped_doublequotes "${value}"`"
-   eval "OPTION_${key}=\"${escaped}\""
-
-   log_fluff "OPTION_${key} defined as \"${value}\""
-
-   DEFINED_OPTIONS="`add_line "${DEFINED_OPTIONS}" "OPTION_${key}"`"
-}
-
-
-make_define_plusoption()
-{
-   log_entry "make_define_plusoption" "$@"
-
-   local key="$1"
-   local value="$2"
-
-   check_option_key_without_prefix "${key}"
-
-   local escaped
-
-   escaped="`escaped_doublequotes "${value}"`"
-   eval "OPTION_${key}=\"${escaped}\""
-
-   log_fluff "OPTION_${key} defined as \"${value}\""
-
-   DEFINED_PLUS_OPTIONS="`add_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"`"
-}
-
-
-
-make_define_option_keyvalue()
-{
-   log_entry "make_define_option_keyvalue" "$@"
-
-   local keyvalue="$1"
-
-   if [ -z "${keyvalue}" ]
-   then
-      fail "Missing key, directly after -D"
-      make_usage
-   fi
-
-   local key
-   local value
-
-   key="`echo "${keyvalue}" | cut -d= -f1 | tr 'a-z' 'A-Z'`"
-   if [ -z "${key}" ]
-   then
-      key="${keyvalue}"
-   else
-      value="`echo "${keyvalue}" | cut -d= -f2-`"
-   fi
-
-   make_define_option "${key}" "${value}"
-}
-
-
-make_define_plusoption_keyvalue()
-{
-   log_entry "make_define_plusoption_keyvalue" "$@"
-
-   local keyvalue="$1"
-
-   if [ -z "${keyvalue}" ]
-   then
-      fail "Missing key, directly after -D"
-      make_usage
-   fi
-
-   local key
-   local value
-
-   key="`echo "${keyvalue}" | cut '-d+' -f1 | tr 'a-z' 'A-Z'`"
-   if [ -z "${key}" ]
-   then
-      key="${keyvalue}"
-   else
-      value="`echo "${keyvalue}" | cut '-d=' -f2-`"
-   fi
-
-   make_define_plusoption "${key}" "${value}"
-}
-
-
-
-read_defines_dir()
-{
-   log_entry "read_defines_dir" "$@"
-
-   local directory="$1"
-   local callback="$2"
-
-   local key
-   local value
-   local filename
-
-   shopt -s nullglob
-   for filename in "${directory}"/[A-Z_][A-Z0-9_]*
-   do
-      shopt -u nullglob
-
-      if [ ! -f "${filename}" ]
-      then
-         continue
-      fi
-
-      value="`egrep -v '^#' "${filename}"`"
-#      if [ -z "${value}" ]
-#      then
-#         continue
-#      fi
-
-      # case insensitive fs needs this
-      key="`basename -- "${filename}"`"
-      key="$(tr '[a-z]' '[A-Z]' <<< "${key}")"
-
-      "${callback}" "${key}" "${value}"
-   done
-   shopt -u nullglob
-}
-
-
-#
-# it is assumed that the caller (mulle-craft) resolved the UNAME already
-#
-read_info_dir()
-{
-   log_entry "read_info_dir" "$@"
-
-   local infodir="$1"
-
-   [ "${infodir}" = "NONE" ] && return
-
-   if [ ! -d "${infodir}" ]
-   then
-      if [ ! -z "${infodir}" ]
-      then
-         log_verbose "There is no \"${infodir}\" here ($PWD)"
-      fi
-      return
-   fi
-
-   infodir="${infodir}"
-
-   read_defines_dir "${infodir}/set" "make_define_option"
-   read_defines_dir "${infodir}"     "make_define_plusoption"
-}
-
-
 _make_build_main()
 {
    log_entry "_make_build_main" "$@"
@@ -828,7 +421,7 @@ xcodebuild"
    local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
    local OPTION_CLEAN_BEFORE_BUILD="DEFAULT"
    local OPTION_CONFIGURATION="DEFAULT"
-   local OPTION_DETERMINE_XCODE_SDK="DEFAULT"
+   local OPTION_DETERMINE_SDK="DEFAULT"
    local OPTION_SDK="DEFAULT"
    local OPTION_NINJA="DEFAULT"
 
@@ -870,12 +463,12 @@ xcodebuild"
             OPTION_NINJA="NO"
          ;;
 
-         --determine-xcode-sdk)
-            OPTION_DETERMINE_XCODE_SDK="YES"
+         --determine-sdk)
+            OPTION_DETERMINE_SDK="YES"
          ;;
 
-         --no-determine-xcode-sdk)
-            OPTION_DETERMINE_XCODE_SDK="NO"
+         --no-determine-sdk)
+            OPTION_DETERMINE_SDK="NO"
          ;;
 
          -n|--name|--project-name)
@@ -992,6 +585,11 @@ xcodebuild"
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-common.sh" || return 1
    fi
 
+   if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
+   then
+      . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
+   fi
+
    if [ -z "${MULLE_MAKE_COMMAND_SH}" ]
    then
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-command.sh" || return 1
@@ -1011,17 +609,17 @@ xcodebuild"
    local dstdir
 
    case "${cmd}" in
-      build|print)
+      build)
          srcdir="${argument:-$PWD}"
+         if [ ! -d "${srcdir}" ]
+         then
+            fail "Source directory \"${srcdir}\" is missing"
+         fi
+
          if read -r argument
          then
             log_error "Superflous argument \"${argument}\""
             build_usage
-         fi
-
-         if [ ! -d "${srcdir}" ]
-         then
-            fail "Source directory \"${srcdir}\" is missing"
          fi
 
          read_info_dir "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
@@ -1030,10 +628,27 @@ xcodebuild"
       ;;
 
       install)
-         srcdir="${argument}"
-         if ! read -r dstdir
+         srcdir="${argument:-$PWD}"
+         if [ ! -d "${srcdir}" ]
          then
-            log_fluff "Defaulting to install prefix \"/tmp\", as there is no argument"
+            fail "Source directory \"${srcdir}\" is missing"
+         fi
+
+         # OPTION_PREFIX is used for regular builds that do not install
+         # if it is not defined, we require a destination directory
+
+         read -r dstdir
+         if [ ! -z "${OPTION_PREFIX}" ]
+         then
+            if [ -z "${dstdir}" ]
+            then
+               dstdir="${OPTION_PREFIX}"
+            fi
+         fi
+
+         if [ -z "${dstdir}" ]
+         then
+            log_fluff "Defaulting to install prefix \"/tmp\""
             dstdir="/tmp"
          fi
 
@@ -1041,11 +656,6 @@ xcodebuild"
          then
             log_error "Superflous argument \"${argument}\""
             install_usage
-         fi
-
-         if [ ! -d "${srcdir}" ]
-         then
-            fail "Source directory \"${srcdir}\" is missing"
          fi
 
          read_info_dir "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
@@ -1065,16 +675,6 @@ make_build_main()
 }
 
 
-make_print_main()
-{
-   log_entry "make_print_main" "$@"
-
-   usage="print_usage"
-   _make_build_main "print" "$@"
-}
-
-
-
 make_install_main()
 {
    log_entry "make_install_main" "$@"
@@ -1082,4 +682,3 @@ make_install_main()
    usage="install_usage"
    _make_build_main "install" "$@"
 }
-

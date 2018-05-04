@@ -76,7 +76,7 @@ build_load_plugin()
 
    if [ "`type -t "test_${preference}"`" = "function" ]
    then
-      log_fluff "Plugin \"${preference}\" already loaded"
+      log_debug "Plugin \"${preference}\" already loaded"
       return 0
    fi
 
@@ -104,7 +104,7 @@ build_load_plugin()
          internal_fail "Build plugin \"${pluginpath}\" has no \"build_${preference}\" function"
       fi
 
-      log_fluff "Build plugin for \"${preference}\" loaded"
+      log_debug "Build plugin for \"${preference}\" loaded"
    fi
 
    return 0
@@ -116,8 +116,6 @@ build_load_plugins()
    log_entry "build_load_plugins" "$@"
 
    local preferences="$1"
-
-   log_fluff "Loading build plugins..."
 
    local preference
 

@@ -32,7 +32,7 @@
 [ "${TRACE}" = "YES" ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.3.12
+MULLE_EXECUTABLE_VERSION=0.4.0
 MULLE_EXECUTABLE_BASHFUNCTIONS="1.3"
 
 
@@ -53,15 +53,14 @@ print_commands()
 
    SHOWN_COMMANDS="\
    build         : build project (default)
+   definition    : manage build definitions
    log           : show build log
-   install       : build project and install
-   version       : print mulle-make version"
-
+   install       : build project and install"
 
    HIDDEN_COMMANDS="\
    libexec-dir   : print path to ${MULLE_USAGE_NAME} libexec
-   print         : print parsed contents of info-dir
-   uname         : ${MULLE_USAGE_NAME}'s simplified uname(1)"
+   uname         : ${MULLE_USAGE_NAME}'s simplified uname(1)
+   version       : print mulle-make version"
 
 
    echo "${SHOWN_COMMANDS}"
@@ -196,6 +195,13 @@ _main()
          make_build_main "$@"
       ;;
 
+      definition)
+         # shellcheck source=src/mulle-make-build.sh
+         . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh"
+
+         make_definition_main "$@"
+      ;;
+
       install)
          # shellcheck source=src/mulle-make-build.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
@@ -212,13 +218,6 @@ _main()
 
       libexec-dir|library-path)
          echo "${MULLE_MAKE_LIBEXEC_DIR}"
-      ;;
-
-      print)
-         # shellcheck source=src/mulle-make-build.sh
-         . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
-
-         make_print_main "$@"
       ;;
 
       uname)

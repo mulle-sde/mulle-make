@@ -25,8 +25,6 @@ other | ./install.sh  (Requires: [mulle-bashfunctions](https://github.com/mulle-
 
 ## What **mulle-make** does
 
-![](dox/overview.png)
-
 Essentially, **mulle-make** does:
 
 ```
@@ -38,7 +36,15 @@ cmake ..
 ninja
 ```
 
-But that's really not all. :) It's provides a uniform call interface to various build tools.
+But it can do this for an expandable variety of build tools.
+
+
+## Project structure
+
+The next picture gives an overview of `mulle-make` default project structure
+and how to customize it:
+
+![](dox/overview.png)
 
 
 ## GitHub and Mulle kybernetiK

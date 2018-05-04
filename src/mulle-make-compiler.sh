@@ -92,22 +92,28 @@ compiler_sdk_parameter()
 {
    local sdk="$1"
 
-   if [ "${MULLE_UNAME}" = "darwin" -a "${OPTION_DETERMINE_XCODE_SDK}" != "NO" ]
-   then
-      local sdkpath
+   local sdkpath
 
-      if [ "${sdk}" = "Default" ]
-      then
-         sdkpath="`xcrun --show-sdk-path`"
-      else
-         sdkpath="`xcrun --sdk "${sdk}" --show-sdk-path`"
-      fi
-      if [ "${sdkpath}" = "" ]
-      then
-         fail "SDK \"${sdk}\" is not installed"
-      fi
-      echo "${sdkpath}"
+   if [ "${OPTION_DETERMINE_SDK}" = "NO" ]
+   then
+      return
    fi
+
+   case "${MULLE_UNAME}" in
+      darwin)
+         if [ "${sdk}" = "Default" ]
+         then
+            sdkpath="`xcrun --show-sdk-path`"
+         else
+            sdkpath="`xcrun --sdk "${sdk}" --show-sdk-path`"
+         fi
+         if [ "${sdkpath}" = "" ]
+         then
+            fail "SDK \"${sdk}\" is not installed"
+         fi
+         echo "${sdkpath}"
+      ;;
+   esac
 }
 
 

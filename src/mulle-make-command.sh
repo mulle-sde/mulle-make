@@ -159,7 +159,7 @@ verify_binary()
    path="`which_binary "${toolname}" `"
    if [ ! -z "${path}" ]
    then
-      log_fluff "${toolfamily:-${tooldefaultname}} is \"${path}\""
+      log_debug "${toolfamily:-${tooldefaultname}} is \"${path}\""
       echo "${path}"
       return 0
    fi

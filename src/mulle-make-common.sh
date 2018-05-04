@@ -149,7 +149,7 @@ __add_path_tool_flags()
 {
    local sdkpath
 
-   sdkpath="`compiler_sdk_parameter "${sdk}"`"
+   sdkpath="`compiler_sdk_parameter "${sdk}"`" || exit 1
    sdkpath="`echo "${sdkpath}" | "${SED}" -e 's/ /\\ /g'`"
 
    if [ ! -z "${sdkpath}" ]
@@ -410,7 +410,7 @@ find_nearest_matching_pattern()
    if [ ! -z "${found}" ]
    then
       found="`sed 's|^\./||g' <<< "${found}"`"
-      log_fluff "\"${found}\" found as nearest match"
+      log_debug "\"${found}\" found as nearest match"
       echo "${found}"
       return 0
    fi

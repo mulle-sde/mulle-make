@@ -49,22 +49,12 @@ mulle-mingw-dumpdef.bat
 endif()
 
 
-set( LIBRARY_SCRIPTS
-src/mulle-make-build.sh
-src/mulle-make-command.sh
-src/mulle-make-common.sh
-src/mulle-make-compiler.sh
-src/mulle-make-list.sh
-src/mulle-make-mingw.sh
-src/mulle-make-plugin.sh
+file( GLOB LIBRARY_SCRIPTS
+   "src/*.sh"
 )
 
-
-set( BUILD_PLUGIN_SCRIPTS
-src/plugins/autoconf.sh
-src/plugins/cmake.sh
-src/plugins/configure.sh
-src/plugins/xcodebuild.sh
+file( GLOB PLUGIN_SCRIPTS
+   "src/plugins/*.sh"
 )
 
 
@@ -91,7 +81,7 @@ PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             WORLD_EXECUTE WORLD_READ
 DESTINATION "libexec/mulle-make")
 
-INSTALL( FILES ${BUILD_PLUGIN_SCRIPTS}
+INSTALL( FILES ${PLUGIN_SCRIPTS}
 PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             GROUP_EXECUTE GROUP_READ
             WORLD_EXECUTE WORLD_READ

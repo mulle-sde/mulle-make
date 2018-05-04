@@ -96,7 +96,7 @@ cmake_sdk_parameter()
 
    case "${MULLE_UNAME}" in
       "darwin")
-         sdkpath=`compiler_sdk_parameter "${sdk}"`
+         sdkpath=`compiler_sdk_parameter "${sdk}"` || exit 1
          if [ ! -z "${sdkpath}" ]
          then
             log_fluff "Set cmake -DCMAKE_OSX_SYSROOT to \"${sdkpath}\""
@@ -144,10 +144,10 @@ build_cmake()
    local cppflags
    local ldflags
 
-   cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO" `"
-   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO" `"
-   cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `" # only cmake does OPTION_INCLUDE_PATH here
-   ldflags="`compiler_ldflags_value`"
+   cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1
+   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1
+   cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `"  || exit 1 # only cmake does OPTION_INCLUDE_PATH here
+   ldflags="`compiler_ldflags_value`" || exit 1
 
    if [ ! -z "${cppflags}" ]
    then
@@ -207,7 +207,7 @@ build_cmake()
 
    local sdkparameter
 
-   sdkparameter="`cmake_sdk_parameter "${sdk}"`"
+   sdkparameter="`cmake_sdk_parameter "${sdk}"`" || exit 1
 
    if [ -z "${sdkparameter}" ]
    then

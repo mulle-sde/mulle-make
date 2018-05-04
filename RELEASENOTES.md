@@ -1,3 +1,8 @@
+## 0.4.0
+
+* initial rudimentary support for .mulle-make management
+
+
 ### 0.3.12
 
 * fix potential bug
