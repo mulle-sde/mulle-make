@@ -1,3 +1,7 @@
+### 0.4.1
+
+* rename install.sh to install, fix bug
+
 ## 0.4.0
 
 * initial rudimentary support for .mulle-make management

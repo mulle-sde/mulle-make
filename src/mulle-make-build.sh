@@ -543,10 +543,20 @@ xcodebuild"
          ;;
 
          -D*+=*)
+            if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
+            then
+               . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
+            fi
+
             make_define_plusoption_keyvalue "`echo "${argument}" | sed s'/^-D[ ]*//'`"
          ;;
 
          -D*)
+            if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
+            then
+               . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
+            fi
+
             make_define_option_keyvalue "`echo "${argument}" | sed s'/^-D[ ]*//'`"
          ;;
 
