@@ -1,14 +1,17 @@
-SCRIPTS=install.sh \
+SCRIPTS=installer \
+src/mulle-make-bash-completion.sh \
 src/mulle-make-build.sh \
 src/mulle-make-command.sh \
+src/mulle-make-common.sh \
 src/mulle-make-compiler.sh \
-src/mulle-make-install.sh \
-src/mulle-make-log.sh \
+src/mulle-make-definition.sh \
+src/mulle-make-list.sh \
 src/mulle-make-mingw.sh \
+src/mulle-make-plugin.sh \
 src/plugins/autoconf.sh \
 src/plugins/cmake.sh \
 src/plugins/configure.sh \
-src/plugins/script.sh \
+src/plugins/meson.sh \
 src/plugins/xcodebuild.sh
 
 CHECKSTAMPS=$(SCRIPTS:.sh=.chk)
@@ -32,8 +35,8 @@ mulle-make.chk:	mulle-make
 	- shellcheck $(SHELLFLAGS) $<
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 
-install:
-	@ ./install.sh
+installer:
+	@ ./installer
 
 clean:
 	@- rm src/*.chk

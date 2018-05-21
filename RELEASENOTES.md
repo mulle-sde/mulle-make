@@ -1,3 +1,7 @@
+### 0.4.2
+
+* rename install to installer, because of name conflict
+
 ### 0.4.1
 
 * rename install.sh to install, fix bug
