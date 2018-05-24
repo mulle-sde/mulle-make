@@ -1,6 +1,6 @@
 # mulle-make, 🤖 Build projects uniformly with a variety of build systems
 
-![Last version](https://img.shields.io/github/tag/{{PUBLISHER}}/mulle-make.svg)
+![Last version](https://img.shields.io/github/tag/mulle-sde/mulle-make.svg)
 
 ... for Linux, OS X, FreeBSD, Windows
 
@@ -68,4 +68,4 @@ and how to customize it:
 
 The development is done on
 [Mulle kybernetiK](https://www.mulle-kybernetik.com/software/git/mulle-make/master).
-Releases and bug-tracking are on [GitHub](https://github.com/{{PUBLISHER}}/mulle-make).
+Releases and bug-tracking are on [GitHub](https://github.com/mulle-sde/mulle-make).

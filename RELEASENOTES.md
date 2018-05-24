@@ -1,3 +1,7 @@
+### 0.4.4
+
+* fix README.md
+
 ### 0.4.3
 
 * improved debug
