@@ -1,3 +1,7 @@
+### 0.4.5
+
+* fix homebrew install ruby script
+
 ### 0.4.4
 
 * fix README.md
