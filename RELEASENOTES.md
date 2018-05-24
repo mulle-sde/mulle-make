@@ -1,3 +1,7 @@
+### 0.4.3
+
+* improved debug
+
 ### 0.4.2
 
 * rename install to installer, because of name conflict

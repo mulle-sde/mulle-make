@@ -339,7 +339,7 @@ build()
 There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERENCES}`\""
    fi
 
-   log_fluff "Actually available plugins for ${MULLE_UNAME} are: `echo ${AVAILABLE_PLUGINS}`"
+   log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: `echo ${AVAILABLE_PLUGINS}`"
 
    local sdk
 
