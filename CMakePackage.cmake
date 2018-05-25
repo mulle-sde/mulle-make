@@ -1,3 +1,8 @@
+##
+## THESE SETTINGS ARE IGNORED WHEN USING mulle-project.
+## SEE mulle-project/formula-info.sh
+##
+
 #
 # CPack and project specific stuff
 #
