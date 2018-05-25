@@ -1,3 +1,7 @@
+### 0.4.6
+
+* fix package dependencies
+
 ### 0.4.5
 
 * fix homebrew install ruby script
