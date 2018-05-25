@@ -561,19 +561,19 @@ set_info_dir()
 
    if [ -z "${argument}" ]
    then
-      make_definition_get_usage "missing key"
+      make_definition_set_usage "Missing key"
    fi
    key="${argument}"
 
    if ! read -r argument
    then
-      make_definition_list_usage "missing value"
+      make_definition_set_usage "Missing value"
    fi
    value="${argument}"
 
    if read -r argument
    then
-      make_definition_list_usage "superflous argument \"${argument}\""
+      make_definition_set_usage "Superflous argument \"${argument}\""
    fi
 
    read_info_dir "${info_dir}"

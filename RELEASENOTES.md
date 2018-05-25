@@ -1,3 +1,7 @@
+### 0.4.8
+
+* expose `MULLE_MAKE_PROJECT_DIR` for convenience
+
 ### 0.4.7
 
 * fix package dependencies more
