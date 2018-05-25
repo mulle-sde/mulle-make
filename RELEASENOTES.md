@@ -1,3 +1,7 @@
+### 0.4.9
+
+* remove some debug code
+
 ### 0.4.8
 
 * expose `MULLE_MAKE_PROJECT_DIR` for convenience
