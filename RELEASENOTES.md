@@ -1,3 +1,7 @@
+### 0.4.10
+
+* smallish doc upgrades for mulle-sde
+
 ### 0.4.9
 
 * remove some debug code

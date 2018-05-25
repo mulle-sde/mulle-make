@@ -92,9 +92,9 @@ emit_options()
 {
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
    then
-      _emit_common_options
+      _emit_uncommon_options
    fi
-   _emit_uncommon_options
+   _emit_common_options
 }
 
 
@@ -500,7 +500,7 @@ xcodebuild"
             read -r OPTION_CONFIGURATION || fail "missing argument to \"${argument}\""
          ;;
 
-         -i|--info-dir)
+         -i|--info-dir|--buildinfo-dir)
             read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
          ;;
 

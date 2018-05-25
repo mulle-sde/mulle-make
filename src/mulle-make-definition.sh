@@ -37,7 +37,7 @@ make_definition_usage()
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} definition [option] <command>
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} [option] <command>
 
    Examine and change build settings.
 
@@ -59,7 +59,7 @@ make_definition_list_usage()
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} definition list
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} list
 
    List build settings.
 EOF
@@ -73,7 +73,7 @@ make_definition_get_usage()
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} definition get <key>
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} get <key>
 
    Retrieve a build setting by name.
 EOF
@@ -87,9 +87,9 @@ make_definition_set_usage()
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} definition set [option] <key> <value>
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set [option] <key> <value>
 
-   Set a build settings. There are two different types of build settings.
+   Set a build setting. There are two different types of build settings.
    Additive and non-additive. Use non-additive for settings like CC. Use
    additive for settings like compiler flags.
 
@@ -99,6 +99,7 @@ Options:
 EOF
    exit 1
 }
+
 
 #
 #
@@ -341,8 +342,8 @@ check_option_key_without_prefix()
       fi
    fi
 
-   if LC_ALL=C fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
-      LC_ALL=C fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
+   if LC_ALL="C" fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
+      LC_ALL="C" fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
    then
       log_warning "\"${key}\" has already been defined"
    fi
