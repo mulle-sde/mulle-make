@@ -43,7 +43,8 @@ Usage:
 
 Commands:
    get   :  get a specific value
-   list  :  list values
+   keys  :  list all known builtin keys
+   list  :  list defined values
    set   :  set a specific value
 
 Options:
@@ -138,6 +139,7 @@ OPTION_CC
 OPTION_CFLAGS
 OPTION_CLEAN_BEFORE_BUILD
 OPTION_CONFIGURATION
+OPTION_CPPFLAGS
 OPTION_CXX
 OPTION_CXXFLAGS
 OPTION_DETERMINE_SDK
@@ -735,6 +737,10 @@ make_definition_main()
          fi
 
          ${cmd}_info_dir "${OPTION_INFO_DIR}"
+      ;;
+
+      keys)
+         sed -e 's/^OPTION_//' <<< "${KNOWN_OPTIONS}" | sort -u
       ;;
 
       set)

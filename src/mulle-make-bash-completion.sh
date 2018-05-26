@@ -46,7 +46,7 @@ _mulle_make_complete()
       case "${context}" in
          definition)
             case "$i" in
-               get|list|set)
+               get|keys|list|set)
                   subcontext="$i"
                ;;
             esac
@@ -93,7 +93,15 @@ _mulle_make_complete()
    # handle other keywords
    case "${context}" in
       definition)
-         COMPREPLY=( $( compgen -W "get list set" -- $cur ) )
+         case "${prev}" in
+            get|set)
+               keys="`mulle-make definition keys`"
+               COMPREPLY=( $( compgen -W "${keys}" -- $cur ) )
+            ;;
+            return 0
+         esac
+
+         COMPREPLY=( $( compgen -W "get keys list set" -- $cur ) )
       ;;
 
       build|install|log)

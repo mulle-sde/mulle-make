@@ -1,3 +1,7 @@
+### 0.4.12
+
+* add keys subcommand to definition
+
 ### 0.4.11
 
 * fix `MULLE_MAKE_PROJECT_DIR` export also `MULLE_MAKE_DESTINATION_DIR`
