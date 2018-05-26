@@ -257,6 +257,8 @@ emit_definitions()
    done
    IFS="${DEFAULT_IFS}"
 
+   log_debug "User definition: ${s}"
+
    printf "%s" "${s}"
 }
 
@@ -282,6 +284,10 @@ emit_userdefined_definitions()
       pluspref=""
    fi
 
+   #
+   # only emit UNKNOWN keys, the known keys are handled
+   # by the plugins themselves
+   #
    keys=`all_userdefined_unknown_keys`
 
    #

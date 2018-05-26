@@ -321,20 +321,25 @@ build_with_configuration_sdk_preferences()
 }
 
 
-# used by plugins
+#
+# used by plugins for environment calling cmake and friends.
+#
 mulle_make_env_flags()
 {
    local env_flags
 
    env_flags="`concat "${env_flags}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"`"
-   if [ ! -z "${MULLE_MAKE_DESTINATION_DIR}" ]
-   then
-      env_flags="`concat "${env_flags}" "MULLE_MAKE_PROJECT_DIR='${MULLE_MAKE_PROJECT_DIR}'"`"
-   fi
-   if [ ! -z "${MULLE_MAKE_DESTINATION_DIR}" ]
-   then
-      env_flags="`concat "${env_flags}" "MULLE_MAKE_DESTINATION_DIR='${MULLE_MAKE_DESTINATION_DIR}'"`"
-   fi
+
+#   if [ ! -z "${MULLE_MAKE_PROJECT_DIR}" ]
+#   then
+#      env_flags="`concat "${env_flags}" "MULLE_MAKE_PROJECT_DIR='${MULLE_MAKE_PROJECT_DIR}'"`"
+#   fi
+#
+#   if [ ! -z "${MULLE_MAKE_DESTINATION_DIR}" ]
+#   then
+#      env_flags="`concat "${env_flags}" "MULLE_MAKE_DESTINATION_DIR='${MULLE_MAKE_DESTINATION_DIR}'"`"
+#   fi
+
    echo "${env_flags}"
 }
 
@@ -346,9 +351,16 @@ build()
    local cmd="$1"
    local srcdir="$2"
    local dstdir="$3"
+   local infodir="$4"
 
+   #
+   # need these three defined before read_info_dir
+   #
    MULLE_MAKE_PROJECT_DIR="`simplified_absolutepath "${srcdir}"`"
    MULLE_MAKE_DESTINATION_DIR="`simplified_absolutepath "${dstdir}"`"
+   MULLE_MAKE_INFO_DIR="`simplified_absolutepath "${infodir}"`"
+
+   read_info_dir "${infodir}"
 
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
@@ -654,9 +666,7 @@ xcodebuild"
             build_usage
          fi
 
-         read_info_dir "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
-
-         build "${cmd}" "${srcdir}"
+         build "${cmd}" "${srcdir}" "" "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
       ;;
 
       install)
@@ -685,9 +695,7 @@ xcodebuild"
             install_usage
          fi
 
-         read_info_dir "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
-
-         build "install" "${srcdir}" "${dstdir}"
+         build "install" "${srcdir}" "${dstdir}" "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
       ;;
    esac
 }

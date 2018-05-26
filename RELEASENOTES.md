@@ -1,3 +1,7 @@
+### 0.4.14
+
+* fix proper order of defining `MULLE_MAKE_PROJECT_DIR` and reading the info-dir
+
 ### 0.4.13
 
 * expose environment in logs for all plugins
