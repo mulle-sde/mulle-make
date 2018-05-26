@@ -1,3 +1,7 @@
+### 0.4.11
+
+* fix `MULLE_MAKE_PROJECT_DIR` export also `MULLE_MAKE_DESTINATION_DIR`
+
 ### 0.4.10
 
 * smallish doc upgrades for mulle-sde

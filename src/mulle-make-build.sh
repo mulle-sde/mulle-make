@@ -329,6 +329,10 @@ build()
    local srcdir="$2"
    local dstdir="$3"
 
+   export MULLE_MAKE_COMMAND="${cmd}"
+   export MULLE_MAKE_PROJECT_DIR="`absolutepath "${srcdir}"`"
+   export MULLE_MAKE_DESTINATION_DIR="`absolutepath "${dstdir}"`"
+
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
 
@@ -618,14 +622,16 @@ xcodebuild"
    local srcdir
    local dstdir
 
+   # export some variables
+
+   srcdir="${argument:-$PWD}"
+   if [ ! -d "${srcdir}" ]
+   then
+      fail "Source directory \"${srcdir}\" is missing"
+   fi
+
    case "${cmd}" in
       build)
-         srcdir="${argument:-$PWD}"
-         if [ ! -d "${srcdir}" ]
-         then
-            fail "Source directory \"${srcdir}\" is missing"
-         fi
-
          if read -r argument
          then
             log_error "Superflous argument \"${argument}\""
@@ -638,12 +644,6 @@ xcodebuild"
       ;;
 
       install)
-         srcdir="${argument:-$PWD}"
-         if [ ! -d "${srcdir}" ]
-         then
-            fail "Source directory \"${srcdir}\" is missing"
-         fi
-
          # OPTION_PREFIX is used for regular builds that do not install
          # if it is not defined, we require a destination directory
 
