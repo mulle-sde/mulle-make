@@ -1,3 +1,7 @@
+### 0.4.13
+
+* expose environment in logs for all plugins
+
 ### 0.4.12
 
 * add keys subcommand to definition

@@ -321,6 +321,24 @@ build_with_configuration_sdk_preferences()
 }
 
 
+# used by plugins
+mulle_make_env_flags()
+{
+   local env_flags
+
+   env_flags="`concat "${env_flags}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"`"
+   if [ ! -z "${MULLE_MAKE_DESTINATION_DIR}" ]
+   then
+      env_flags="`concat "${env_flags}" "MULLE_MAKE_PROJECT_DIR='${MULLE_MAKE_PROJECT_DIR}'"`"
+   fi
+   if [ ! -z "${MULLE_MAKE_DESTINATION_DIR}" ]
+   then
+      env_flags="`concat "${env_flags}" "MULLE_MAKE_DESTINATION_DIR='${MULLE_MAKE_DESTINATION_DIR}'"`"
+   fi
+   echo "${env_flags}"
+}
+
+
 build()
 {
    log_entry "build" "$@"
@@ -329,9 +347,8 @@ build()
    local srcdir="$2"
    local dstdir="$3"
 
-   export MULLE_MAKE_COMMAND="${cmd}"
-   export MULLE_MAKE_PROJECT_DIR="`absolutepath "${srcdir}"`"
-   export MULLE_MAKE_DESTINATION_DIR="`absolutepath "${dstdir}"`"
+   MULLE_MAKE_PROJECT_DIR="`simplified_absolutepath "${srcdir}"`"
+   MULLE_MAKE_DESTINATION_DIR="`simplified_absolutepath "${dstdir}"`"
 
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
@@ -620,7 +637,6 @@ xcodebuild"
    fi
 
    local srcdir
-   local dstdir
 
    # export some variables
 
@@ -646,6 +662,7 @@ xcodebuild"
       install)
          # OPTION_PREFIX is used for regular builds that do not install
          # if it is not defined, we require a destination directory
+         local dstdir
 
          read -r dstdir
          if [ ! -z "${OPTION_PREFIX}" ]

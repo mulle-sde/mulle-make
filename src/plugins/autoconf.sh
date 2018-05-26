@@ -77,6 +77,10 @@ build_autoconf()
 
    projectdir="`dirname -- "${projectfile}"`"
 
+   local env_common
+
+   env_common="`mulle_make_env_flags`"
+
    local autoconf_flags
    local autoreconf_flags
 
@@ -118,6 +122,7 @@ build_autoconf()
       then
           # use absolute paths for configure, safer (and easier to read IMO)
          if ! logging_redirect_eval_exekutor "${logfile1}" \
+                                             "${env_common}" \
                                              "${AUTORECONF}" \
                                              "${autoreconf_flags}"
          then

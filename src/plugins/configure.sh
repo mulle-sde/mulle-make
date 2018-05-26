@@ -124,7 +124,12 @@ build_configure()
    local env_flags
    local passed_keys
 
-   env_flags=
+   local env_common
+
+   env_common="`mulle_make_env_flags`"
+
+   env_flags="${env_common}"
+
    passed_keys=
 
    if [ ! -z "${OPTION_CC}" ]
@@ -159,6 +164,7 @@ build_configure()
    fi
 
    # always pass at least a trailing :
+
    env_flags="`concat "${env_flags}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"`"
 
    local absprojectdir

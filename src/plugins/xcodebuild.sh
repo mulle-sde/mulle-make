@@ -222,6 +222,10 @@ EOF
    buildsettings="`concat "${buildsettings}" "SYMROOT='${absbuilddir}/'" `"
    buildsettings="`concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${ONLY_ACTIVE_ARCH:-NO}'" `"
 
+   local env_common
+
+   env_common="`mulle_make_env_flags`"
+
    local cflags
    local cxxflags
    local ldflags
@@ -320,6 +324,7 @@ EOF
 
       # if it doesn't install, probably SKIP_INSTALL is set
       if ! logging_redirect_eval_exekutor "${logfile}" \
+                                          "${env_common}" \
             "'${XCODEBUILD}'" ${action} "${arguments}" "${buildsettings}"
       then
          build_fail "${logfile}" "${TOOLNAME}"

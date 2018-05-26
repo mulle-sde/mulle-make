@@ -125,9 +125,9 @@ build_meson()
    local ldflags
 
    cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1
-   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1 
+   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1
    cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `"  || exit 1 # only meson does OPTION_INCLUDE_PATH here
-   ldflags="`compiler_ldflags_value`" || exit 1 
+   ldflags="`compiler_ldflags_value`" || exit 1
 
    __add_path_tool_flags
 
@@ -250,7 +250,7 @@ build_meson()
 
    local env_common
 
-   env_common="`concat "${env_common}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"`"
+   env_common="`mulle_make_env_flags`"
 
    local logfile1
    local logfile2

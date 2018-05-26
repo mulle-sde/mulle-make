@@ -297,9 +297,9 @@ build_cmake()
       ;;
    esac
 
-   local env_flags
+   local env_common
 
-   env_flags="`concat "${env_flags}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"`"
+   env_common="`mulle_make_env_flags`"
 
    local logfile1
    local logfile2
@@ -329,7 +329,7 @@ build_cmake()
       log_fluff "PATH temporarily set to $PATH"
 
       if ! logging_redirect_eval_exekutor "${logfile1}" \
-               "${env_flags}" \
+               "${env_common}" \
                "'${CMAKE}'" -G "'${CMAKE_GENERATOR}'" \
                             "${cmake_flags}" \
                             "'${rel_project_dir}'"
@@ -338,7 +338,7 @@ build_cmake()
       fi
 
       if ! logging_redirect_eval_exekutor "${logfile2}" \
-               "${env_flags}" \
+               "${env_common}" \
                "'${MAKE}'" "${make_flags}" ${maketarget}
       then
          build_fail "${logfile2}" "make"
