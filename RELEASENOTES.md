@@ -1,3 +1,7 @@
+### 0.4.15
+
+* fix broken completion script
+
 ### 0.4.14
 
 * fix proper order of defining `MULLE_MAKE_PROJECT_DIR` and reading the info-dir

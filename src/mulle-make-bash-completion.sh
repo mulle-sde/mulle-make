@@ -97,8 +97,8 @@ _mulle_make_complete()
             get|set)
                keys="`mulle-make definition keys`"
                COMPREPLY=( $( compgen -W "${keys}" -- $cur ) )
+               return 0
             ;;
-            return 0
          esac
 
          COMPREPLY=( $( compgen -W "get keys list set" -- $cur ) )
