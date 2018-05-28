@@ -18,26 +18,8 @@ Executable   | Description
 
 ## Install
 
-### Manually
-
-Install the pre-requisites:
-
-* [mulle-bashfunctions](https://github.com/mulle-nat/mulle-bashfunctions)
-
-
-Install latest version into `/usr` with sudo:
-
-```
-curl -L 'https://github.com/mulle-sde/mulle-make/archive/latest.tar.gz' \
- | tar xfz - && cd 'mulle-make-latest' && sudo ./install /usr
-```
-
-### Packages
-
-OS    | Command
-------|------------------------------------
-macos | `brew install mulle-kybernetik/software/mulle-make`
-
+See [mulle-sde-developer](//github.com/mulle-sde/mulle-sde-developer) how
+to install mulle-sde.
 
 
 ## What **mulle-make** does
