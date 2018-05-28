@@ -1,3 +1,7 @@
+### 0.4.16
+
+* improved brew formula defintion
+
 ### 0.4.15
 
 * fix broken completion script

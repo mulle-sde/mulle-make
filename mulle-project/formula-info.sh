@@ -7,6 +7,6 @@ DESC="💄 Build projects with tools like cmake, meson, autoconf"
 LANGUAGE="bash"                # c,cpp, objc, bash ...
 # NAME="${PROJECT}"        # formula filename without .rb extension
 
-DEPENDENCIES='${BOOTSTRAP_TAP}mulle-bashfunctions'
+DEPENDENCIES='${MULLE_NAT_TAP}mulle-bashfunctions'
 
 DEBIAN_DEPENDENCIES="mulle-bashfunctions (>= 1.5.0), build-essential"
