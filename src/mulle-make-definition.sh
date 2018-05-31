@@ -108,7 +108,7 @@ EOF
 #
 
 # grep through project to get the options:_
-# egrep -h -o -w 'OPTION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | sort -u
+# egrep -h -o -w 'OPTION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | LC_ALL=C sort -u
 #
 KNOWN_AUTOCONF_PLUGIN_OPTIONS="\
 OPTION_AUTOCONF
@@ -746,7 +746,7 @@ make_definition_main()
       ;;
 
       keys)
-         sed -e 's/^OPTION_//' <<< "${KNOWN_OPTIONS}" | sort -u
+         sed -e 's/^OPTION_//' <<< "${KNOWN_OPTIONS}" | LC_ALL=C sort -u
       ;;
 
       set)

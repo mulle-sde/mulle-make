@@ -109,7 +109,7 @@ Usage:
 
 Options:
 EOF
-   emit_options | sort
+   emit_options | LC_ALL=C sort
 
    exit 1
 }
@@ -127,7 +127,7 @@ Usage:
 
 Options:
 EOF
-   emit_options | sort
+   emit_options | LC_ALL=C sort
 
    exit 1
 }

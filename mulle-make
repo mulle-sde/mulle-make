@@ -32,7 +32,7 @@
 [ "${TRACE}" = "YES" ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.4.18
+MULLE_EXECUTABLE_VERSION=0.4.19
 MULLE_EXECUTABLE_BASHFUNCTIONS="1.3"
 
 
@@ -96,7 +96,7 @@ Usage:
 Flags:
 EOF
 
-   print_flags | sort
+   print_flags | LC_ALL=C sort
 
    cat <<EOF
 

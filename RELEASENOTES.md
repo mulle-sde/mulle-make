@@ -1,3 +1,7 @@
+### 0.4.19
+
+* use `LC_ALL=C` for sort
+
 ### 0.4.18
 
 * remove file from git

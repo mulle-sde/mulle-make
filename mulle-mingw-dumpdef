@@ -125,7 +125,13 @@ dump_function_exports()
    local filename
 
    filename="$1"
-   dumpbin.exe -symbols "${filename}" | egrep '^[^|]* \(\) [^|]*\|' | fgrep ' External ' | fgrep -v ' UNDEF ' | sed 's/^[^|]*| *\([^ (]*\).*$/\1/' | sed 's/^_//' | sort
+   dumpbin.exe -symbols "${filename}" | \
+      egrep '^[^|]* \(\) [^|]*\|' | \
+      fgrep ' External ' | \
+      fgrep -v ' UNDEF ' | \
+      sed 's/^[^|]*| *\([^ (]*\).*$/\1/' | \
+      sed 's/^_//' | \
+      LC_ALL=C sort
 }
 
 
@@ -134,7 +140,13 @@ dump_data_exports()
    local filename
 
    filename="$1"
-   dumpbin.exe -symbols "${filename}" | egrep -v '^[^|]* \(\) [^|]*\|' | fgrep ' External ' | fgrep -v ' UNDEF ' | sed "s/^[^|]*| *\\([^ (]*\\).*\$/\\1   ${DATA}/" | sed 's/^_//' | sort
+   dumpbin.exe -symbols "${filename}" | \
+      egrep -v '^[^|]* \(\) [^|]*\|' | \
+      fgrep ' External ' | \
+      fgrep -v ' UNDEF ' | \
+      sed "s/^[^|]*| *\\([^ (]*\\).*\$/\\1   ${DATA}/" | \
+      sed 's/^_//' | \
+      LC_ALL=C sort
 }
 
 
