@@ -196,7 +196,7 @@ build_fail()
 
    if [ "$MULLE_TRACE" != "1848" ]
    then
-      log_info "Check the build log: ${C_RESET_BOLD}$1${C_INFO}"
+      log_info "Check the build log: ${C_RESET_BOLD}${1#${MULLE_VIRTUAL_ROOT}/}${C_INFO}"
    fi
    fail "$2 failed"
 }

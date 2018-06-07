@@ -487,7 +487,7 @@ read_defines_dir()
 
       # ignore files with an extension
       case "${key}" in
-         *.*)
+         *"."*)
             continue
          ;;
       esac
