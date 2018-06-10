@@ -516,7 +516,7 @@ read_info_dir()
    then
       if [ ! -z "${infodir}" ]
       then
-         log_verbose "There is no \"${infodir}\" here ($PWD)"
+         log_fluff "There is no \"${infodir}\" here ($PWD)"
       fi
       return
    fi

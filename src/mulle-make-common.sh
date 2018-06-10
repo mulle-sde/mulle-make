@@ -190,13 +190,13 @@ build_fail()
    if [ -f "$1" ]
    then
       printf "${C_RED}"
-      egrep -B1 -A5 -w "[Ee]rror" "$1" >&2
+      egrep -B1 -A5 -w "[Ee]rror|FAILED:" "$1" >&2
       printf "${C_RESET}"
    fi
 
    if [ "$MULLE_TRACE" != "1848" ]
    then
-      log_info "Check the build log: ${C_RESET_BOLD}${1#${MULLE_VIRTUAL_ROOT}/}${C_INFO}"
+      log_info "Check the build log: ${C_RESET_BOLD}${1#${MULLE_USER_PWD}/}${C_INFO}"
    fi
    fail "$2 failed"
 }
@@ -344,23 +344,26 @@ find_nearest_matching_pattern()
       return 1
    fi
 
-   local found
-
+   # local found
+   #
+   #
+   # Unused feature removed. For now. Would need [ -f ] around it to make it
+   # faster.
    #
    # allow user to specify directory to use for building
    #
-   found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir.${MULLE_UNAME}" `"
-   if [  -z "${found}" ]
-   then
-      found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir" `"
-   fi
-
-   if [ ! -z "${found}" ]
-   then
-      log_fluff "Use .mulle-make-dir specified directory \"${found}\""
-      echo "${found}"
-      return
-   fi
+   #   found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir.${MULLE_UNAME}" `"
+   #   if [  -z "${found}" ]
+   #   then
+   #      found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir" `"
+   #   fi
+   #
+   #   if [ ! -z "${found}" ]
+   #   then
+   #      log_fluff "Use .mulle-make-dir specified directory \"${found}\""
+   #      echo "${found}"
+   #      return
+   #   fi
 
    local depth
 
@@ -372,6 +375,8 @@ find_nearest_matching_pattern()
    local match1
    local match2
    local new_depth
+
+   match2=`fast_basename "${expectation}"`
 
    #
    # don't go too deep in search
@@ -389,12 +394,11 @@ find_nearest_matching_pattern()
          return 0
       fi
 
-      match1=`basename -- "$i"`
-      match2=`basename -- "${expectation}"`
+      match1="${i##*/}"
       if [ "${match1}" = "${match2}" ]
       then
          echo "$i"
-         log_fluff "\"${i}\" found as filename match"
+         log_fluff "\"${i}\" found as matching filename "
          return 0
       fi
 
@@ -409,9 +413,8 @@ find_nearest_matching_pattern()
 
    if [ ! -z "${found}" ]
    then
-      found="`sed 's|^\./||g' <<< "${found}"`"
-      log_debug "\"${found}\" found as nearest match"
-      echo "${found}"
+      log_debug "\"${found#./}\" found as nearest match"
+      echo "${found#./}"
       return 0
    fi
 

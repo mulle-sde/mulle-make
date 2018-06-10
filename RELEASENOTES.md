@@ -1,3 +1,7 @@
+### 0.4.21
+
+* improve startup speed, cmake: find more errors to display
+
 ### 0.4.20
 
 * protect case globs from extglob
