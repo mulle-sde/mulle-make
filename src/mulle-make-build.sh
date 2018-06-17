@@ -257,7 +257,11 @@ build_with_configuration_sdk_preferences()
 
    local name
 
-   name="`basename -- "${srcdir}"`"
+   name="${OPTION_PROJECT_NAME}"
+   if [ -z "${name}" ]
+   then
+      name="`basename -- "${srcdir}"`"
+   fi
 
    #
    # remove symlinks
@@ -617,7 +621,7 @@ xcodebuild"
             "${usage}"
          ;;
 
-         ""|*)
+         *)
             break
          ;;
       esac

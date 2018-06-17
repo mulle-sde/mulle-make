@@ -145,7 +145,7 @@ build_cmake()
    local ldflags
 
    cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1
-   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1
+   cxxflags="`compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO" `" || exit 1
    cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `"  || exit 1 # only cmake does OPTION_INCLUDE_PATH here
    ldflags="`compiler_ldflags_value`" || exit 1
 

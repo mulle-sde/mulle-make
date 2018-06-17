@@ -76,7 +76,12 @@ make_definition_get_usage()
 Usage:
    ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} get <key>
 
-   Retrieve a build setting by name.
+   Retrieve a build setting by name. Will echo to standard output.
+
+Returns:
+   0 : found
+   1 : error
+   2 : not found
 EOF
    exit 1
 }
@@ -537,10 +542,6 @@ set_info_dir()
 
    local info_dir="$1"
 
-   log_entry "get_info_dir" "$@"
-
-   local info_dir="$1"
-
    local argument
    local OPTION_ADDITIVE="NO"
 
@@ -617,7 +618,7 @@ get_info_dir()
          ;;
 
          -*)
-            make_definition_get_usage "unknown option \"${argument}\""
+            make_definition_get_usage "Unknown option \"${argument}\""
          ;;
 
          *)
@@ -630,19 +631,25 @@ get_info_dir()
 
    if [ -z "${argument}" ]
    then
-      make_definition_get_usage "missing key"
+      make_definition_get_usage "Missing key"
    fi
    key="${argument}"
 
    if read -r argument
    then
-      make_definition_list_usage "superflous argument \"${argument}\""
+      make_definition_list_usage "Superflous argument \"${argument}\""
    fi
 
    read_info_dir "${info_dir}"
 
    key="OPTION_${key}"
    eval echo "\\\$$key"
+
+   # https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
+   if [ -z ${key+x} ]
+   then
+      return 2
+   fi
 }
 
 
@@ -662,7 +669,7 @@ list_info_dir()
          ;;
 
          -*)
-            make_definition_list_usage "unknown option \"${argument}\""
+            make_definition_list_usage "Unknown option \"${argument}\""
          ;;
 
          *)
@@ -673,7 +680,7 @@ list_info_dir()
 
    if [ ! -z "${argument}" ]
    then
-      make_definition_list_usage "superflous argument \"${argument}\""
+      make_definition_list_usage "Superflous argument \"${argument}\""
    fi
 
    read_info_dir "${info_dir}"
@@ -722,7 +729,7 @@ make_definition_main()
             make_definition_usage "Unknown definition option ${argument}"
          ;;
 
-         ""|*)
+         *)
             break
          ;;
       esac
@@ -739,7 +746,8 @@ make_definition_main()
       list|get)
          if ! [ -d "${OPTION_INFO_DIR}" ]
          then
-            fail "Directory \"${OPTION_INFO_DIR}\" not found"
+            log_verbose "Directory \"${OPTION_INFO_DIR}\" not found"
+            return 2
          fi
 
          ${cmd}_info_dir "${OPTION_INFO_DIR}"

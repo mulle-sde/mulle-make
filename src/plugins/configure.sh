@@ -95,7 +95,7 @@ build_configure()
    local ldflags
 
    cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}"`" || exit 1
-   cxxflags="`compiler_cxxflags_value "${OPTION_CC}" "${configuration}"`" || exit 1
+   cxxflags="`compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}"`" || exit 1
    cppflags="`compiler_cppflags_value`" || exit 1
    ldflags="`compiler_ldflags_value`" || exit 1
 

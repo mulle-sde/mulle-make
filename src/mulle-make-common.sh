@@ -237,9 +237,11 @@ guess_project_name()
 
 
 #
-# build log will be of form
-# <name>--<configuration>-<sdk>.<tool>.log
-# It is ensured, that
+# Build log will be in this form, if OPTION_LOG_FILENAME_FORMAT="%t" is specified
+#     <name>--<configuration>-<sdk>.<tool>.log
+# Otherwise it is just
+#     <tool>.log
+#
 build_log_name()
 {
    log_entry "build_log_name" "$@"
@@ -252,47 +254,61 @@ build_log_name()
    [ -z "${tool}" ]    && internal_fail "tool missing"
    [ -z "${srcdir}" ]  && internal_fail "srcdir missing"
 
-   local logfile
-   local s
-   local name
-
-   name="${OPTION_PROJECT_NAME}"
-   if [ -z "${name}" ]
+   if [ -z "${OPTION_LOG_FILENAME_FORMAT}" ]
    then
-      name="$(guess_project_name "${srcdir}")"
+      absolutepath "${logsdir}/${tool}.log"
+      return
    fi
 
-   case "${name}" in
-      *-)
-         fail "Dependency \"${name}\" ends with -, that won't work here"
-      ;;
-
-      *--*)
-         fail "Dependency \"${name}\" contains --, that won't work here"
-      ;;
-   esac
-
-   logfile="${logsdir}/${name}"
-   if [ $# -ne 0 ]
-   then
-      # want to separate with --
-      logfile="${logfile}-"
-   fi
-
-   while [ $# -gt 0 ]
-   do
-      s="$1"
-      shift
-
-      if [ ! -z "$s" ]
-      then
-         s="${s//-/_}"
-         logfile="${logfile}-${s}"
-      fi
-   done
-
-   tool="${tool//-/_}"
-   absolutepath "${logfile}.${tool}.log"
+   internal_fail "Need to implement this"
+#      logfile="${logsdir}/${name}"
+#      if [ $# -ne 0 ]
+#      then
+#         # want to separate with --
+#         logfile="${logfile}-"
+#      fi
+#   then
+#      local logfile
+#      local s
+#      local name
+#
+#      name="`tr '[/:.]' '_' <<< "${OPTION_PROJECT_NAME}"`"
+#      if [ -z "${name}" ]
+#      then
+#         name="$(guess_project_name "${srcdir}")"
+#      fi
+#
+#      case "${name}" in
+#         *-)
+#            fail "Dependency \"${name}\" ends with -, that won't work here"
+#         ;;
+#
+#         *--*)
+#            fail "Dependency \"${name}\" contains --, that won't work here"
+#         ;;
+#      esac
+#
+#      logfile="${logsdir}/${name}"
+#      if [ $# -ne 0 ]
+#      then
+#         # want to separate with --
+#         logfile="${logfile}-"
+#      fi
+#
+#      while [ $# -gt 0 ]
+#      do
+#         s="$1"
+#         shift
+#
+#         if [ ! -z "$s" ]
+#         then
+#            s="${s//-/_}"
+#            logfile="${logfile}-${s}"
+#         fi
+#      done
+#
+#   tool="${tool//-/_}"
+#   absolutepath "${logfile}.${tool}.log"
 }
 
 

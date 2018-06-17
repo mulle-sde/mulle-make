@@ -1,3 +1,7 @@
+### 0.4.22
+
+* logfile name is much smaller now, fix possible bug with cpp options
+
 ### 0.4.21
 
 * improve startup speed, cmake: find more errors to display
