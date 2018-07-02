@@ -260,7 +260,7 @@ build_with_configuration_sdk_preferences()
    name="${OPTION_PROJECT_NAME}"
    if [ -z "${name}" ]
    then
-      name="`basename -- "${srcdir}"`"
+      name="`fast_basename "${srcdir}"`"
    fi
 
    #

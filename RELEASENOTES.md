@@ -1,3 +1,7 @@
+### 0.4.23
+
+* smallish improvement
+
 ### 0.4.22
 
 * logfile name is much smaller now, fix possible bug with cpp options
