@@ -289,7 +289,7 @@ build_with_configuration_sdk_preferences()
    logsdir="${OPTION_LOG_DIR}"
    if [ -z "${logsdir}" ]
    then
-      logsdir="${buildroot}/logs"
+      logsdir="${buildroot}/.log"
       logsdir="`filepath_concat "${logsdir}" "${build_subdir}" `"
    fi
 

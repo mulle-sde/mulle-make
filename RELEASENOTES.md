@@ -1,3 +1,7 @@
+### 0.4.24
+
+* use .log as default logdir
+
 ### 0.4.23
 
 * smallish improvement
