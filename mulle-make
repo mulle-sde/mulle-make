@@ -29,12 +29,10 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${TRACE}" = "YES" ] && set -x && : "$0" "$@"
+[ "${TRACE}" = "YES" -o "${MULLE_MAKE_TRACE}" = "YES" ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.4.24
-MULLE_EXECUTABLE_BASHFUNCTIONS="1.3"
-
+MULLE_EXECUTABLE_VERSION=0.4.25
 
 #
 # This is the main user interface to mulle-make
@@ -123,7 +121,7 @@ EOF
 
 _main()
 {
-   local MULLE_FLAG_MAGNUM_FORCE="NONE"
+   local MULLE_FLAG_MAGNUM_FORCE="NO"
    local MULLE_FLAG_IGNORE_GRAVEYARD="NO"
 
    # technical flags
@@ -154,7 +152,7 @@ _main()
 
       case "${argument}" in
          -f|--force)
-            MULLE_FLAG_MAGNUM_FORCE="BOTH"
+            MULLE_FLAG_MAGNUM_FORCE="YES"
          ;;
 
          -h*|--help|help)

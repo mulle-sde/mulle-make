@@ -526,6 +526,8 @@ read_info_dir()
       return
    fi
 
+   log_verbose "Read buildinfo ${C_RESET_BOLD}${infodir}${C_VERBOSE}"
+
    infodir="${infodir}"
 
    read_defines_dir "${infodir}/set"  "make_define_option"

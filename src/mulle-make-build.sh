@@ -362,9 +362,15 @@ build()
    #
    MULLE_MAKE_PROJECT_DIR="`simplified_absolutepath "${srcdir}"`"
    MULLE_MAKE_DESTINATION_DIR="`simplified_absolutepath "${dstdir}"`"
-   MULLE_MAKE_INFO_DIR="`simplified_absolutepath "${infodir}"`"
+   MULLE_MAKE_INFO_DIR=
 
-   read_info_dir "${infodir}"
+   if [ ! -z "${infodir}" ]
+   then
+      MULLE_MAKE_INFO_DIR="`simplified_absolutepath "${infodir}"`"
+
+      read_info_dir "${infodir}"
+   fi
+
 
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
@@ -466,7 +472,7 @@ xcodebuild"
    local OPTION_INFO_DIR
    local OPTION_LOG_DIR
    local OPTION_PREFIX
-
+   local OPTION_INFO_DIR="DEFAULT"
    local argument
 
    while read -r argument
@@ -662,6 +668,16 @@ xcodebuild"
       fail "Source directory \"${srcdir}\" is missing"
    fi
 
+   case "${OPTION_INFO_DIR}" in
+      'DEFAULT')
+         OPTION_INFO_DIR="${srcdir}/.mulle-make"
+      ;;
+
+      'NONE')
+         unset OPTION_INFO_DIR
+      ;;
+   esac
+
    case "${cmd}" in
       build)
          if read -r argument
@@ -670,7 +686,10 @@ xcodebuild"
             build_usage
          fi
 
-         build "${cmd}" "${srcdir}" "" "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
+         build "${cmd}" \
+               "${srcdir}" \
+               "" \
+               "${OPTION_INFO_DIR}"
       ;;
 
       install)

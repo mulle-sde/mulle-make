@@ -1,3 +1,7 @@
+### 0.4.25
+
+* allow NONE for --info-dir option
+
 ### 0.4.24
 
 * use .log as default logdir
