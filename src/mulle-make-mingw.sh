@@ -206,7 +206,8 @@ setup_mingw_buildenvironment()
 
 
 #
-# mingw32-make can't have sh.exe in its path, so remove it
+# mingw32-make can't have sh.exe or in its path, so remove it
+# do not use mulle-bashfunctions here
 #
 mingw_buildpath()
 {
@@ -223,7 +224,7 @@ mingw_buildpath()
 
       if [ -x "${i}/sh.exe" ]
       then
-         log_fluff "Removed \"$i\" from build PATH because it contains sh"
+         echo "Removed \"$i\" from build PATH because it contains sh" >&2
          continue
       fi
 
@@ -238,6 +239,8 @@ mingw_buildpath()
    IFS="${DEFAULT_IFS}"
    set +o noglob
 
+   echo "link.exe: `PATH="${buildpath}" /usr/bin/which link.exe`" >&2
+   echo "Modified PATH: ${buildpath}" >&2
    echo "${buildpath}"
 }
 

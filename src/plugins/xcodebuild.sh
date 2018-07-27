@@ -303,24 +303,32 @@ EOF
                             "${configuration}" "${targetname}" "${schemename}" \
                             "${sdk}" `" || exit 1
 
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   then
+      logfile="`safe_tty`"
+   fi
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   then
+      logfile="/dev/null"
+   fi
+   log_verbose "Build log will be in: ${C_RESET_BOLD}${logfile}${C_VERBOSE}"
+
+
    (
       set -f  # prevent bash from expanding glob
 
       exekutor cd "${projectdir}" || exit 1
 
       # DONT READ CONFIG SETTING IN THIS INDENT
-      if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
-      then
-         logfile="`safe_tty`"
-      fi
-      if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
-      then
-         logfile="/dev/null"
-      fi
-      log_verbose "Build log will be in: ${C_RESET_BOLD}${logfile}${C_VERBOSE}"
 
+      [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
       PATH="${BUILDPATH}"
       log_fluff "PATH temporarily set to $PATH"
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      then
+         env | sort >&2
+      fi
+
 
       # if it doesn't install, probably SKIP_INSTALL is set
       if ! logging_redirect_eval_exekutor "${logfile}" \

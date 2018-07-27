@@ -44,9 +44,18 @@ expect_content()
 
    local diffs
 
-   diffs="`diff -B "${output}" "${expect}"`"
+   diffs="`diff -b "${output}" "${expect}"`"
    if [ $? -ne 0 ]
    then
+      # fix for mingw
+      if [ `wc -l <<< "${diffs}"` -eq 2 ] 
+      then
+         if egrep -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
+         then 
+            return 0
+         fi
+      fi
+
       log_error "Unexpected output generated"
       cat <<EOF >&2
 ----------------
@@ -68,37 +77,6 @@ EOF
 }
 
 
-run_test()
-{
-   local meson_expect="$1"; shift
-   local make_expect="$1"; shift
-
-   local meson_output
-   local make_output
-
-   meson_output="${directory}/meson-args.txt"
-   make_output="${directory}/make-args.txt"
-
-   MESON_REDIRECT_FILE="${meson_output}" \
-   NINJA_REDIRECT_FILE="${make_output}" \
-      run_mulle_make make --build-dir "${directory}/build" \
-                          -DMESON="${PWD}/../mock-meson" \
-                          -DNINJA="${PWD}/../mock-ninja" \
-                          "$@"
-
-   if [ "$?" -ne 0 ]
-   then
-      exit 1
-   fi
-
-   expect_content "${meson_output}" "${meson_expect}"
-   expect_content "${make_output}" "${make_expect}"
-
-   remove_file_if_present "${meson_output}"
-   remove_file_if_present "${make_output}"
-
-   rmdir_safer "${directory}/build"
-}
 
 
 main()
@@ -108,28 +86,38 @@ main()
    _options_mini_main "$@"
 
    local directory
+   local dstdir
+   local builddir
 
    directory="`make_tmp_directory`" || exit 1
    directory="${directory:-/tmp/build}"
 
+   builddir="${directory}/build"
+   dstdir="${directory}/root"
+
    #
    # Default is release
    #
-   run_test "release_meson.txt" "ninja.txt" --no-determine-xcode-sdk
+   if ! run_mulle_make install --no-ninja --build-dir "${builddir}" "." "${dstdir}"
+   then
+      exit 1
+   fi
+
+   case "${MULLE_UNAME}" in
+      mingw)
+         [ -x "${dstdir}/bin/myexe.exe" ]   || fail "myexe.exe failed"
+         [ -f "${dstdir}/lib/mylib.lib" ]   || fail "mylib.lib failed"
+         [ -f "${dstdir}/include/mylib.h" ] || fail "mylib.h failed"
+      ;;
+
+      *)
+         [ -x "${dstdir}/bin/myexe" ]       || fail "myexe failed"
+         [ -f "${dstdir}/lib/libmylib.a" ]  || fail "libmylib.a failed"
+         [ -f "${dstdir}/include/mylib.h" ] || fail "mylib.h failed"
+      ;;
+   esac
+
    log_verbose "----- #1 PASSED -----"
-
-   run_test "release_prefix_meson.txt" "ninja.txt" --no-determine-xcode-sdk "--prefix" "/tmp/foo"
-   log_verbose "----- #2 PASSED -----"
-
-   #
-   # check -I -L -F
-   #
-   run_test "paths_meson.txt" "ninja.txt" -DDETERMINE_XCODE_SDK="NO" \
-                                             -I /usr/local/include:/usr/include \
-                                             -L /usr/local/lib:/usr/lib \
-                                             -F /Network/Library/Frameworks:/Library/Frameworks
-   log_verbose "----- #3 PASSED -----"
-
 
    log_info "----- ALL PASSED -----"
 

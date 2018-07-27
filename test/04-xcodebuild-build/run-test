@@ -44,9 +44,18 @@ expect_content()
 
    local diffs
 
-   diffs="`diff "${output}" "${expect}"`"
+   diffs="`diff -b "${output}" "${expect}"`"
    if [ $? -ne 0 ]
    then
+      # fix for mingw
+      if [ `wc -l <<< "${diffs}"` -eq 2 ] 
+      then
+         if egrep -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
+         then 
+            return 0
+         fi
+      fi
+
       log_error "Unexpected output generated"
       cat <<EOF >&2
 ----------------
@@ -70,14 +79,17 @@ EOF
 
 run_test()
 {
-   local cmake_expect="$1"; shift
-   local make_expect="$1"; shift
+   local directory="$1"; shift
+   local xcodebuild_expect="$1"; shift
 
-   CMAKE_REDIRECT_FILE="${directory}/cmake-args.txt" \
-   MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
+   #
+   # MOCK_TEST_DIR is passed to mock-xcodebuild so it can create
+   # paths that look the same
+   #
+   MOCK_TEST_DIR="${directory}" \
+   XCODEBUILD_REDIRECT_FILE="${directory}/xcodebuild-args.txt" \
       run_mulle_make ${MULLE_MAKE_FLAGS} make --build-dir "${directory}/build" \
-                          -DCMAKE="${PWD}/../mock-cmake" \
-                          -DMAKE="${PWD}/../mock-make" \
+                          -DXCODEBUILD="${PWD}/../mock-xcodebuild" \
                           "$@"
 
    if [ "$?" -ne 0 ]
@@ -85,11 +97,9 @@ run_test()
       exit 1
    fi
 
-   expect_content "${directory}/cmake-args.txt" "${cmake_expect}"
-   expect_content "${directory}/make-args.txt" "${make_expect}"
+   expect_content "${directory}/xcodebuild-args.txt" "${xcodebuild_expect}"
 
-   remove_file_if_present "${directory}/cmake-args.txt"
-   remove_file_if_present "${directory}/make-args.txt"
+   remove_file_if_present "${directory}/xcodebuild-args.txt"
    rmdir_safer "${directory}/build"
 }
 
@@ -100,6 +110,12 @@ main()
 
    _options_mini_main "$@"
 
+   if [ -z "`command -v "xcodebuild"`" ]
+   then
+      log_info "xcodebuild not installed, so skipping this test"
+      return
+   fi
+
    local directory
 
    directory="`make_tmp_directory`" || exit 1
@@ -108,31 +124,32 @@ main()
    #
    # Default is release
    #
-   run_test "release_cmake.txt" "make.txt"
+   run_test "${directory}" "release_xcodebuild.txt" -c "Release"
    log_verbose "----- #1 PASSED -----"
-   run_test "release_cmake.txt" "make.txt" -c Release
+
+   run_test "${directory}" "debug_xcodebuild.txt" -c "Debug"
    log_verbose "----- #2 PASSED -----"
-   run_test "release_cmake.txt" "make.txt" --release
+
+   run_test "${directory}" "prefix_xcodebuild.txt" -c "Release" -p "/tmp"
    log_verbose "----- #3 PASSED -----"
 
-   run_test "debug_cmake.txt" "make.txt" -c Debug
+   run_test "${directory}" "sdk_xcodebuild.txt" -c "Release" -s "mulle-sdk"
    log_verbose "----- #4 PASSED -----"
-   run_test "debug_cmake.txt" "make.txt" --debug
+
+   run_test "${directory}" "user_xcodebuild.txt" -c "Release" -DUSER_INFO="VfL Bochum 1848"
    log_verbose "----- #5 PASSED -----"
 
-   run_test "xxx_cmake.txt" "make.txt" -DXXX=yyy
+   run_test "${directory}" "userplus_xcodebuild.txt" -c "Release" -DUSER_INFO+="VfL Bochum 1848"
    log_verbose "----- #6 PASSED -----"
 
-   # check that known flags are filtered
-   run_test "release_cmake.txt" "make.txt" -DMAKETARGET=filtered_away
+   run_test "${directory}" "xcconfig_xcodebuild.txt" -c "Release" \
+                                                     --xcode-config-file whatever.xcconfig
    log_verbose "----- #7 PASSED -----"
 
-   #
-   # check -I -L -F
-   #
-   run_test "paths_cmake.txt" "make.txt" -I /usr/local/include:/usr/include \
-                                         -L /usr/local/lib:/usr/lib \
-                                         -F /Network/Library/Frameworks:/Library/Frameworks
+   run_test "${directory}" "paths_xcodebuild.txt" -c "Release" \
+                                                  -I /usr/local/include:/usr/include \
+                                                  -L /usr/local/lib:/usr/lib \
+                                                  -F /Network/Library/Frameworks:/Library/Frameworks
    log_verbose "----- #8 PASSED -----"
 
    log_info "----- ALL PASSED -----"

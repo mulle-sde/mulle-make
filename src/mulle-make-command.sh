@@ -156,7 +156,20 @@ verify_binary()
 
    local path
 
-   path="`which_binary "${toolname}" `"
+   case "${toolname}" in
+      /*)
+         if [ ! -x "${toolname}" ]
+         then
+            fail "\"${toolname}\" is not present as an executable"
+         fi
+         path="${toolname}"
+      ;;
+
+      *)
+         path="`which_binary "${toolname}" `"
+      ;;
+   esac
+
    if [ ! -z "${path}" ]
    then
       log_debug "${toolfamily:-${tooldefaultname}} is \"${path}\""

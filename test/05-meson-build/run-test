@@ -6,10 +6,10 @@
 run_mulle_make()
 {
    log_fluff "####################################"
-   log_fluff ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@" --no-ninja
+   log_fluff ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
    log_fluff "####################################"
 
-   exekutor ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@" --no-ninja
+   exekutor ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
 }
 
 
@@ -44,9 +44,19 @@ expect_content()
 
    local diffs
 
-   diffs="`diff "${output}" "${expect}"`"
+   diffs="`diff -b -B "${output}" "${expect}"`"
    if [ $? -ne 0 ]
    then
+      # fix for mingw
+      if [ `wc -l <<< "${diffs}"` -eq 2 ] 
+      then
+         if egrep -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
+         then 
+            return 0
+         fi
+      fi
+
+      
       log_error "Unexpected output generated"
       cat <<EOF >&2
 ----------------
@@ -70,13 +80,20 @@ EOF
 
 run_test()
 {
-   local configure_expect="$1"; shift
+   local meson_expect="$1"; shift
    local make_expect="$1"; shift
 
-   CONFIGURE_REDIRECT_FILE="${directory}/configure-args.txt" \
-   MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
+   local meson_output
+   local make_output
+
+   meson_output="${directory}/meson-args.txt"
+   make_output="${directory}/make-args.txt"
+
+   MESON_REDIRECT_FILE="${meson_output}" \
+   NINJA_REDIRECT_FILE="${make_output}" \
       run_mulle_make make --build-dir "${directory}/build" \
-                          -DMAKE="${PWD}/../mock-make" \
+                          -DMESON="${PWD}/../mock-meson" \
+                          -DNINJA="${PWD}/../mock-ninja" \
                           "$@"
 
    if [ "$?" -ne 0 ]
@@ -84,11 +101,12 @@ run_test()
       exit 1
    fi
 
-   expect_content "${directory}/configure-args.txt" "${configure_expect}"
-   expect_content "${directory}/make-args.txt" "${make_expect}"
+   expect_content "${meson_output}" "${meson_expect}"
+   expect_content "${make_output}" "${make_expect}"
 
-   remove_file_if_present "${directory}/configure-args.txt"
-   remove_file_if_present "${directory}/make-args.txt"
+   remove_file_if_present "${meson_output}"
+   remove_file_if_present "${make_output}"
+
    rmdir_safer "${directory}/build"
 }
 
@@ -99,6 +117,15 @@ main()
 
    _options_mini_main "$@"
 
+   local MESON
+
+   MESON="`command -v meson`"
+   if [ -z  "${MESON}" ]
+   then
+      log_info "meson not installed, so skipping this test"
+      return
+   fi
+
    local directory
 
    directory="`make_tmp_directory`" || exit 1
@@ -107,16 +134,16 @@ main()
    #
    # Default is release
    #
-   run_test "release_configure.txt" "make.txt" --no-determine-xcode-sdk
+   run_test "release_meson.txt" "ninja.txt" --no-determine-sdk
    log_verbose "----- #1 PASSED -----"
 
-   run_test "release_prefix_configure.txt" "make.txt" --no-determine-xcode-sdk "--prefix" "/tmp/foo"
+   run_test "release_prefix_meson.txt" "ninja.txt" --no-determine-sdk "--prefix" "/tmp/foo"
    log_verbose "----- #2 PASSED -----"
 
    #
    # check -I -L -F
    #
-   run_test "paths_configure.txt" "make.txt" -DDETERMINE_XCODE_SDK="NO" \
+   run_test "paths_meson.txt" "ninja.txt" -DDETERMINE_SDK="NO" \
                                              -I /usr/local/include:/usr/include \
                                              -L /usr/local/lib:/usr/lib \
                                              -F /Network/Library/Frameworks:/Library/Frameworks

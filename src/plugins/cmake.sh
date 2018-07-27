@@ -155,23 +155,30 @@ build_cmake()
       cxxflags="`concat "${cxxflags}" "${cppflags}"`"
    fi
 
-   local rel_project_dir
    local absbuilddir
    local absprojectdir
    local projectdir
 
-   projectdir="`dirname -- "${projectfile}"`"
+   projectdir="`fast_dirname "${projectfile}"`"
    absprojectdir="$(simplified_absolutepath "${projectdir}")"
    absbuilddir="$(simplified_absolutepath "${builddir}")"
 
-   rel_project_dir="`projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"`"
+   case "${MULLE_UNAME}" in
+      mingw*)
+         projectdir="${absprojectdir}"
+      ;;
 
-   log_debug "projectfile:     ${projectfile}"
-   log_debug "projectdir:      ${projectdir}"
-   log_debug "absprojectdir:   ${absprojectdir}"
-   log_debug "absbuilddir:     ${absbuilddir}"
-   log_debug "rel_project_dir: ${rel_project_dir}"
-   log_debug "PWD:             ${PWD}"
+      *)
+         projectdir="`projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"`"
+      ;;
+   esac
+
+   log_debug "projectfile:   ${projectfile}"
+   log_debug "projectdir:    ${projectdir}"
+   log_debug "absprojectdir: ${absprojectdir}"
+   log_debug "absbuilddir:   ${absbuilddir}"
+   log_debug "projectdir:    ${projectdir}"
+   log_debug "PWD:           ${PWD}"
 
    local cmake_flags
 
@@ -222,6 +229,12 @@ build_cmake()
    if [ ! -z "${OPTION_CXX}" ]
    then
       cmake_flags="`concat "${cmake_flags}" "-DCMAKE_CXX_COMPILER='${OPTION_CXX}'"`"
+   fi
+
+   # this is now necessary, though undocumented apparently
+   if [ ! -z "${LD}" ]
+   then
+      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_LINKER:PATH='${LD}'"`"
    fi
 
    if [ ! -z "${cflags}" ]
@@ -309,33 +322,38 @@ build_cmake()
    logfile1="`build_log_name "${logsdir}" "cmake" "${srcdir}" "${configuration}" "${sdk}"`"
    logfile2="`build_log_name "${logsdir}" "make" "${srcdir}" "${configuration}" "${sdk}"`"
 
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   then
+      logfile1="`safe_tty`"
+      logfile2="$logfile1"
+   fi
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   then
+      logfile1="/dev/null"
+      logfile2="/dev/null"
+   fi
+   log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+
    (
       exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
-
-      if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
-      then
-         logfile1="`safe_tty`"
-         logfile2="$logfile1"
-      fi
-      if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
-      then
-         logfile1="/dev/null"
-         logfile2="/dev/null"
-      fi
-      log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
 
       [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
       PATH="${BUILDPATH}"
       log_fluff "PATH temporarily set to $PATH"
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      then
+         env | sort >&2
+      fi
 
       if ! logging_redirect_eval_exekutor "${logfile1}" \
                "${env_common}" \
                "'${CMAKE}'" -G "'${CMAKE_GENERATOR}'" \
                             "${cmake_flags}" \
-                            "'${rel_project_dir}'"
+                            "'${projectdir}'"
       then
          build_fail "${logfile1}" "cmake"
       fi
+
 
       if ! logging_redirect_eval_exekutor "${logfile2}" \
                "${env_common}" \
@@ -365,6 +383,16 @@ test_cmake()
       log_fluff "There is no CMakeLists.txt file in \"${srcdir}\""
       return 1
    fi
+
+   case "${MULLE_UNAME}" in
+      mingw*)
+         if [ -z "${MULLE_MAKE_MINGW_SH}" ]
+         then
+            . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-mingw.sh" || exit 1
+         fi
+         setup_mingw_buildenvironment
+      ;;
+   esac
 
    tools_environment_cmake
 

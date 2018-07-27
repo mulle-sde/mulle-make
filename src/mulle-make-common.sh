@@ -33,11 +33,13 @@ MULLE_MAKE_COMMON_SH="included"
 
 platform_make()
 {
+   log_entry "platform_make" "$@"
+
    local compilerpath="$1"
 
    local name
 
-   name="`basename -- "${compilerpath}"`"
+   name="`fast_basename "${compilerpath}"`"
 
    case "${MULLE_UNAME}" in
       mingw)
@@ -63,6 +65,8 @@ platform_make()
 
 find_make()
 {
+   log_entry "find_make" "$@"
+
    local defaultname="${1:-make}"
    local noninja="$2"
 
@@ -74,6 +78,10 @@ find_make()
       # Ninja is preferable if installed for cmake but not else
       #
       case "${OPTION_NINJA}" in
+         "")
+            internal_fail "OPTION_NINJA must not be empty"
+         ;;
+
          "YES"|"DEFAULT")
             if [ ! -z "`command -v ninja`" ]
             then
@@ -89,7 +97,7 @@ find_make()
       esac
    fi
 
-   toolname="${OPTION_MAKE:-${MAKE:-make}}"
+   toolname="${OPTION_MAKE:-${defaultname:-make}}"
    verify_binary "${toolname}" "make" "${defaultname}"
 }
 
@@ -109,7 +117,7 @@ tools_environment_common()
       CXX="${OPTION_CXX}"
    fi
 
-   TR="`verify_binary "tr" "tr" "tr"`"
+   TR="`verify_binary "tr" "tr" "tr"`" 
    SED="`verify_binary "sed" "sed" "sed"`"
 
    [ -z "${TR}" ]   && fail "can't locate tr"
@@ -119,6 +127,8 @@ tools_environment_common()
 
 tools_environment_make()
 {
+   log_entry "tools_environment_make" "$@"
+
    local noninja="$1"
 
    tools_environment_common
@@ -129,11 +139,13 @@ tools_environment_make()
    #
    if [ -z "${MAKE}" ]
    then
-      local defaultmake
+      local ourmake
 
-      defaultmake="`platform_make "${CC}"`"
-      MAKE="`find_make "${defaultmake}" "${noninja}"`"
+      ourmake="`platform_make "${CC}"`" 
+      MAKE="`find_make "${ourmake}" "${noninja}"`" 
+      [ -z "${MAKE}" ] && fail "can't locate make (named \"${ourmake}\" - on this platform)"
    fi
+
 }
 
 
@@ -213,8 +225,8 @@ guess_project_name()
 
    while :
    do
-      parent="`dirname -- "${directory}"`"
-      name="`basename -- "${directory}"`"
+      parent="`fast_dirname "${directory}"`"
+      name="`fast_basename "${directory}"`"
       directory="${parent}"
 
       if [ "${directory}" = "." ]
@@ -448,11 +460,12 @@ projectdir_relative_to_builddir()
    local directory
 
    directory="`relative_path_between "${projectdir}" "${builddir}"`"
-   case "${MULLE_UNAME}" in
-      mingw)
-         echo "${directory}" | "${TR}" '/' '\\'  2> /dev/null
-      ;;
 
+   case "${MULLE_UNAME}" in
+#      mingw)
+#         "${TR}" '/' '\\' <<< "${directory}"  2> /dev/null
+#      ;;
+#
       *)
          echo "${directory}"
       ;;

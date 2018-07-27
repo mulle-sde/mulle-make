@@ -99,24 +99,30 @@ build_autoconf()
    logfile1="`build_log_name "${logsdir}" "autoreconf" "${srcdir}" "${configuration}" "${sdk}"`"
    logfile2="`build_log_name "${logsdir}" "autoconf" "${srcdir}" "${configuration}" "${sdk}"`"
 
+   if [ "${MULLE_FLAG_VERBOSE_BUILD}" = "YES" ]
+   then
+      logfile1="`safe_tty`"
+      logfile2="`safe_tty`"
+   fi
+
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   then
+      logfile1="/dev/null"
+      logfile2="/dev/null"
+   fi
+   log_verbose "Build log will be in \"${logfile1}\""
+
+
    (
       exekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
 
-      if [ "${MULLE_FLAG_VERBOSE_BUILD}" = "YES" ]
-      then
-         logfile1="`safe_tty`"
-         logfile2="`safe_tty`"
-      fi
-
-      if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
-      then
-         logfile1="/dev/null"
-         logfile2="/dev/null"
-      fi
-      log_verbose "Build log will be in \"${logfile1}\""
-
+      [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
       PATH="${BUILDPATH}"
       log_fluff "PATH temporarily set to $PATH"
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      then
+         env | sort >&2
+      fi
 
       if ! [ -f "aclocal4.am" ]
       then

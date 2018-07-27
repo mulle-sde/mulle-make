@@ -44,9 +44,19 @@ expect_content()
 
    local diffs
 
-   diffs="`diff "${output}" "${expect}"`"
+   diffs="`diff -b "${output}" "${expect}"`"
    if [ $? -ne 0 ]
    then
+      # fix for mingw
+      if [ `wc -l <<< "${diffs}"` -eq 2 ] 
+      then
+         if egrep -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
+         then 
+            return 0
+         fi
+      fi
+
+
       log_error "Unexpected output generated"
       cat <<EOF >&2
 ----------------

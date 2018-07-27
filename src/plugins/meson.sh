@@ -275,8 +275,11 @@ build_meson()
    (
       [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
       PATH="${BUILDPATH}"
-
       log_fluff "PATH temporarily set to $PATH"
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      then
+         env | sort >&2
+      fi
 
       #
       # If there is already something built and we changed environment vars,

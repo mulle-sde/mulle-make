@@ -194,10 +194,16 @@ build_configure()
    log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
 
    (
+      exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
+
+      [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
       PATH="${BUILDPATH}"
       log_fluff "PATH temporarily set to $PATH"
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      then
+         env | sort >&2
+      fi
 
-      exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
 
        # use absolute paths for configure, safer (and easier to read IMO)
       if ! logging_redirect_eval_exekutor "${logfile1}" \
