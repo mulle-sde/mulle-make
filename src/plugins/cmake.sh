@@ -78,7 +78,7 @@ find_cmake()
 
 tools_environment_cmake()
 {
-   tools_environment_make
+   tools_environment_make "" "cmake"
 
    local defaultgenerator
 

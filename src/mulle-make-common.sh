@@ -31,11 +31,16 @@
 MULLE_MAKE_COMMON_SH="included"
 
 
+#
+# The configure plugin can't use nmake on mingw it must use mingw32-make 
+# The cmake plugin will use nmake though
+#
 platform_make()
 {
    log_entry "platform_make" "$@"
 
    local compilerpath="$1"
+   local plugin="$2"
 
    local name
 
@@ -43,13 +48,21 @@ platform_make()
 
    case "${MULLE_UNAME}" in
       mingw)
-         case "${name%.*}" in
-            ""|cl|clang-cl|mulle-clang-cl)
-               echo "nmake"
+         case "${plugin}" in
+            'configure')
+               echo "mingw32-make"
             ;;
 
             *)
-               echo "mingw32-make"
+               case "${name%.*}" in
+                  ""|cl|clang-cl|mulle-clang-cl)
+                     echo "nmake"
+                  ;;
+
+                  *)
+                     echo "mingw32-make"
+                  ;;
+               esac
             ;;
          esac
       ;;
@@ -130,6 +143,7 @@ tools_environment_make()
    log_entry "tools_environment_make" "$@"
 
    local noninja="$1"
+   local plugin="$2"
 
    tools_environment_common
 
@@ -141,7 +155,7 @@ tools_environment_make()
    then
       local ourmake
 
-      ourmake="`platform_make "${CC}"`" 
+      ourmake="`platform_make "${CC}" "${plugin}"`" 
       MAKE="`find_make "${ourmake}" "${noninja}"`" 
       [ -z "${MAKE}" ] && fail "can't locate make (named \"${ourmake}\" - on this platform)"
    fi

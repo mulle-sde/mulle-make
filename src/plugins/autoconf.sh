@@ -51,7 +51,7 @@ find_autoreconf()
 
 tools_environment_autoconf()
 {
-   tools_environment_make "no-ninja"
+   tools_environment_make "no-ninja" "autoconf"
 
    AUTOCONF="`find_autoconf`"
    AUTORECONF="`find_autoreconf`"

@@ -56,7 +56,6 @@ expect_content()
          fi
       fi
 
-
       log_error "Unexpected output generated"
       cat <<EOF >&2
 ----------------

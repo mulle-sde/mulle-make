@@ -58,7 +58,7 @@ find_meson()
 
 tools_environment_meson()
 {
-   tools_environment_make
+   tools_environment_make "" "meson"
 
    local defaultbackend
 

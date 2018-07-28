@@ -250,7 +250,18 @@ test_configure()
       return 1
    fi
 
-   tools_environment_make "no-ninja"
+
+   case "${MULLE_UNAME}" in
+      mingw*)
+         if [ -z "${MULLE_MAKE_MINGW_SH}" ]
+         then
+            . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-mingw.sh" || exit 1
+         fi
+         setup_mingw_buildenvironment
+      ;;
+   esac
+
+   tools_environment_make "no-ninja" "configure"
 
    if [ -z "${MAKE}" ]
    then
