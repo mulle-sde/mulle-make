@@ -98,11 +98,11 @@ emit_options()
 }
 
 
-build_usage()
+project_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} build [options] [directory]
+   ${MULLE_USAGE_NAME} project [options] [directory]
 
    Build the project in directory. If directory is omitted, the current
    directory is used.
@@ -445,7 +445,7 @@ _make_build_main()
 {
    log_entry "_make_build_main" "$@"
 
-   local cmd="${1:-build}"
+   local cmd="${1:-project}"
    shift
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
@@ -679,11 +679,11 @@ xcodebuild"
    esac
 
    case "${cmd}" in
-      build)
+      project)
          if read -r argument
          then
             log_error "Superflous argument \"${argument}\""
-            build_usage
+            project_usage
          fi
 
          build "${cmd}" \
@@ -728,8 +728,8 @@ make_build_main()
 {
    log_entry "make_build_main" "$@"
 
-   usage="build_usage"
-   _make_build_main "build" "$@"
+   usage="project_usage"
+   _make_build_main "project" "$@"
 }
 
 

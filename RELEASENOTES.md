@@ -1,3 +1,8 @@
+### 0.4.26
+
+* rename build to project, so that it fits better with mulle-craft lingo
+* fixes for mingw
+
 ### 0.4.25
 
 * allow NONE for --info-dir option

@@ -18,7 +18,7 @@ main()
 
    local i
 
-   log_verbose "mulle-make: `mulle-make version` (`mulle-make library-path`)"
+   log_verbose "mulle-make: `mulle-make version` (`mulle-make libexec-dir`)"
 
    for i in "${TEST_DIR}"/*
    do

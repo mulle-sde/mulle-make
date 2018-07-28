@@ -32,7 +32,7 @@
 [ "${TRACE}" = "YES" -o "${MULLE_MAKE_TRACE}" = "YES" ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.4.25
+MULLE_EXECUTABLE_VERSION=0.4.26
 
 #
 # This is the main user interface to mulle-make
@@ -49,8 +49,8 @@ print_commands()
 {
    local  show_all="${1:-NO}"
 
-   SHOWN_COMMANDS="\
-   build         : build project (default)
+   SHOWN_COMMAS="\
+   project       : build project (default)
    definition    : manage buildinfo definitions
    log           : show build log
    install       : build project and install"
@@ -183,7 +183,7 @@ _main()
    cmd="${argument:-make}"
 
    case "${cmd}" in
-      build|make)
+      build|make|project)
          # shellcheck source=src/mulle-make-build.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
