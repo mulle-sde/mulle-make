@@ -33,8 +33,15 @@ MULLE_MAKE_COMMON_SH="included"
 
 #
 # The configure plugin can't use nmake on mingw it must use mingw32-make 
+# (still called mingw32-make on 64 bit)
 # The cmake plugin will use nmake though
 #
+mingw_bitness()
+{
+   uname | sed -e 's/MINGW\([0-9]*\)_.*/\1/' 
+}
+
+
 platform_make()
 {
    log_entry "platform_make" "$@"
