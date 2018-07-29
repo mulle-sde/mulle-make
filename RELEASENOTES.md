@@ -1,3 +1,7 @@
+### 0.4.27
+
+* configure must use "real" make on mingw (mingw32-make)
+
 ### 0.4.26
 
 * rename build to project, so that it fits better with mulle-craft lingo
