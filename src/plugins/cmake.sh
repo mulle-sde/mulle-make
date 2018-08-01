@@ -291,7 +291,7 @@ build_cmake()
    # hackish
    case "${MAKE}" in
       *ninja)
-         if [ "${MULLE_FLAG_VERBOSE_MAKE}" = "YES" ]
+         if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
          then
             make_flags="`concat "${make_flags}" "-v"`"
          fi
@@ -303,7 +303,7 @@ build_cmake()
             make_flags="-j '${OPTION_CORES}'"
          fi
 
-         if [ "${MULLE_FLAG_VERBOSE_MAKE}" = "YES" ]
+         if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
          then
             make_flags="`concat "${make_flags}" "VERBOSE=1"`"
          fi

@@ -1,3 +1,8 @@
+## 0.5.0
+
+* Various small improvements
+
+
 ### 0.4.27
 
 * configure must use "real" make on mingw (mingw32-make)

@@ -618,10 +618,6 @@ xcodebuild"
             read -r OPTION_LIB_PATH || fail "missing argument to \"${argument}\""
          ;;
 
-         -V|--verbose-make)
-            MULLE_FLAG_VERBOSE_MAKE="YES"
-         ;;
-
          -*)
             log_error "Unknown build option ${argument}"
             "${usage}"

@@ -235,7 +235,7 @@ build_meson()
       ninja_flags="-j '${OPTION_CORES}'"
    fi
 
-   if [ "${MULLE_FLAG_VERBOSE_MAKE}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
    then
       ninja_flags="`concat "${ninja_flags}" "-v"`"
    fi
