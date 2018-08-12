@@ -1,3 +1,7 @@
+### 0.5.1
+
+* improve usage information
+
 ## 0.5.0
 
 * Various small improvements
