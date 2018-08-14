@@ -1,3 +1,7 @@
+### 0.5.2
+
+* add `${DEPENDENCY_DIR}/${configuration}/bin` to BUILDPATH
+
 ### 0.5.1
 
 * improve usage information

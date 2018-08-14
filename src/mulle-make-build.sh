@@ -33,6 +33,15 @@ MULLE_MAKE_BUILD_SH="included"
 
 _emit_common_options()
 {
+   local marks="$1"
+
+   if [ "${marks}" = "common-prefix" ]
+   then
+      cat <<EOF
+   --prefix <prefix>          : prefix to use for build products e.g. /usr/local
+EOF
+   fi
+
    cat <<EOF
    -D<key>=<value>            : set definition (can't mix with += definitions)
    -D<key>+=<value>           : add to definition
@@ -67,6 +76,15 @@ EOF
 
 _emit_uncommon_options()
 {
+   local marks="$1"
+
+   if [ "${marks}" != "common-prefix" ]
+   then
+      cat <<EOF
+   --prefix <prefix>          : prefix to use for build products e.g. /usr/local
+EOF
+   fi
+
    cat <<EOF
    --configuration <name>     : configuration to build like Debug or Release
    -K                         : always clean before building
@@ -74,7 +92,6 @@ _emit_uncommon_options()
    --no-ninja                 : prefer make over ninja
    --log-dir <dir>            : specify log directory
    --no-determine-sdk         : don't try to figure out the default SDK
-   --prefix <prefix>          : prefix to use for build products e.g. /usr/local
    --project-name <name>      : explicitly set project name
    --sdk <name>               : SDK to use (Default)
    --tool-preferences <list>  : tool preference order. Tools are separated by ','
@@ -90,11 +107,13 @@ EOF
 
 emit_options()
 {
+   local marks="$1"
+
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
    then
-      _emit_uncommon_options
+      _emit_uncommon_options "${marks}"
    fi
-   _emit_common_options
+   _emit_common_options "${marks}"
 }
 
 
@@ -127,7 +146,7 @@ Usage:
 
 Options:
 EOF
-   emit_options | LC_ALL=C sort
+   emit_options "common-prefix" | LC_ALL=C sort
 
    exit 1
 }
@@ -300,8 +319,15 @@ build_with_configuration_sdk_preferences()
    logsdir="`canonicalize_path "${logsdir}"`"
 
    local BUILDPATH
+   local configbin
 
-   BUILDPATH="${OPTION_PATH:-$PATH}"
+   BUILDPATH="${PATH}"
+   configbin="${DEPENDENCY_DIR}/${configuration}/bin"
+   if [ -d "${configbin}" ]
+   then
+      log_debug "Added \""${configbin}"\" to BUILDPATH"
+      BUILDPATH="${configbin}:${BUILDPATH}"
+   fi
 
    local rval
    local preference
@@ -543,7 +569,7 @@ xcodebuild"
             read -r OPTION_CONFIGURATION || fail "missing argument to \"${argument}\""
          ;;
 
-         -i|--info-dir|--buildinfo-dir)
+         -i|--info-dir|--makeinfo-dir)
             read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
          ;;
 

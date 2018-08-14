@@ -526,7 +526,7 @@ read_info_dir()
       return
    fi
 
-   log_verbose "Read buildinfo ${C_RESET_BOLD}${infodir}${C_VERBOSE}"
+   log_verbose "Read info ${C_RESET_BOLD}${infodir}${C_VERBOSE}"
 
    infodir="${infodir}"
 

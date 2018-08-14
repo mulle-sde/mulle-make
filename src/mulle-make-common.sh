@@ -32,13 +32,13 @@ MULLE_MAKE_COMMON_SH="included"
 
 
 #
-# The configure plugin can't use nmake on mingw it must use mingw32-make 
+# The configure plugin can't use nmake on mingw it must use mingw32-make
 # (still called mingw32-make on 64 bit)
 # The cmake plugin will use nmake though
 #
 mingw_bitness()
 {
-   uname | sed -e 's/MINGW\([0-9]*\)_.*/\1/' 
+   uname | sed -e 's/MINGW\([0-9]*\)_.*/\1/'
 }
 
 
@@ -137,7 +137,7 @@ tools_environment_common()
       CXX="${OPTION_CXX}"
    fi
 
-   TR="`verify_binary "tr" "tr" "tr"`" 
+   TR="`verify_binary "tr" "tr" "tr"`"
    SED="`verify_binary "sed" "sed" "sed"`"
 
    [ -z "${TR}" ]   && fail "can't locate tr"
@@ -162,8 +162,8 @@ tools_environment_make()
    then
       local ourmake
 
-      ourmake="`platform_make "${CC}" "${plugin}"`" 
-      MAKE="`find_make "${ourmake}" "${noninja}"`" 
+      ourmake="`platform_make "${CC}" "${plugin}"`"
+      MAKE="`find_make "${ourmake}" "${noninja}"`"
       [ -z "${MAKE}" ] && fail "can't locate make (named \"${ourmake}\" - on this platform)"
    fi
 
@@ -225,11 +225,11 @@ build_fail()
       printf "${C_RED}"
       egrep -B1 -A5 -w "[Ee]rror|FAILED:" "$1" >&2
       printf "${C_RESET}"
-   fi
 
-   if [ "$MULLE_TRACE" != "1848" ]
-   then
-      log_info "Check the build log: ${C_RESET_BOLD}${1#${MULLE_USER_PWD}/}${C_INFO}"
+      if [ "$MULLE_TRACE" != "1848" ]
+      then
+         log_info "Check the build log: ${C_RESET_BOLD}${1#${MULLE_USER_PWD}/}${C_INFO}"
+      fi
    fi
    fail "$2 failed"
 }
