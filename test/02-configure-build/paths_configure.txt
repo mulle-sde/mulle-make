@@ -1,2 +1,2 @@
 [CPPFLAGS=-I/usr/local/include -I/usr/include]
-[LDFLAGS=-L/usr/local/lib -L/usr/lib -F/Network/Library/Frameworks -F/Library/Frameworks]
+[LDFLAGS=-L/usr/local/lib -L/usr/lib]

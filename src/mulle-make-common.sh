@@ -42,40 +42,38 @@ mingw_bitness()
 }
 
 
-platform_make()
+r_platform_make()
 {
-   log_entry "platform_make" "$@"
+   log_entry "r_platform_make" "$@"
 
    local compilerpath="$1"
    local plugin="$2"
 
    local name
 
-   name="`fast_basename "${compilerpath}"`"
+   r_fast_basename "${compilerpath}"
+   name="${RVAL}"
 
+   RVAL="make"
    case "${MULLE_UNAME}" in
       mingw)
          case "${plugin}" in
             'configure')
-               echo "mingw32-make"
+               RVAL="mingw32-make"
             ;;
 
             *)
                case "${name%.*}" in
                   ""|cl|clang-cl|mulle-clang-cl)
-                     echo "nmake"
+                     RVAL="nmake"
                   ;;
 
                   *)
-                     echo "mingw32-make"
+                     RVAL="mingw32-make"
                   ;;
                esac
             ;;
          esac
-      ;;
-
-      *)
-         echo "make"
       ;;
    esac
 }
@@ -83,9 +81,9 @@ platform_make()
 
 # common functions for build tools
 
-find_make()
+r_find_make()
 {
-   log_entry "find_make" "$@"
+   log_entry "r_find_make" "$@"
 
    local defaultname="${1:-make}"
    local noninja="$2"
@@ -105,7 +103,7 @@ find_make()
          "YES"|"DEFAULT")
             if [ ! -z "`command -v ninja`" ]
             then
-               echo "ninja"
+               RVAL="ninja"
                return
             fi
 
@@ -118,7 +116,12 @@ find_make()
    fi
 
    toolname="${OPTION_MAKE:-${defaultname:-make}}"
-   verify_binary "${toolname}" "make" "${defaultname}"
+   RVAL="${toolname}"
+
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   then
+      r_verify_binary "${toolname}" "make" "${defaultname}"
+   fi
 }
 
 
@@ -137,11 +140,20 @@ tools_environment_common()
       CXX="${OPTION_CXX}"
    fi
 
-   TR="`verify_binary "tr" "tr" "tr"`"
-   SED="`verify_binary "sed" "sed" "sed"`"
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   then
+      local RVAL
 
-   [ -z "${TR}" ]   && fail "can't locate tr"
-   [ -z "${SED}" ]  && fail "can't locate sed"
+      r_verify_binary "tr" "tr" "tr"
+      TR="${RVAL}"
+      r_verify_binary "sed" "sed" "sed"
+      SED="${RVAL}"
+      [ -z "${TR}" ]   && fail "can't locate tr"
+      [ -z "${SED}" ]  && fail "can't locate sed"
+   else
+      TR=tr
+      SED=sed
+   fi
 }
 
 
@@ -161,9 +173,13 @@ tools_environment_make()
    if [ -z "${MAKE}" ]
    then
       local ourmake
+      local RVAL
 
-      ourmake="`platform_make "${CC}" "${plugin}"`"
-      MAKE="`find_make "${ourmake}" "${noninja}"`"
+      r_platform_make "${CC}" "${plugin}"
+      ourmake="${RVAL}"
+
+      r_find_make "${ourmake}" "${noninja}"
+      MAKE="${RVAL}"
       [ -z "${MAKE}" ] && fail "can't locate make (named \"${ourmake}\" - on this platform)"
    fi
 
@@ -182,37 +198,50 @@ __add_path_tool_flags()
 {
    local sdkpath
 
-   sdkpath="`compiler_sdk_parameter "${sdk}"`" || exit 1
-   sdkpath="`echo "${sdkpath}" | "${SED}" -e 's/ /\\ /g'`"
-
+   r_compiler_sdk_parameter "${sdk}"
+   sdkpath="${RVAL}"
    if [ ! -z "${sdkpath}" ]
    then
-      cppflags="`concat "-isysroot ${sdkpath}" "${cppflags}"`"
-      ldflags="`concat "-isysroot ${sdkpath}" "${ldflags}"`"
+      sdkpath="`"${SED}" -e 's/ /\\ /g' <<< "${sdkpath}" `"
+      r_concat "-isysroot ${sdkpath}" "${cppflags}"
+      cppflags="${RVAL}"
+      r_concat "-isysroot ${sdkpath}" "${ldflags}"
+      ldflags="${RVAL}"
    fi
 
    local headersearchpaths
 
    case "${OPTION_CC}" in
       *clang*|*gcc)
-         headersearchpaths="`convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-isystem " "'"`"
+         r_convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-isystem " "'"
+         headersearchpaths="${RVAL}"
       ;;
 
       *)
-         headersearchpaths="`convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-I" "'"`"
+         r_convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-I" "'"
+         headersearchpaths="${RVAL}"
       ;;
    esac
    cppflags="`concat "${cppflags}" "${headersearchpaths}"`"
+   cppflags="${RVAL}"
 
    local librarysearchpaths
 
-   librarysearchpaths="`convert_path_to_flag "${OPTION_LIB_PATH}" "-L" "'"`"
-   ldflags="`concat "${ldflags}" "${librarysearchpaths}"`"
+   r_convert_path_to_flag "${OPTION_LIB_PATH}" "-L" "'"
+   librarysearchpaths="${RVAL}"
+   r_concat "${ldflags}" "${librarysearchpaths}"
+   ldflags="${RVAL}"
 
-   local frameworksearchpaths
+   case "${MULLE_UNAME}" in
+      darwin)
+         local frameworksearchpaths
 
-   frameworksearchpaths="`convert_path_to_flag "${OPTION_FRAMEWORKS_PATH}" "-F" "'"`"
-   ldflags="`concat "${ldflags}" "${frameworksearchpaths}"`"
+         r_convert_path_to_flag "${OPTION_FRAMEWORKS_PATH}" "-F" "'"
+         frameworksearchpaths="${RVAL}"
+         r_concat "${ldflags}" "${frameworksearchpaths}"
+         ldflags="${RVAL}"
+      ;;
+   esac
 }
 
 
@@ -235,49 +264,15 @@ build_fail()
 }
 
 
-guess_project_name()
-{
-   log_entry "guess_project_name" "$@"
-
-   local directory="$1"
-
-   [  -z "${directory}" ] && internal_fail "empty parameter"
-   directory="$(absolutepath "${directory}")"
-
-   while :
-   do
-      parent="`fast_dirname "${directory}"`"
-      name="`fast_basename "${directory}"`"
-      directory="${parent}"
-
-      if [ "${directory}" = "." ]
-      then
-         echo "${name}"
-         return
-      fi
-
-      case "${name}" in
-         .|..|trunk|branch|branches|src|source|sources)
-         ;;
-
-         *)
-            echo "${name}"
-            return
-         ;;
-       esac
-   done
-}
-
-
 #
 # Build log will be in this form, if OPTION_LOG_FILENAME_FORMAT="%t" is specified
 #     <name>--<configuration>-<sdk>.<tool>.log
 # Otherwise it is just
 #     <tool>.log
 #
-build_log_name()
+r_build_log_name()
 {
-   log_entry "build_log_name" "$@"
+   log_entry "r_build_log_name" "$@"
 
    local logsdir=$1; shift
    local tool="$1"; shift
@@ -289,7 +284,7 @@ build_log_name()
 
    if [ -z "${OPTION_LOG_FILENAME_FORMAT}" ]
    then
-      absolutepath "${logsdir}/${tool}.log"
+      r_absolutepath "${logsdir}/${tool}.log"
       return
    fi
 
@@ -379,9 +374,9 @@ safe_tty()
 # first find a project with matching name, otherwise find
 # first nearest project
 #
-find_nearest_matching_pattern()
+r_find_nearest_matching_pattern()
 {
-   log_entry "find_nearest_matching_pattern" "$@"
+   log_entry "r_find_nearest_matching_pattern" "$@"
 
    local directory="$1"
    local pattern="$2"
@@ -390,6 +385,7 @@ find_nearest_matching_pattern()
    if [ ! -d "${directory}" ]
    then
       log_warning "\"${directory}\" not found"
+      RVAL=""
       return 1
    fi
 
@@ -425,7 +421,8 @@ find_nearest_matching_pattern()
    local match2
    local new_depth
 
-   match2=`fast_basename "${expectation}"`
+   r_fast_basename "${expectation}"
+   match2="${RVAL}"
 
    #
    # don't go too deep in search
@@ -438,16 +435,16 @@ find_nearest_matching_pattern()
 
       if [ "${i}" = "${expectation}" ]
       then
-         echo "$i"
-         log_fluff "\"${i}\" found as complete match"
+         log_fluff "\"${RVAL}\" found as complete match"
+         RVAL="$i"
          return 0
       fi
 
       match1="${i##*/}"
       if [ "${match1}" = "${match2}" ]
       then
-         echo "$i"
-         log_fluff "\"${i}\" found as matching filename "
+         RVAL="$i"
+         log_fluff "\"${RVAL}\" found as matching filename "
          return 0
       fi
 
@@ -462,35 +459,24 @@ find_nearest_matching_pattern()
 
    if [ ! -z "${found}" ]
    then
-      log_debug "\"${found#./}\" found as nearest match"
-      echo "${found#./}"
+      RVAL="${found#./}"
+      log_debug "\"${RVAL}\" found as nearest match"
       return 0
    fi
 
+   RVAL=""
    return 1
 }
 
 
-projectdir_relative_to_builddir()
+r_projectdir_relative_to_builddir()
 {
-   log_entry "projectdir_relative_to_builddir" "$@"
+   log_entry "r_projectdir_relative_to_builddir" "$@"
 
    local builddir="$1"
    local projectdir="$2"
 
-   local directory
-
-   directory="`relative_path_between "${projectdir}" "${builddir}"`"
-
-   case "${MULLE_UNAME}" in
-#      mingw)
-#         "${TR}" '/' '\\' <<< "${directory}"  2> /dev/null
-#      ;;
-#
-      *)
-         echo "${directory}"
-      ;;
-   esac
+   r_relative_path_between "${projectdir}" "${builddir}"
 }
 
 

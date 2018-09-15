@@ -31,7 +31,7 @@
 MULLE_MAKE_COMPILER_SH="included"
 
 
-platform_c_compiler()
+r_platform_c_compiler()
 {
    local name
 
@@ -39,17 +39,17 @@ platform_c_compiler()
 
    case "${MULLE_UNAME}" in
       mingw)
-         echo "${name:-cl}"
+         RVAL="${name:-cl}"
       ;;
 
       *)
-         echo "${name:-cc}"
+         RVAL="${name:-cc}"
       ;;
    esac
 }
 
 
-platform_cxx_compiler()
+r_platform_cxx_compiler()
 {
    local name
 
@@ -57,11 +57,11 @@ platform_cxx_compiler()
 
    case "${MULLE_UNAME}" in
       mingw)
-         echo "${name:-cl}"
+         RVAL="${name:-cl}"
       ;;
 
       *)
-         echo "${name:-c++}"
+         RVAL="${name:-c++}"
       ;;
    esac
 }
@@ -71,28 +71,30 @@ platform_cxx_compiler()
 # assume default is release and the flags
 # are set for that
 #
-_compiler_debug_options()
+_r_compiler_debug_options()
 {
    local name="$1"
 
    case "${name%.*}" in
       cl|*-cl)
-         echo "/Od /Zi"
+         RVAL="/Od /Zi"
       ;;
 
       *)
-         echo "-g -O0"
+         RVAL="-g -O0"
       ;;
    esac
 }
 
 
 # compiler is re
-compiler_sdk_parameter()
+r_compiler_sdk_parameter()
 {
    local sdk="$1"
 
    local sdkpath
+
+   RVAL=""
 
    if [ "${OPTION_DETERMINE_SDK}" = "NO" ]
    then
@@ -111,7 +113,7 @@ compiler_sdk_parameter()
          then
             fail "SDK \"${sdk}\" is not installed"
          fi
-         echo "${sdkpath}"
+         RVAL="${sdkpath}"
       ;;
    esac
 }
@@ -123,42 +125,30 @@ compiler_sdk_parameter()
 # WARNING_CFLAGS
 # COMPILER_PREPROCESSOR_DEFINITIONS
 #
-# In general it would be nice when using cmake, that the -I detection would
-# be just done by find_library. Unfortunately, this doesn't work when you
-# have header only libraries with no .a file.
-# Therefore we need to add -Isystem here if passes
+# The -I/-isystem generation s done somewhere else
 #
-compiler_cppflags_value()
+r_compiler_cppflags_value()
 {
-   log_entry "compiler_cppflags_value" "$@"
+   log_entry "r_compiler_cppflags_value" "$@"
 
-   local result
+   r_concat "${OPTION_CPPFLAGS}" "${OPTION_OTHER_CPPFLAGS}"
 
-   result="`concat "${OPTION_CPPFLAGS}" "${OPTION_OTHER_CPPFLAGS}" `"
-
-   if [ ! -z "$1" ]
-   then
-      local tmp
-
-      # space bug ?
-      #
-      # the flags get passed in as quoted, if the path itself has spaces
-      # this will not work I suspect. But let's try anyway
-      #
-      tmp="$(sed -e 's/ /\\ /g' <<< "$1")"
-      tmp="`convert_path_to_flag "$1" "-isystem " "" `"
-
-      result="`concat "${result}" "${tmp}" `"
-   fi
-
-   if [ ! -z "${result}" ]
-   then
-      echo "${result}"
-   fi
+   case "${compiler%.*}" in
+      c++|cc|gcc*|*clang*|"")
+         IFS=","
+         set -o noglob
+         for i in ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}
+         do
+            r_concat "${RVAL}" "-D${i}"
+         done
+         IFS="${DEFAULT_IFS}"
+         set +o noglob
+      ;;
+   esac
 }
 
 
-_compiler_cflags_value()
+_r_compiler_cflags_value()
 {
    local compiler="$1"
    local configuration="$2"
@@ -168,88 +158,66 @@ _compiler_cflags_value()
    local result
    local i
 
-   value="${OPTION_WARNING_CFLAGS}"
-   result="`concat "$result" "$value"`"
+   result="${OPTION_WARNING_CFLAGS}"
 
    if [ "${addoptflags}" = "YES" ]
    then
       case "${configuration}" in
          Debug)
-            value="`_compiler_debug_options "${compiler}"`"
-            result="`concat "$result" "$value"`"
+            _r_compiler_debug_options "${compiler}"
+            r_concat "$result" "${RVAL}"
+            result="${RVAL}"
          ;;
       esac
    fi
 
-   case "${compiler%.*}" in
-      c++|cc|gcc*|*clang*|"")
-         IFS=","
-         set -o noglob
-         for i in ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}
-         do
-            result="`concat "$result" "-D${i}"`"
-         done
-         IFS="${DEFAULT_IFS}"
-         set +o noglob
-      ;;
-   esac
-
-   echo "${result}"
+   RVAL="${result}"
 }
 
 
-compiler_cflags_value()
+r_compiler_cflags_value()
 {
-   log_entry "compiler_cflags_value" "$@"
+   log_entry "r_compiler_cflags_value" "$@"
 
    local compiler="$1"
    local configuration="$2"
    local addoptflags="$3"
 
-   result="${OPTION_CFLAGS}"
-   value="${OPTION_OTHER_CFLAGS}"
-   result="`concat "$result" "$value"`"
+   local result
 
-   value="`_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"`"
-   result="`concat "$result" "$value"`"
+   r_concat "${OPTION_CFLAGS}" "${OPTION_OTHER_CFLAGS}"
+   result="${RVAL}"
 
-   echo "${result}"
+   _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
+   r_concat "${result}" "${RVAL}"
+
+   RVAL="${result}"
 }
 
 
-compiler_cxxflags_value()
+r_compiler_cxxflags_value()
 {
-   log_entry "compiler_cxxflags_value" "$@"
+   log_entry "r_compiler_cxxflags_value" "$@"
 
    local compiler="$1"
    local configuration="$2"
    local addoptflags="$3"
 
-   local value
    local result
-   local name
 
-   result="${OPTION_CXXFLAGS}"
-   value="${OPTION_OTHER_CXXFLAGS}"
-   result="`concat "$result" "$value"`"
+   r_concat "${OPTION_CXXFLAGS}" "${OPTION_OTHER_CXXFLAGS}"
+   result="${RVAL}"
 
-   value="`_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"`"
-   result="`concat "$result" "$value"`"
-
-   echo "${result}"
+   _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
+   r_concat "${result}" "${RVAL}"
 }
 
 
-compiler_ldflags_value()
+r_compiler_ldflags_value()
 {
-   log_entry "compiler_ldflags_value" "$@"
+   log_entry "r_compiler_ldflags_value" "$@"
 
-   local value
-   local result
-
-   result="${OPTION_LDFLAGS}"
-   value="${OPTION_OTHER_LDFLAGS}"
-   concat "$result" "$value"
+   r_concat "${OPTION_LDFLAGS}" "${OPTION_OTHER_LDFLAGS}"
 }
 
 :

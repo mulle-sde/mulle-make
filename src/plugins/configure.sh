@@ -31,7 +31,7 @@
 MULLE_MAKE_PLUGIN_CONFIGURE_SH="included"
 
 
-convert_path_to_flag()
+r_convert_path_to_flag()
 {
    local path="$1"
    local flag="$2"
@@ -39,6 +39,8 @@ convert_path_to_flag()
 
    local output
    local munged
+
+   RVAL=""
 
    IFS=":"
    set -o noglob
@@ -50,13 +52,12 @@ convert_path_to_flag()
       then
          component="$(sed -e 's/ /\\ /g' <<< "${component}")"
       fi
-      output="`concat "${output}" "${flag}${quote}${component}${quote}"`"
+      r_concat "${output}" "${flag}${quote}${component}${quote}"
+      output="${RVAL}"
    done
 
    IFS="${DEFAULT_IFS}"
    set +o noglob
-
-   printf "%s" "${output}"
 }
 
 
@@ -94,10 +95,14 @@ build_configure()
    local cppflags
    local ldflags
 
-   cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}"`" || exit 1
-   cxxflags="`compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}"`" || exit 1
-   cppflags="`compiler_cppflags_value`" || exit 1
-   ldflags="`compiler_ldflags_value`" || exit 1
+   r_compiler_cflags_value "${OPTION_CC}" "${configuration}"
+   cflags="${RVAL}"
+   r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}"
+   cxxflags="${RVAL}"
+   r_compiler_cppflags_value
+   cppflags="${RVAL}"
+   r_compiler_ldflags_value
+   ldflags="${RVAL}"
 
    # hackish! changes cflags and friends
    __add_path_tool_flags
@@ -106,7 +111,7 @@ build_configure()
    local arguments
 
    case "${cmd}" in
-      build)
+      build|project)
          maketarget=
          if [ ! -z "${OPTION_PREFIX}" ]
          then
@@ -126,7 +131,8 @@ build_configure()
 
    local env_common
 
-   env_common="`mulle_make_env_flags`"
+   r_mulle_make_env_flags
+   env_common="${RVAL}"
 
    env_flags="${env_common}"
 
@@ -178,20 +184,24 @@ build_configure()
 
    mkdir_if_missing "${logsdir}"
 
-   logfile1="`build_log_name "${logsdir}" "configure" "${srcdir}" "${configuration}" "${sdk}"`"
-   logfile2="`build_log_name "${logsdir}" "make" "${srcdir}" "${configuration}" "${sdk}"`"
+   r_build_log_name "${logsdir}" "configure" "${srcdir}" "${configuration}" "${sdk}"
+   logfile1="${RVAL}"
+   r_build_log_name "${logsdir}" "make" "${srcdir}" "${configuration}" "${sdk}"
+   logfile2="${RVAL}"
 
-   if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
-   then
-      logfile1="`safe_tty`"
-      logfile2="${logfile1}"
-   fi
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
+   else
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      then
+         logfile1="`safe_tty`"
+         logfile2="${logfile1}"
+      else
+         log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+      fi
    fi
-   log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
 
    (
       exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
@@ -235,15 +245,17 @@ test_configure()
 
    local projectfile
    local projectdir
+   local RVAL
 
-   projectfile="`find_nearest_matching_pattern "${srcdir}" "configure"`"
-   if [ -z "${projectfile}" ]
+   if ! r_find_nearest_matching_pattern "${srcdir}" "configure"
    then
       log_fluff "There is no configure project in \"${srcdir}\""
       return 1
    fi
+   projectfile="${RVAL}"
+   r_fast_dirname "${projectfile}"
+   projectdir="${RVAL}"
 
-   projectdir="`dirname -- "${projectfile}"`"
    if ! [ -x "${projectdir}/configure" ]
    then
       log_fluff "Configure script in \"${projectdir}\" is not executable"

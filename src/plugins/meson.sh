@@ -36,23 +36,23 @@ MULLE_MAKE_PLUGIN_MESON_SH="included"
 # Meson can work with several backends.
 # Let's do only ninja at first and add xcodebuild or vs later.
 #
-platform_meson_backend()
+r_platform_meson_backend()
 {
    local makepath="$1"
 
    local toolname
 
    toolname="${OPTION_NINJA:-${NINJA:-ninja}}"
-   verify_binary "${toolname}" "ninja" "ninja"
+   r_verify_binary "${toolname}" "ninja" "ninja"
 }
 
 
-find_meson()
+r_find_meson()
 {
    local toolname
 
    toolname="${OPTION_MESON:-${MESON:-meson}}"
-   verify_binary "${toolname}" "meson" "meson"
+   r_verify_binary "${toolname}" "meson" "meson"
 }
 
 
@@ -61,26 +61,29 @@ tools_environment_meson()
    tools_environment_make "" "meson"
 
    local defaultbackend
+   local RVAL
 
-   defaultbackend="`platform_meson_backend "${NINJA}"`"
-   MESON="`find_meson`"
+   r_platform_meson_backend "${NINJA}"
+   defaultbackend="${RVAL}"
+   r_find_meson
+
+   MESON="${RVAL}"
    MESON_BACKEND="${OPTION_MESON_BACKEND:-${defaultbackend}}"
 }
 
 
-meson_sdk_parameter()
+r_meson_sdk_parameter()
 {
    local sdk="$1"
 
-   local sdkpath
-
+   RVAL=""
    case "${MULLE_UNAME}" in
       "darwin")
-         sdkpath=`compiler_sdk_parameter "${sdk}"` || exit 1
-         if [ ! -z "${sdkpath}" ]
+         r_compiler_sdk_parameter "${sdk}"
+         if [ ! -z "${RVAL}" ]
          then
-            log_fluff "Set meson sdk to \"${sdkpath}\""
-            echo "-isysroot '${sdkpath}'"
+            log_fluff "Set meson sdk to \"${RVAL}\""
+            RVAL="-isysroot '${RVAL}'"
          fi
       ;;
    esac
@@ -124,10 +127,14 @@ build_meson()
    local cppflags
    local ldflags
 
-   cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1
-   cxxflags="`compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO" `" || exit 1
-   cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `"  || exit 1 # only meson does OPTION_INCLUDE_PATH here
-   ldflags="`compiler_ldflags_value`" || exit 1
+   r_compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO"
+   cflags="${RVAL}"
+   r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO"
+   cxxflags="${RVAL}"
+   r_compiler_cppflags_value "${OPTION_INCLUDE_PATH}"
+   cppflags="${RVAL}"
+   r_compiler_ldflags_value
+   ldflags="${RVAL}"
 
    __add_path_tool_flags
 
@@ -136,18 +143,29 @@ build_meson()
    local absprojectdir
    local projectdir
 
-   projectdir="`dirname -- "${projectfile}"`"
-   absprojectdir="$(simplified_absolutepath "${projectdir}")"
-   absbuilddir="$(simplified_absolutepath "${builddir}")"
+   r_fast_dirname "${projectfile}"
+   projectdir="${RVAL}"
+   r_simplified_absolutepath "${projectdir}"
+   absprojectdir="${RVAL}"
+   r_simplified_absolutepath "${builddir}"
+   absbuilddir="${RVAL}"
 
-   rel_project_dir="`projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"`"
+   r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
+   rel_project_dir="${RVAL}"
 
-   log_debug "projectfile:     ${projectfile}"
-   log_debug "projectdir:      ${projectdir}"
-   log_debug "absprojectdir:   ${absprojectdir}"
-   log_debug "absbuilddir:     ${absbuilddir}"
-   log_debug "rel_project_dir: ${rel_project_dir}"
-   log_debug "PWD:             ${PWD}"
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "cflags:          ${cflags}"
+      log_trace2 "cppflags:        ${cppflags}"
+      log_trace2 "cxxflags:        ${cxxflags}"
+      log_trace2 "ldflags:         ${ldflags}"
+      log_trace2 "projectfile:     ${projectfile}"
+      log_trace2 "projectdir:      ${projectdir}"
+      log_trace2 "absprojectdir:   ${absprojectdir}"
+      log_trace2 "absbuilddir:     ${absbuilddir}"
+      log_trace2 "rel_project_dir: ${rel_project_dir}"
+      log_trace2 "PWD:             ${PWD}"
+   fi
 
    local meson_flags
    local meson_env
@@ -160,71 +178,89 @@ build_meson()
    local maketarget
 
    case "${cmd}" in
-      build)
+      build|project)
          maketarget=
          if [ ! -z "${OPTION_PREFIX}" ]
          then
-            meson_flags="`concat "${meson_flags}" "--prefix '${OPTION_PREFIX}'"`"
+            r_concat "${meson_flags}" "--prefix '${OPTION_PREFIX}'"
+            meson_flags="${RVAL}"
          fi
       ;;
 
       install)
          [ -z "${dstdir}" ] && internal_fail "srcdir is empty"
          maketarget="install"
-         meson_flags="`concat "${meson_flags}" "--prefix '${dstdir}'"`"
+         r_concat "${meson_flags}" "--prefix '${dstdir}'"
+         meson_flags="${RVAL}"
       ;;
    esac
 
    if [ ! -z "${configuration}" ]
    then
       configuration="$(tr 'A-Z' 'a-z' <<< "${configuration}" )"
-      meson_flags="`concat "${meson_flags}" "--buildtype '${configuration}'"`"
+      r_concat "${meson_flags}" "--buildtype '${configuration}'"
+      meson_flags="${RVAL}"
    fi
 
    if [ ! -z "${OPTION_CC}" ]
    then
-      meson_env="`concat "${meson_env}" "CC='${OPTION_CC}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CC"`"
+      r_concat "${meson_env}" "CC='${OPTION_CC}'"
+      meson_env="${RVAL}"
+      r_colon_concat "${passed_keys}" "CC"
+      passed_keys="${RVAL}"
    fi
 
    if [ ! -z "${OPTION_CXX}" ]
    then
-      meson_env="`concat "${meson_env}" "CXX='${OPTION_CXX}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CXX"`"
+      r_concat "${meson_env}" "CXX='${OPTION_CXX}'"
+      meson_env="${RVAL}"
+      r_colon_concat "${passed_keys}" "CXX"
+      passed_keys="${RVAL}"
    fi
 
    local sdkparameter
 
-   sdkparameter="`meson_sdk_parameter "${sdk}"`" || exit 1
+   r_meson_sdk_parameter "${sdk}"
+   sdkparameter="${RVAL}"
 
    if [ ! -z "${sdkparameter}" ]
    then
-      cppflags="`concat "${cppflags}" "${sdkparameter}"`"
+      r_concat "${cppflags}" "${sdkparameter}"
+      cppflags="${RVAL}"
    fi
 
    if [ ! -z "${cppflags}" ]
    then
-      meson_env="`concat "${meson_env}" "CPPFLAGS='${cppflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CPPFLAGS"`"
+      r_concat "${meson_env}" "CPPFLAGS='${cppflags}'"
+      meson_env="${RVAL}"
+      r_colon_concat "${passed_keys}" "CPPFLAGS"
+      passed_keys="${RVAL}"
    fi
    if [ ! -z "${cflags}" ]
    then
-      meson_env="`concat "${meson_env}" "CFLAGS='${cflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CFLAGS"`"
+      r_concat "${meson_env}" "CFLAGS='${cflags}'"
+      meson_env="${RVAL}"
+      r_colon_concat "${passed_keys}" "CFLAGS"
+      passed_keys="${RVAL}"
    fi
    if [ ! -z "${cxxflags}" ]
    then
-      meson_env="`concat "${meson_env}" "CXXFLAGS='${cxxflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CXXFLAGS"`"
+      r_concat "${meson_env}" "CXXFLAGS='${cxxflags}'"
+      meson_env="${RVAL}"
+      r_colon_concat "${passed_keys}" "CXXFLAGS"
+      passed_keys="${RVAL}"
    fi
    if [ ! -z "${ldflags}" ]
    then
-      meson_env="`concat "${meson_env}" "LDFLAGS='${ldflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "LDFLAGS"`"
+      r_concat "${meson_env}" "LDFLAGS='${ldflags}'"
+      meson_env="${RVAL}"
+      r_colon_concat "${passed_keys}" "LDFLAGS"
+      passed_keys="${RVAL}"
    fi
 
    # always pass at least a trailing :
-   meson_env="`concat "${meson_env}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"`"
+   r_concat "${meson_env}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"
+   meson_env="${RVAL}"
 
    local ninja_flags
 
@@ -232,12 +268,14 @@ build_meson()
 
    if [ ! -z "${OPTION_CORES}" ]
    then
-      ninja_flags="-j '${OPTION_CORES}'"
+      r_concat "${ninja_flags}" "-j '${OPTION_CORES}'"
+      ninja_flags="${RVAL}"
    fi
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
    then
-      ninja_flags="`concat "${ninja_flags}" "-v"`"
+      r_concat "${ninja_flags}" "-v"
+      ninja_flags="${RVAL}"
    fi
 
    local other_buildsettings
@@ -245,32 +283,38 @@ build_meson()
    other_buildsettings="`emit_userdefined_definitions "-D " "=" "=" ""`"
    if [ ! -z "${other_buildsettings}" ]
    then
-      meson_flags="`concat "${meson_flags}" "${other_buildsettings}"`"
+      r_concat "${meson_flags}" "${other_buildsettings}"
+      meson_flags="${RVAL}"
    fi
 
    local env_common
 
-   env_common="`mulle_make_env_flags`"
+   r_mulle_make_env_flags
+   env_common="${RVAL}"
 
    local logfile1
    local logfile2
 
    mkdir_if_missing "${logsdir}"
 
-   logfile1="`build_log_name "${logsdir}" "meson" "${srcdir}" "${configuration}" "${sdk}"`"
-   logfile2="`build_log_name "${logsdir}" "ninja" "${srcdir}" "${configuration}" "${sdk}"`"
+   r_build_log_name "${logsdir}" "meson" "${srcdir}" "${configuration}" "${sdk}"
+   logfile1="${RVAL}"
+   r_build_log_name "${logsdir}" "ninja" "${srcdir}" "${configuration}" "${sdk}"
+   logfile2="${RVAL}"
 
-   if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
-   then
-      logfile1="`safe_tty`"
-      logfile2="$logfile1"
-   fi
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
+   else
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      then
+         logfile1="`safe_tty`"
+         logfile2="$logfile1"
+      else
+         log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+      fi
    fi
-   log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
 
    (
       [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
@@ -326,19 +370,21 @@ test_meson()
 
    local projectfile
    local projectdir
+   local RVAL
 
-   projectfile="`find_nearest_matching_pattern "${srcdir}" "meson.build"`"
-   if [ ! -f "${projectfile}" ]
+   if ! r_find_nearest_matching_pattern "${srcdir}" "meson.build"
    then
       log_fluff "There is no meson.build file in \"${srcdir}\""
       return 1
    fi
+   projectfile="${RVAL}"
 
    tools_environment_meson
 
    if [ -z "${MESON}" ]
    then
-      log_warning "Found a meson.build, but ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
+      log_warning "Found a meson.build, but \
+${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
       return 1
    fi
 

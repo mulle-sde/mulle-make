@@ -80,11 +80,14 @@ build_load_plugin()
       return 0
    fi
 
-   upcase="`tr 'a-z' 'A-Z' <<< "${preference}"`"
-   plugindefine="MULLE_MAKE_PLUGIN_${upcase}_SH"
+#
+# doppelt gemoppelt
+#
+#   upcase="`tr 'a-z' 'A-Z' <<< "${preference}"`"
+#   plugindefine="MULLE_MAKE_PLUGIN_${upcase}_SH"
 
-   if [ -z "`eval echo \$\{${plugindefine}\}`" ]
-   then
+#   if [ -z "`eval echo \$\{${plugindefine}\}`" ]
+#   then
       pluginpath="${MULLE_MAKE_LIBEXEC_DIR}/plugins/${preference}.sh"
       if [ ! -f "${pluginpath}" ]
       then
@@ -94,18 +97,24 @@ build_load_plugin()
 
       . "${pluginpath}" > /dev/null 2>&1
 
-      if [ "`type -t "test_${preference}"`" != "function" ]
+      #
+      # too costly normally
+      #
+      if [ "${MULLE_FLAG_LOG_VERBOSE}"  = "YES" ]
       then
-         internal_fail "Build plugin \"${pluginpath}\" has no \"test_${preference}\" function"
-      fi
+         if [ "`type -t "test_${preference}"`" != "function" ]
+         then
+            internal_fail "Build plugin \"${pluginpath}\" has no \"test_${preference}\" function"
+         fi
 
-      if [ "`type -t "build_${preference}"`" != "function" ]
-      then
-         internal_fail "Build plugin \"${pluginpath}\" has no \"build_${preference}\" function"
+         if [ "`type -t "build_${preference}"`" != "function" ]
+         then
+            internal_fail "Build plugin \"${pluginpath}\" has no \"build_${preference}\" function"
+         fi
       fi
 
       log_debug "Build plugin for \"${preference}\" loaded"
-   fi
+#   fi
 
    return 0
 }
@@ -118,6 +127,7 @@ build_load_plugins()
    local preferences="$1"
 
    local preference
+   local RVAL
 
    AVAILABLE_PLUGINS=
    IFS="
@@ -132,7 +142,8 @@ build_load_plugins()
       then
          continue
       fi
-      AVAILABLE_PLUGINS="`add_line "${AVAILABLE_PLUGINS}" "${preference}"`"
+      r_add_line "${AVAILABLE_PLUGINS}" "${preference}"
+      AVAILABLE_PLUGINS="${RVAL}"
    done
 
    IFS="${DEFAULT_IFS}"

@@ -118,35 +118,13 @@ which_binary()
 
 
 #
-# used by test scripts outside of mulle-make
-#
-assert_binary()
-{
-   log_entry "assert_binary" "$@"
-
-   local toolname="$1"
-   local toolfamily="$2"
-
-   [ -z "${toolname}" ] && internal_fail "toolname for \"${toolfamily}\" is empty"
-
-   local path
-
-   if ! which_binary "${toolname}"
-   then
-      fail "${toolname} is an unknown build tool (PATH=$PATH)"
-   fi
-   # echo "$path"
-}
-
-
-#
 # toolname : ex. mulle-clang
 # toolfamily: CC
 # tooldefaultname: compiler
 #
-verify_binary()
+r_verify_binary()
 {
-   log_entry "verify_binary" "$@"
+   log_entry "r_verify_binary" "$@"
 
    local toolname="$1"
    local toolfamily="$2"
@@ -166,14 +144,14 @@ verify_binary()
       ;;
 
       *)
-         path="`which_binary "${toolname}" `"
+         path="`which_binary "${toolname}"`"
       ;;
    esac
 
    if [ ! -z "${path}" ]
    then
       log_debug "${toolfamily:-${tooldefaultname}} is \"${path}\""
-      echo "${path}"
+      RVAL="${path}"
       return 0
    fi
 
@@ -182,8 +160,10 @@ verify_binary()
    # there is bad.
    # Otherwise it's maybe OK (f.e. only using xcodebuild not cmake)
    #
-   toolname="`extensionless_basename "${toolname}"`"
-   tooldefaultname="`extensionless_basename "${tooldefaultname}"`"
+   r_extensionless_basename "${toolname}"
+   toolname="${RVAL}"
+   r_extensionless_basename "${tooldefaultname}"
+   tooldefaultname="${RVAL}"
 
    if [ "${toolname}" != "${tooldefaultname}" ]
    then

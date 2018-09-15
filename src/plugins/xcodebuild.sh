@@ -70,7 +70,7 @@ xcode_get_setting()
 #
 # Let's not inherit here
 #
-convert_path_to_value()
+r_convert_path_to_value()
 {
    local path="$1"
    local inherit="${2:-NO}"
@@ -82,18 +82,19 @@ convert_path_to_value()
    set -o noglob
    for component in ${path}
    do
-      output="`concat "${output}" "${component}" `"
+      r_concat "${output}" "${component}"
+      output="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
    set +o noglob
 
    if [ "${inherit}" = "YES" -a ! -z "${inherit}" ]
    then
-      output="`concat "${output}" "\$(inherited)" `"
+      r_concat "${output}" "\$(inherited)"
+      output="${RVAL}"
    fi
 
-
-   printf "%s" "${output}"
+   RVAL="${output}"
 }
 
 
@@ -101,7 +102,7 @@ _build_xcodebuild()
 {
    log_entry "_build_xcodebuild" "$@"
 
-   local command="$1"; shift
+   local cmd="$1"; shift
 
    local projectfile="$1"; shift
    local configuration="$1"; shift
@@ -148,8 +149,8 @@ EOF
    # now don't load any settings anymoe
    local action
 
-   case "${command}" in
-      build)
+   case "${cmd}" in
+      build|project)
          action="build"
          dstdir="" # paranoia
       ;;
@@ -164,32 +165,40 @@ EOF
    arguments=""
    if [ ! -z "${projectname}" ]
    then
-      arguments="$(concat "${arguments}" "-project '${projectname}'" )"
+      r_concat "${arguments}" "-project '${projectname}'"
+      arguments="${RVAL}"
    fi
    if [ ! -z "${sdk}" ]
    then
       if [ "${sdk}" = "Default" ]
       then
-         arguments="$(concat "${arguments}" "-sdk 'macosx'" )"
+         r_concat "${arguments}" "-sdk 'macosx'"
+         arguments="${RVAL}"
       else
-         arguments="$(concat "${arguments}" "-sdk '${sdk}'" )"
+         r_concat "${arguments}" "-sdk '${sdk}'"
+         arguments="${RVAL}"
       fi
    fi
 
    if [ -z "${schemename}" -a -z "${targetname}" ]
    then
-      arguments="$(concat "${arguments}" "-alltargets")"
+      r_concat "${arguments}" "-alltargets"
+      arguments="${RVAL}"
    else
       if [ ! -z "${schemename}" ]
       then
-         arguments="$(concat "${arguments}" "-scheme '${schemename}'" )"
-      else
-         arguments="$(concat "${arguments}" "-target '${targetname}'" )"
+         r_concat "${arguments}" "-scheme '${schemename}'"
+         arguments="${RVAL}"
+   else
+         r_concat "${arguments}" "-target '${targetname}'"
+         arguments="${RVAL}"
       fi
    fi
+
    if [ ! -z "${configuration}" ]
    then
-      arguments="$(concat "${arguments}" "-configuration '${configuration}'" )"
+      r_concat "${arguments}" "-configuration '${configuration}'"
+      arguments="${RVAL}"
    fi
 
    # an empty xcconfig is nice, because it acts as a reset for ?
@@ -198,7 +207,8 @@ EOF
    xcconfig="${OPTION_XCODE_XCCONFIG_FILE}"
    if [ ! -z "${xcconfig}" ]
    then
-      arguments="$(concat "${arguments}" "-xcconfig '${xcconfig}'" )"
+      r_concat "${arguments}" "-xcconfig '${xcconfig}'"
+      arguments="${RVAL}"
    fi
 
    local buildsettings
@@ -212,19 +222,25 @@ EOF
       ;;
 
       *)
-         absbuilddir="`absolutepath "${builddir}" `"
+         r_absolutepath "${builddir}"
+         absbuilddir="${RVAL}"
       ;;
    esac
 
    buildsettings="ARCHS='${OPTION_XCODE_ARCHS:-\${ARCHS_STANDARD_32_64_BIT}}'"
-   buildsettings="`concat "${buildsettings}" "DSTROOT='${dstdir:-${absbuilddir}}'" `"
-   buildsettings="`concat "${buildsettings}" "OBJROOT='${absbuilddir}/obj'" `"
-   buildsettings="`concat "${buildsettings}" "SYMROOT='${absbuilddir}/'" `"
-   buildsettings="`concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${ONLY_ACTIVE_ARCH:-NO}'" `"
+   r_concat "${buildsettings}" "DSTROOT='${dstdir:-${absbuilddir}}'"
+   buildsettings="${RVAL}"
+   r_concat "${buildsettings}" "OBJROOT='${absbuilddir}/obj'"
+   buildsettings="${RVAL}"
+   r_concat "${buildsettings}" "SYMROOT='${absbuilddir}/'"
+   buildsettings="${RVAL}"
+   r_concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${ONLY_ACTIVE_ARCH:-NO}'"
+   buildsettings="${RVAL}"
 
    local env_common
 
-   env_common="`mulle_make_env_flags`"
+   r_mulle_make_env_flags
+   env_common="${RVAL}"
 
    local cflags
    local cxxflags
@@ -232,38 +248,46 @@ EOF
 
    if [ ! -z "${OPTION_CFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "CFLAGS='${OPTION_CFLAGS}'" `"
+      r_concat "${buildsettings}" "CFLAGS='${OPTION_CFLAGS}'"
+      buildsettings="${RVAL}"
    fi
    if [ ! -z "${OPTION_CXXFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "CXXFLAGS='${OPTION_CXXFLAGS}'" `"
+      r_concat "${buildsettings}" "CXXFLAGS='${OPTION_CXXFLAGS}'"
+      buildsettings="${RVAL}"
    fi
    if [ ! -z "${OPTION_LDFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "LDFLAGS='${OPTION_LDFLAGS}'" `"
+      r_concat "${buildsettings}" "LDFLAGS='${OPTION_LDFLAGS}'"
+      buildsettings="${RVAL}"
    fi
 
    if [ ! -z "${OPTION_OTHER_CFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "OTHER_CFLAGS='${OPTION_OTHER_CFLAGS}'" `"
+      r_concat "${buildsettings}" "OTHER_CFLAGS='${OPTION_OTHER_CFLAGS}'"
+      buildsettings="${RVAL}"
    fi
    if [ ! -z "${OPTION_OTHER_CXXFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "OTHER_CXXFLAGS='${OPTION_OTHER_CXXFLAGS}'" `"
+      r_concat "${buildsettings}" "OTHER_CXXFLAGS='${OPTION_OTHER_CXXFLAGS}'"
+      buildsettings="${RVAL}"
    fi
    if [ ! -z "${OPTION_OTHER_LDFLAGS}" ]
    then
-      buildsettings="`concat "${buildsettings}" "OTHER_LDFLAGS='${OPTION_OTHER_LDFLAGS}'" `"
+      r_concat "${buildsettings}" "OTHER_LDFLAGS='${OPTION_OTHER_LDFLAGS}'"
+      buildsettings="${RVAL}"
    fi
 
    if [ ! -z "${OPTION_PREFIX}" ]
    then
-      buildsettings="`concat "${buildsettings}" "DYLIB_INSTALL_NAME_BASE='${OPTION_PREFIX}'" `"
+      r_concat "${buildsettings}" "DYLIB_INSTALL_NAME_BASE='${OPTION_PREFIX}'"
+      buildsettings="${RVAL}"
    fi
 
    if [ "${OPTION_XCODE_HAS_PROPER_SKIP_INSTALL:-NO}" = "NO" ]
    then
-      buildsettings="`concat "${buildsettings}" "SKIP_INSTALL=NO" `"
+      r_concat "${buildsettings}" "SKIP_INSTALL=NO"
+      buildsettings="${RVAL}"
    fi
 
    #
@@ -272,37 +296,44 @@ EOF
    #
    local value
 
-   value="`convert_path_to_value "${OPTION_INCLUDE_PATH}"`"
+   r_convert_path_to_value "${OPTION_INCLUDE_PATH}"
+   value="${RVAL}"
    if [ ! -z "${value}" ]
    then
-      buildsettings="`concat "${buildsettings}" "HEADER_SEARCH_PATHS='${value}'" `"
+      r_concat "${buildsettings}" "HEADER_SEARCH_PATHS='${value}'"
+      buildsettings="${RVAL}"
    fi
 
-   value="`convert_path_to_value "${OPTION_LIB_PATH}"`"
+   r_convert_path_to_value "${OPTION_LIB_PATH}"
+   value="${RVAL}"
    if [ ! -z "${value}" ]
    then
-      buildsettings="`concat "${buildsettings}" "LIBRARY_SEARCH_PATHS='${value}'" `"
+      r_concat "${buildsettings}" "LIBRARY_SEARCH_PATHS='${value}'"
+      buildsettings="${RVAL}"
    fi
 
-   value="`convert_path_to_value "${OPTION_FRAMEWORKS_PATH}"`"
+   r_convert_path_to_value "${OPTION_FRAMEWORKS_PATH}"
+   value="${RVAL}"
    if [ ! -z "${value}" ]
    then
-      buildsettings="`concat "${buildsettings}" "FRAMEWORK_SEARCH_PATHS='${value}'" `"
+      r_concat "${buildsettings}" "FRAMEWORK_SEARCH_PATHS='${value}'"
+      buildsettings="${RVAL}"
    fi
 
    user_buildsettings="`emit_userdefined_definitions`"
    if [ ! -z "${user_buildsettings}" ]
    then
-      buildsettings="`concat "${buildsettings}" "${user_buildsettings}" `"
+      r_concat "${buildsettings}" "${user_buildsettings}"
+      buildsettings="${RVAL}"
    fi
 
    local logfile
 
    mkdir_if_missing "${logsdir}"
-   logfile="`build_log_name "${logsdir}" "${TOOLNAME}" "${srcdir}" \
+   r_build_log_name "${logsdir}" "${TOOLNAME}" "${srcdir}" \
                             "${configuration}" "${targetname}" "${schemename}" \
-                            "${sdk}" `" || exit 1
-
+                            "${sdk}"
+   logfile="${RVAL}"
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
    then
       logfile="`safe_tty`"

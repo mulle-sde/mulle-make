@@ -1,3 +1,8 @@
+## 0.6.0
+
+* use `r_` functions of mulle-bashfunctions 1.8.0
+
+
 ### 0.5.2
 
 * add `${DEPENDENCY_DIR}/${configuration}/bin` to BUILDPATH

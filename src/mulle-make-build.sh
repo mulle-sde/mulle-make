@@ -171,9 +171,9 @@ mkdir_build_directories()
 }
 
 
-determine_build_subdir()
+r_determine_build_subdir()
 {
-   log_entry "determine_build_subdir" "$@"
+   log_entry "r_determine_build_subdir" "$@"
 
    local configuration="$1"
    local sdk="$2"
@@ -183,14 +183,15 @@ determine_build_subdir()
 
    sdk=`echo "${sdk}" | "${SED:-sed}" 's/^\([a-zA-Z]*\).*$/\1/g'`
 
+   RVAL=""
    if [ "${sdk}" = "Default" ]
    then
       if [ "${configuration}" != "Release" ]
       then
-         echo "${configuration}"
+         RVAL="${configuration}"
       fi
    else
-      echo "${configuration}-${sdk}"
+      RVAL="${configuration}-${sdk}"
    fi
 }
 
@@ -275,11 +276,13 @@ build_with_configuration_sdk_preferences()
    fi
 
    local name
+   local RVAL
 
    name="${OPTION_PROJECT_NAME}"
    if [ -z "${name}" ]
    then
-      name="`fast_basename "${srcdir}"`"
+      r_fast_basename "${srcdir}"
+      name="${RVAL}"
    fi
 
    #
@@ -295,12 +298,14 @@ build_with_configuration_sdk_preferences()
 
    local build_subdir
 
-   build_subdir="`determine_build_subdir "${configuration}" "${sdk}"`" || exit 1
+   r_determine_build_subdir "${configuration}" "${sdk}"
+   build_subdir="${RVAL}"
 
    if [ -z "${builddir}" ]
    then
       buildroot="${srcdir}/build"
-      builddir="`filepath_concat "${buildroot}" "${build_subdir}" `"
+      r_filepath_concat "${buildroot}" "${build_subdir}"
+      builddir="${RVAL}"
    fi
 
    local logsdir
@@ -309,7 +314,8 @@ build_with_configuration_sdk_preferences()
    if [ -z "${logsdir}" ]
    then
       logsdir="${buildroot}/.log"
-      logsdir="`filepath_concat "${logsdir}" "${build_subdir}" `"
+      r_filepath_concat "${logsdir}" "${build_subdir}"
+      logsdir="${RVAL}"
    fi
 
    mkdir_build_directories "${builddir}" "${logsdir}"
@@ -354,11 +360,11 @@ build_with_configuration_sdk_preferences()
 #
 # used by plugins for environment calling cmake and friends.
 #
-mulle_make_env_flags()
+r_mulle_make_env_flags()
 {
    local env_flags
 
-   env_flags="`concat "${env_flags}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"`"
+   r_concat "${env_flags}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"
 
 #   if [ ! -z "${MULLE_MAKE_PROJECT_DIR}" ]
 #   then
@@ -369,8 +375,6 @@ mulle_make_env_flags()
 #   then
 #      env_flags="`concat "${env_flags}" "MULLE_MAKE_DESTINATION_DIR='${MULLE_MAKE_DESTINATION_DIR}'"`"
 #   fi
-
-   echo "${env_flags}"
 }
 
 
@@ -386,13 +390,16 @@ build()
    #
    # need these three defined before read_info_dir
    #
-   MULLE_MAKE_PROJECT_DIR="`simplified_absolutepath "${srcdir}"`"
-   MULLE_MAKE_DESTINATION_DIR="`simplified_absolutepath "${dstdir}"`"
+   r_simplified_absolutepath "${srcdir}"
+   MULLE_MAKE_PROJECT_DIR="${RVAL}"
+   r_simplified_absolutepath "${dstdir}"
+   MULLE_MAKE_DESTINATION_DIR="${RVAL}"
    MULLE_MAKE_INFO_DIR=
 
    if [ ! -z "${infodir}" ]
    then
-      MULLE_MAKE_INFO_DIR="`simplified_absolutepath "${infodir}"`"
+      r_simplified_absolutepath "${infodir}"
+      MULLE_MAKE_INFO_DIR="${RVAL}"
 
       read_info_dir "${infodir}"
    fi
@@ -740,7 +747,10 @@ xcodebuild"
             install_usage
          fi
 
-         build "install" "${srcdir}" "${dstdir}" "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
+         build "install" \
+               "${srcdir}" \
+               "${dstdir}" \
+               "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
       ;;
    esac
 }

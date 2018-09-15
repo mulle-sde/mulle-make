@@ -108,10 +108,6 @@ EOF
 
 
 #
-#
-#
-#
-
 # grep through project to get the options:_
 # egrep -h -o -w 'OPTION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | LC_ALL=C sort -u
 #
@@ -236,6 +232,7 @@ emit_definitions()
    local s
    local key
    local value
+   local RVAL  
 
    IFS="
 "
@@ -244,7 +241,8 @@ emit_definitions()
       IFS="${DEFAULT_IFS}"
 
       value="`eval echo "\\\$$key"`"
-      s="`concat "${s}" "${prefix}${key#OPTION_}${sep}'${value}'" "${concatsep}"`"
+      r_concat "${s}" "${prefix}${key#OPTION_}${sep}'${value}'" "${concatsep}"
+      s="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
 
@@ -258,7 +256,8 @@ emit_definitions()
       IFS="${DEFAULT_IFS}"
 
       value="`eval echo "\\\$$key"`"
-      s="`concat "${s}" "${prefix}${key#OPTION_}${plussep}'${pluspref}${value}'"`"
+      r_concat "${s}" "${prefix}${key#OPTION_}${plussep}'${pluspref}${value}'" "${concatsep}"
+      s="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
 
@@ -378,8 +377,10 @@ make_define_option()
    check_option_key_without_prefix "${key}" "${userkey}"
 
    local escaped
+   local RVAL
 
-   escaped="`escaped_doublequotes "${value}"`"
+   r_escaped_doublequotes "${value}"
+   escaped="${RVAL}"
    eval "OPTION_${key}=\"${escaped}\""
 
    log_fluff "OPTION_${key} defined as \"${value}\""
@@ -399,8 +400,10 @@ make_define_plusoption()
    check_option_key_without_prefix "${key}" "${userkey}"
 
    local escaped
+   local RVAL  
 
-   escaped="`escaped_doublequotes "${value}"`"
+   r_escaped_doublequotes "${value}"
+   escaped="${RVAL}"
    eval "OPTION_${key}=\"${escaped}\""
 
    log_fluff "OPTION_${key} defined as \"${value}\""

@@ -31,21 +31,21 @@
 MULLE_MAKE_PLUGIN_AUTOCONF_SH="included"
 
 
-find_autoconf()
+r_find_autoconf()
 {
    local toolname
 
    toolname="${OPTION_AUTOCONF:-${AUTOCONF:-autoconf}}"
-   verify_binary "${toolname}" "autoconf" "autoconf"
+   r_verify_binary "${toolname}" "autoconf" "autoconf"
 }
 
 
-find_autoreconf()
+r_find_autoreconf()
 {
    local toolname
 
    toolname="${OPTION_AUTORECONF:-${AUTORECONF:-autoreconf}}"
-   verify_binary "${toolname}" "autoreconf" "autoreconf"
+   r_verify_binary "${toolname}" "autoreconf" "autoreconf"
 }
 
 
@@ -53,8 +53,10 @@ tools_environment_autoconf()
 {
    tools_environment_make "no-ninja" "autoconf"
 
-   AUTOCONF="`find_autoconf`"
-   AUTORECONF="`find_autoreconf`"
+   r_find_autoconf
+   AUTOCONF="${RVAL}"
+   r_find_autoreconf
+   AUTORECONF="${RVAL}"
 }
 
 
@@ -74,12 +76,15 @@ build_autoconf()
    local sdk="$1"; shift
 
    local projectdir
+   local RVAL
 
-   projectdir="`dirname -- "${projectfile}"`"
+   r_fast_dirname "${projectfile}"
+   projectdir="${RVAL}"
 
    local env_common
 
-   env_common="`mulle_make_env_flags`"
+   r_mulle_make_env_flags
+   env_common="${RVAL}"
 
    local autoconf_flags
    local autoreconf_flags
@@ -96,21 +101,24 @@ build_autoconf()
 
    mkdir_if_missing "${logsdir}"
 
-   logfile1="`build_log_name "${logsdir}" "autoreconf" "${srcdir}" "${configuration}" "${sdk}"`"
-   logfile2="`build_log_name "${logsdir}" "autoconf" "${srcdir}" "${configuration}" "${sdk}"`"
+   r_build_log_name "${logsdir}" "autoreconf" "${srcdir}" "${configuration}" "${sdk}"
+   logfile1="${RVAL}"
+   r_build_log_name "${logsdir}" "autoconf" "${srcdir}" "${configuration}" "${sdk}"
+   logfile2="${RVAL}"
 
-   if [ "${MULLE_FLAG_VERBOSE_BUILD}" = "YES" ]
-   then
-      logfile1="`safe_tty`"
-      logfile2="`safe_tty`"
-   fi
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
+   else
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      then
+         logfile1="`safe_tty`"
+         logfile2="${logfile1}"
+      else
+         log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+      fi
    fi
-   log_verbose "Build log will be in \"${logfile1}\""
 
 
    (
@@ -189,23 +197,25 @@ test_autoconf()
 
    local projectfile
    local projectdir
+   local RVAL
 
-   projectfile="`find_nearest_matching_pattern "${srcdir}" "configure.ac"`"
-   if [ -z "${projectfile}" ]
+   if ! r_find_nearest_matching_pattern "${srcdir}" "configure.ac"
    then
-      projectfile="`find_nearest_matching_pattern "${srcdir}" "configure.in"`"
-      if [ -z "${projectfile}" ]
+      if ! r_find_nearest_matching_pattern "${srcdir}" "configure.in"
       then
          log_fluff "There is no autoconf project in \"${srcdir}\""
          return 1
       fi
    fi
+   projectfile="${RVAL}"
 
    if [ "${OPTION_AUTOCONF_CLEAN}" != "NO" ]
    then
       local configurefile
 
-      configurefile="`dirname -- "${projectfile}"`/configure"
+      r_fast_dirname "${projectfile}"
+      configurefile="${RVAL}/configure"
+
       if [ "${configurefile}" -nt "${projectfile}" ]
       then
          log_fluff "Autoconf has already run once, skip to configure..."
@@ -217,7 +227,7 @@ test_autoconf()
 
    if [ -z "${AUTOCONF}" ]
    then
-      log_warning "Found a `basename -- "${projectfile}"`, but ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
+      log_warning "Found a `fast_basename "${projectfile}"`, but ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
       return 1
    fi
 

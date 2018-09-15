@@ -32,34 +32,35 @@ MULLE_MAKE_PLUGIN_CMAKE_SH="included"
 
 
 
-platform_cmake_generator()
+r_platform_cmake_generator()
 {
    local makepath="$1"
 
    local name
 
-   name="`basename -- "${makepath}"`"
+   r_fast_basename "${makepath}"
+   name="${RVAL}"
    case "${name%.*}" in
       nmake)
-         echo "NMake Makefiles"
+         RVAL="NMake Makefiles"
       ;;
 
       mingw*|MINGW*)
-         echo "MinGW Makefiles"
+         RVAL="MinGW Makefiles"
       ;;
 
       ninja)
-         echo "Ninja"
+         RVAL="Ninja"
       ;;
 
       *)
          case "${MULLE_UNAME}" in
             mingw*)
-               echo "MSYS Makefiles"
+               RVAL="MSYS Makefiles"
             ;;
 
             *)
-               echo "Unix Makefiles"
+               RVAL="Unix Makefiles"
             ;;
          esac
       ;;
@@ -67,12 +68,12 @@ platform_cmake_generator()
 }
 
 
-find_cmake()
+r_find_cmake()
 {
    local toolname
 
    toolname="${OPTION_CMAKE:-${CMAKE:-cmake}}"
-   verify_binary "${toolname}" "cmake" "cmake"
+   r_verify_binary "${toolname}" "cmake" "cmake"
 }
 
 
@@ -81,29 +82,89 @@ tools_environment_cmake()
    tools_environment_make "" "cmake"
 
    local defaultgenerator
+   local RVAL
 
-   defaultgenerator="`platform_cmake_generator "${MAKE}"`"
-   CMAKE="`find_cmake`"
+   r_platform_cmake_generator "${MAKE}"
+   defaultgenerator="${RVAL}"
+
+   r_find_cmake
+
+   CMAKE="${RVAL}"
    CMAKE_GENERATOR="${OPTION_CMAKE_GENERATOR:-${defaultgenerator}}"
 }
 
 
-cmake_sdk_parameter()
+r_cmake_sdk_parameter()
 {
    local sdk="$1"
 
-   local sdkpath
-
+   RVAL=""
    case "${MULLE_UNAME}" in
       "darwin")
-         sdkpath=`compiler_sdk_parameter "${sdk}"` || exit 1
-         if [ ! -z "${sdkpath}" ]
+         r_compiler_sdk_parameter "${sdk}"
+         if [ ! -z "${RVAL}" ]
          then
-            log_fluff "Set cmake -DCMAKE_OSX_SYSROOT to \"${sdkpath}\""
-            echo "-DCMAKE_OSX_SYSROOT='${sdkpath}'"
+            log_fluff "Set cmake -DCMAKE_OSX_SYSROOT to \"${RVAL}\""
+            RVAL="-DCMAKE_OSX_SYSROOT='${RVAL}'"
          fi
       ;;
    esac
+}
+
+
+cmake_files_are_newer_than_makefile()
+{
+   log_entry "cmake_files_are_newer_than_makefile" "$@"
+
+   local absprojectdir="$1"
+   local makefile="$2"
+
+   if [ -z "${MULLE_MATCH_FIND_LOCATIONS}" ]
+   then
+      log_debug "MULLE_MATCH_FIND_LOCATIONS are undefined, so run cmake"
+      return 0
+   fi
+
+   if [ ! -f "${makefile}" ]
+   then
+      log_debug "Makefile \"${makefile}\" not found, so run cmake"
+      return 0
+   fi
+
+   local arguments
+   local location
+
+   IFS=":"
+   for location in ${MULLE_MATCH_FIND_LOCATIONS}
+   do
+      [ -z "${location}" ] && fail "Environment variable \
+MULLE_MATCH_FIND_LOCATIONS must not contain empty paths"
+
+      if ! is_absolutepath "${location}"
+      then
+         location="${absprojectdir}/${location}"
+      fi
+      if [ -e "${location}" ]
+      then
+         r_concat "${arguments}" "${location}"
+         arguments="${RVAL}"
+      fi
+   done
+   IFS="${DEFAULT_IFS}"
+
+   if [ -z "${arguments}" ]
+   then
+      log_debug "No location of MULLE_MATCH_FIND_LOCATIONS exists"
+      return 0
+   fi
+
+   arguments="${arguments} \\( -name CMakeLists.txt -o -name '*.cmake' \\)"
+   arguments="${arguments} -newer '${makefile}'"
+
+   matches="`eval_exekutor "find" "${arguments}"`"
+   log_debug "cmakefiles with changes: [${matches}]"
+
+   [ ! -z "${matches}" ]
 }
 
 
@@ -144,24 +205,35 @@ build_cmake()
    local cppflags
    local ldflags
 
-   cflags="`compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO" `" || exit 1
-   cxxflags="`compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO" `" || exit 1
-   cppflags="`compiler_cppflags_value "${OPTION_INCLUDE_PATH}" `"  || exit 1 # only cmake does OPTION_INCLUDE_PATH here
-   ldflags="`compiler_ldflags_value`" || exit 1
+   r_compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO"
+   cflags="${RVAL}"
+   r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO"
+   cxxflags="${RVAL}"
+   r_compiler_cppflags_value "${OPTION_INCLUDE_PATH}"
+   cppflags="${RVAL}"
+   r_compiler_ldflags_value
+   ldflags="${RVAL}"
+
+   __add_path_tool_flags
 
    if [ ! -z "${cppflags}" ]
    then
-      cflags="`concat "${cflags}" "${cppflags}"`"
-      cxxflags="`concat "${cxxflags}" "${cppflags}"`"
+      r_concat "${cflags}" "${cppflags}"
+      cflags="${RVAL}"
+      r_concat "${cxxflags}" "${cppflags}"
+      cxxflags="${RVAL}"
    fi
 
    local absbuilddir
    local absprojectdir
    local projectdir
 
-   projectdir="`fast_dirname "${projectfile}"`"
-   absprojectdir="$(simplified_absolutepath "${projectdir}")"
-   absbuilddir="$(simplified_absolutepath "${builddir}")"
+   r_fast_dirname "${projectfile}"
+   projectdir="${RVAL}"
+   r_simplified_absolutepath "${projectdir}"
+   absprojectdir="${RVAL}"
+   r_simplified_absolutepath "${builddir}"
+   absbuilddir="${RVAL}"
 
    case "${MULLE_UNAME}" in
       mingw*)
@@ -169,16 +241,24 @@ build_cmake()
       ;;
 
       *)
-         projectdir="`projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"`"
+         r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
+         projectdir="${RVAL}"
       ;;
    esac
 
-   log_debug "projectfile:   ${projectfile}"
-   log_debug "projectdir:    ${projectdir}"
-   log_debug "absprojectdir: ${absprojectdir}"
-   log_debug "absbuilddir:   ${absbuilddir}"
-   log_debug "projectdir:    ${projectdir}"
-   log_debug "PWD:           ${PWD}"
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "cflags:        ${cflags}"
+      log_trace2 "cppflags:      ${cppflags}"
+      log_trace2 "cxxflags:      ${cxxflags}"
+      log_trace2 "ldflags:       ${ldflags}"
+      log_trace2 "projectfile:   ${projectfile}"
+      log_trace2 "projectdir:    ${projectdir}"
+      log_trace2 "absprojectdir: ${absprojectdir}"
+      log_trace2 "absbuilddir:   ${absbuilddir}"
+      log_trace2 "projectdir:    ${projectdir}"
+      log_trace2 "PWD:           ${PWD}"
+   fi
 
    local cmake_flags
 
@@ -187,11 +267,12 @@ build_cmake()
    local maketarget
 
    case "${cmd}" in
-      build)
+      build|project)
          maketarget=
          if [ ! -z "${OPTION_PREFIX}" ]
          then
-            cmake_flags="`concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${OPTION_PREFIX}'"`"
+            r_concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${OPTION_PREFIX}'"
+            cmake_flags="${RVAL}"
          fi
       ;;
 
@@ -200,56 +281,68 @@ build_cmake()
          maketarget="install"
          if [ ! -z "${OPTION_PREFIX}" ]
          then
-            cmake_flags="`concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${OPTION_PREFIX}'"`"
+            r_concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${OPTION_PREFIX}'"
+            cmake_flags="${RVAL}"
          else
-            cmake_flags="`concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${dstdir}'"`"
+            r_concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${dstdir}'"
+            cmake_flags="${RVAL}"
          fi
       ;;
    esac
 
    if [ ! -z "${configuration}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_BUILD_TYPE='${configuration}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_BUILD_TYPE='${configuration}'"
+      cmake_flags="${RVAL}"
    fi
 
    local sdkparameter
 
-   sdkparameter="`cmake_sdk_parameter "${sdk}"`" || exit 1
+   r_cmake_sdk_parameter "${sdk}"
+   sdkparameter="${RVAL}"
 
    if [ -z "${sdkparameter}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "${sdkparameter}"`"
+      r_concat "${cmake_flags}" "${sdkparameter}"
+      cmake_flags="${RVAL}"
    fi
 
    if [ ! -z "${OPTION_CC}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_C_COMPILER='${OPTION_CC}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_C_COMPILER='${OPTION_CC}'"
+      cmake_flags="${RVAL}"
    fi
 
    if [ ! -z "${OPTION_CXX}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_CXX_COMPILER='${OPTION_CXX}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_CXX_COMPILER='${OPTION_CXX}'"
+      cmake_flags="${RVAL}"
    fi
 
    # this is now necessary, though undocumented apparently
    if [ ! -z "${LD}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_LINKER:PATH='${LD}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_LINKER:PATH='${LD}'"
+      cmake_flags="${RVAL}"
    fi
 
    if [ ! -z "${cflags}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_C_FLAGS='${cflags}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_C_FLAGS='${cflags}'"
+      cmake_flags="${RVAL}"
    fi
    if [ ! -z "${cxxflags}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_CXX_FLAGS='${cxxflags}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_CXX_FLAGS='${cxxflags}'"
+      cmake_flags="${RVAL}"
    fi
 
    if [ ! -z "${ldflags}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_SHARED_LINKER_FLAGS='${ldflags}'"`"
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_EXE_LINKER_FLAGS='${ldflags}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_SHARED_LINKER_FLAGS='${ldflags}'"
+      cmake_flags="${RVAL}"
+      r_concat "${cmake_flags}" "-DCMAKE_EXE_LINKER_FLAGS='${ldflags}'"
+      cmake_flags="${RVAL}"
    fi
 
    #
@@ -265,7 +358,8 @@ build_cmake()
       local munged
 
       munged="$(tr ':' ';' <<< "${OPTION_LIB_PATH}")"
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_LIBRARY_PATH='${munged}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_LIBRARY_PATH='${munged}'"
+      cmake_flags="${RVAL}"
    fi
 
    if [ ! -z "${OPTION_FRAMEWORKS_PATH}" ]
@@ -273,66 +367,96 @@ build_cmake()
       local munged
 
       munged="$(tr ':' ';' <<< "${OPTION_FRAMEWORKS_PATH}")"
-      cmake_flags="`concat "${cmake_flags}" "-DCMAKE_FRAMEWORK_PATH='${munged}'"`"
+      r_concat "${cmake_flags}" "-DCMAKE_FRAMEWORK_PATH='${munged}'"
+      cmake_flags="${RVAL}"
    fi
 
    local other_buildsettings
 
-   other_buildsettings="`emit_userdefined_definitions "-D " "=" "=" ""`"
+   other_buildsettings="`emit_userdefined_definitions "-D" "=" "=" ""`"
    if [ ! -z "${other_buildsettings}" ]
    then
-      cmake_flags="`concat "${cmake_flags}" "${other_buildsettings}"`"
+      r_concat "${cmake_flags}" "${other_buildsettings}"
+      cmake_flags="${RVAL}"
    fi
 
    local make_flags
 
    make_flags="${OPTION_MAKEFLAGS}"
 
+   #
    # hackish
+   # figure out if we need to run cmake, by looking for cmakefiles and
+   # checking if they are newer than the MAKEFILE
+   #
    case "${MAKE}" in
       *ninja)
+         makefile="${builddir}/build.ninja"
          if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
          then
-            make_flags="`concat "${make_flags}" "-v"`"
+            r_concat "${make_flags}" "-v"
+            make_flags="${RVAL}"
          fi
       ;;
 
       *make)
+         makefile="${builddir}/Makefile"
          if [ ! -z "${OPTION_CORES}" ]
          then
-            make_flags="-j '${OPTION_CORES}'"
+            r_concat "${make_flags}" "-j '${OPTION_CORES}'"
+            make_flags="${RVAL}"
          fi
 
          if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
          then
-            make_flags="`concat "${make_flags}" "VERBOSE=1"`"
+            r_concat "${make_flags}" "VERBOSE=1"
+            make_flags="${RVAL}"
          fi
       ;;
    esac
 
+   local run_cmake
+
+   run_cmake="YES"
+   if ! cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
+   then
+      run_cmake="NO"
+      log_fluff "cmake run skipped as no changes to cmake files have been detected"
+   fi
+
    local env_common
 
-   env_common="`mulle_make_env_flags`"
+   r_mulle_make_env_flags
+   env_common="${RVAL}"
 
    local logfile1
    local logfile2
+   local logname2
+
+   r_extensionless_basename "${MAKE}"
+   logname2="${RVAL}"
 
    mkdir_if_missing "${logsdir}"
 
-   logfile1="`build_log_name "${logsdir}" "cmake" "${srcdir}" "${configuration}" "${sdk}"`"
-   logfile2="`build_log_name "${logsdir}" "make" "${srcdir}" "${configuration}" "${sdk}"`"
+   r_build_log_name "${logsdir}" "cmake" "${srcdir}" "${configuration}" "${sdk}"
+   logfile1="${RVAL}"
 
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
-   then
-      logfile1="`safe_tty`"
-      logfile2="$logfile1"
-   fi
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   r_build_log_name "${logsdir}" "${logname2}" "${srcdir}" "${configuration}" "${sdk}"
+   logfile2="${RVAL}"
+
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
+   else
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      then
+         logfile1="`safe_tty`"
+         logfile2="${logfile1}"
+      else
+         log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+      fi
    fi
-   log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
 
    (
       exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
@@ -340,20 +464,23 @@ build_cmake()
       [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
       PATH="${BUILDPATH}"
       log_fluff "PATH temporarily set to $PATH"
+
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
       then
          env | sort >&2
       fi
 
-      if ! logging_redirect_eval_exekutor "${logfile1}" \
-               "${env_common}" \
-               "'${CMAKE}'" -G "'${CMAKE_GENERATOR}'" \
-                            "${cmake_flags}" \
-                            "'${projectdir}'"
+      if [ "${run_cmake}" = "YES" ]
       then
-         build_fail "${logfile1}" "cmake"
+         if ! logging_redirect_eval_exekutor "${logfile1}" \
+                  "${env_common}" \
+                  "'${CMAKE}'" -G "'${CMAKE_GENERATOR}'" \
+                               "${cmake_flags}" \
+                               "'${projectdir}'"
+         then
+            build_fail "${logfile1}" "cmake"
+         fi
       fi
-
 
       if ! logging_redirect_eval_exekutor "${logfile2}" \
                "${env_common}" \
@@ -376,13 +503,14 @@ test_cmake()
 
    local projectfile
    local projectdir
+   local RVAL
 
-   projectfile="`find_nearest_matching_pattern "${srcdir}" "CMakeLists.txt"`"
-   if [ ! -f "${projectfile}" ]
+   if ! r_find_nearest_matching_pattern "${srcdir}" "CMakeLists.txt"
    then
       log_fluff "There is no CMakeLists.txt file in \"${srcdir}\""
       return 1
    fi
+   projectfile="${RVAL}"
 
    case "${MULLE_UNAME}" in
       mingw*)
