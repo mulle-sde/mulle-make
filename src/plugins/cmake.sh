@@ -347,12 +347,17 @@ build_cmake()
 
    #
    # CMAKE_INCLUDE_PATH doesn't really do what one expects it would
-   # it's a setting for the rarely used find_file
+   # it's a setting for the rarely used find_file, but for mulle-c11 its
+   # still useful apparently
    #
-   #if [ ! -z "${includelines}" ]
-   #then
-   #   cmake_dirs="`concat "${cmake_dirs}" "-DCMAKE_INCLUDE_PATH='${includelines}'"`"
-   #fi
+   if [ ! -z "${OPTION_INCLUDE_PATH}" ]
+   then
+      local munged
+
+      munged="$(tr ':' ';' <<< "${OPTION_INCLUDE_PATH}")"
+      r_concat "${cmake_flags}" "-DCMAKE_INCLUDE_PATH='${munged}'"
+      cmake_flags="${RVAL}"
+   fi
    if [ ! -z "${OPTION_LIB_PATH}" ]
    then
       local munged

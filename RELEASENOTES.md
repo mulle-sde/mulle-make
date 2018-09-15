@@ -1,3 +1,7 @@
+### 0.6.1
+
+* export `CMAKE_INCLUDE_PATH` again for mulle-c11
+
 ## 0.6.0
 
 * use `r_` functions of mulle-bashfunctions 1.8.0
