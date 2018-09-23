@@ -317,8 +317,7 @@ build_meson()
    fi
 
    (
-      [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
-      PATH="${BUILDPATH}"
+      PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
       then

@@ -35,6 +35,11 @@ r_platform_c_compiler()
 {
    local name
 
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "CC:  ${OPTION_CC}"
+   fi
+
    name="${OPTION_CC}"
 
    case "${MULLE_UNAME}" in
@@ -52,6 +57,11 @@ r_platform_c_compiler()
 r_platform_cxx_compiler()
 {
    local name
+
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "CXX:  ${OPTION_CXX}"
+   fi
 
    name="${OPTION_CXX}"
 
@@ -131,10 +141,21 @@ r_compiler_cppflags_value()
 {
    log_entry "r_compiler_cppflags_value" "$@"
 
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "CPPFLAGS:       ${OPTION_CPPFLAGS}"
+      log_trace2 "OTHER_CPPFLAG:  ${OPTION_OTHER_CPPFLAGS}"
+   fi
+
    r_concat "${OPTION_CPPFLAGS}" "${OPTION_OTHER_CPPFLAGS}"
 
    case "${compiler%.*}" in
       c++|cc|gcc*|*clang*|"")
+         if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+         then
+            log_trace2 "OPTION_GCC_PREPROCESSOR_DEFINITIONS:  ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}"
+         fi
+
          IFS=","
          set -o noglob
          for i in ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}
@@ -157,6 +178,11 @@ _r_compiler_cflags_value()
    local value
    local result
    local i
+
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "WARNING_CFLAGS:  ${OPTION_WARNING_CFLAGS}"
+   fi
 
    result="${OPTION_WARNING_CFLAGS}"
 
@@ -185,6 +211,12 @@ r_compiler_cflags_value()
 
    local result
 
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "CFLAGS:          ${OPTION_CFLAGS}"
+      log_trace2 "OTHER_CFLAGS:    ${OPTION_OTHER_CFLAGS}"
+   fi
+
    r_concat "${OPTION_CFLAGS}" "${OPTION_OTHER_CFLAGS}"
    result="${RVAL}"
 
@@ -204,6 +236,12 @@ r_compiler_cxxflags_value()
    local addoptflags="$3"
 
    local result
+
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "CXXFLAGS:        ${OPTION_CXXFLAGS}"
+      log_trace2 "OTHER_CXXFLAGS:  ${OPTION_OTHER_CXXFLAGS}"
+   fi
 
    r_concat "${OPTION_CXXFLAGS}" "${OPTION_OTHER_CXXFLAGS}"
    result="${RVAL}"

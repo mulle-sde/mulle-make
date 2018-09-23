@@ -199,6 +199,7 @@ __add_path_tool_flags()
    local sdkpath
 
    r_compiler_sdk_parameter "${sdk}"
+
    sdkpath="${RVAL}"
    if [ ! -z "${sdkpath}" ]
    then
@@ -222,7 +223,8 @@ __add_path_tool_flags()
          headersearchpaths="${RVAL}"
       ;;
    esac
-   cppflags="`concat "${cppflags}" "${headersearchpaths}"`"
+
+   r_concat "${cppflags}" "${headersearchpaths}"
    cppflags="${RVAL}"
 
    local librarysearchpaths

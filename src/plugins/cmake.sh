@@ -207,9 +207,12 @@ build_cmake()
 
    r_compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO"
    cflags="${RVAL}"
-   r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO"
-   cxxflags="${RVAL}"
-   r_compiler_cppflags_value "${OPTION_INCLUDE_PATH}"
+   if [ "${OPTION_PROJECT_LANGUAGE}" != "c" ]
+   then
+      r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO"
+      cxxflags="${RVAL}"
+   fi
+   r_compiler_cppflags_value
    cppflags="${RVAL}"
    r_compiler_ldflags_value
    ldflags="${RVAL}"
@@ -220,8 +223,12 @@ build_cmake()
    then
       r_concat "${cflags}" "${cppflags}"
       cflags="${RVAL}"
-      r_concat "${cxxflags}" "${cppflags}"
-      cxxflags="${RVAL}"
+
+      if [ "${OPTION_PROJECT_LANGUAGE}" != "c" ]
+      then
+         r_concat "${cxxflags}" "${cppflags}"
+         cxxflags="${RVAL}"
+      fi
    fi
 
    local absbuilddir
@@ -257,7 +264,6 @@ build_cmake()
       log_trace2 "absprojectdir: ${absprojectdir}"
       log_trace2 "absbuilddir:   ${absbuilddir}"
       log_trace2 "projectdir:    ${projectdir}"
-      log_trace2 "PWD:           ${PWD}"
    fi
 
    local cmake_flags
@@ -296,6 +302,12 @@ build_cmake()
       cmake_flags="${RVAL}"
    fi
 
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "PREFIX:        ${OPTION_PREFIX}"
+      log_trace2 "CMAKEFLAGS:    ${OPTION_CMAKEFLAGS}"
+   fi
+
    local sdkparameter
 
    r_cmake_sdk_parameter "${sdk}"
@@ -307,41 +319,49 @@ build_cmake()
       cmake_flags="${RVAL}"
    fi
 
-   if [ ! -z "${OPTION_CC}" ]
+   if [ ! -z "${OPTION_CMAKE_C_COMPILER:-${OPTION_CC}}" ]
    then
-      r_concat "${cmake_flags}" "-DCMAKE_C_COMPILER='${OPTION_CC}'"
+      r_concat "${cmake_flags}" "-DCMAKE_C_COMPILER='${OPTION_CMAKE_C_COMPILER:-${OPTION_CC}}'"
       cmake_flags="${RVAL}"
    fi
 
-   if [ ! -z "${OPTION_CXX}" ]
+   if [ "${OPTION_PROJECT_LANGUAGE}" != "c" ]
    then
-      r_concat "${cmake_flags}" "-DCMAKE_CXX_COMPILER='${OPTION_CXX}'"
-      cmake_flags="${RVAL}"
+      if [ ! -z "${OPTION_CMAKE_CXX_COMPILER:-${OPTION_CXX}}" ]
+      then
+         r_concat "${cmake_flags}" "-DCMAKE_CXX_COMPILER='${OPTION_CMAKE_CXX_COMPILER:-${OPTION_CXX}}'"
+         cmake_flags="${RVAL}"
+      fi
    fi
 
    # this is now necessary, though undocumented apparently
-   if [ ! -z "${LD}" ]
+   if [ ! -z "${OPTION_CMAKE_LINKER:-${LD}}" ]
    then
       r_concat "${cmake_flags}" "-DCMAKE_LINKER:PATH='${LD}'"
       cmake_flags="${RVAL}"
    fi
 
-   if [ ! -z "${cflags}" ]
+   if [ ! -z "${OPTION_CMAKE_C_FLAGS:-${cflags}}" ]
    then
-      r_concat "${cmake_flags}" "-DCMAKE_C_FLAGS='${cflags}'"
-      cmake_flags="${RVAL}"
-   fi
-   if [ ! -z "${cxxflags}" ]
-   then
-      r_concat "${cmake_flags}" "-DCMAKE_CXX_FLAGS='${cxxflags}'"
+      r_concat "${cmake_flags}" "-DCMAKE_C_FLAGS='${OPTION_CMAKE_C_FLAGS:-${cflags}}'"
       cmake_flags="${RVAL}"
    fi
 
-   if [ ! -z "${ldflags}" ]
+   if [ ! -z "${OPTION_CMAKE_CXX_FLAGS:-${cxxflags}}" ]
    then
-      r_concat "${cmake_flags}" "-DCMAKE_SHARED_LINKER_FLAGS='${ldflags}'"
+      r_concat "${cmake_flags}" "-DCMAKE_CXX_FLAGS='${OPTION_CMAKE_CXX_FLAGS:-${cxxflags}}'"
       cmake_flags="${RVAL}"
-      r_concat "${cmake_flags}" "-DCMAKE_EXE_LINKER_FLAGS='${ldflags}'"
+   fi
+
+   if [ ! -z "${OPTION_CMAKE_SHARED_LINKER_FLAGS:-${ldflags}}" ]
+   then
+      r_concat "${cmake_flags}" "-DCMAKE_SHARED_LINKER_FLAGS='${OPTION_CMAKE_SHARED_LINKER_FLAGS:-${ldflags}}'"
+      cmake_flags="${RVAL}"
+   fi
+
+   if [ ! -z "${OPTION_CMAKE_EXE_LINKER_FLAGS:-${ldflags}}" ]
+   then
+      r_concat "${cmake_flags}" "-DCMAKE_EXE_LINKER_FLAGS='${OPTION_CMAKE_EXE_LINKER_FLAGS:-${ldflags}}'"
       cmake_flags="${RVAL}"
    fi
 
@@ -350,29 +370,44 @@ build_cmake()
    # it's a setting for the rarely used find_file, but for mulle-c11 its
    # still useful apparently
    #
-   if [ ! -z "${OPTION_INCLUDE_PATH}" ]
-   then
-      local munged
+   local value
 
-      munged="$(tr ':' ';' <<< "${OPTION_INCLUDE_PATH}")"
-      r_concat "${cmake_flags}" "-DCMAKE_INCLUDE_PATH='${munged}'"
+   value=${OPTION_CMAKE_INCLUDE_PATH:-${OPTION_INCLUDE_PATH}}
+   if [ ! -z "${value}" ]
+   then
+      if [ -z "${OPTION_CMAKE_INCLUDE_PATH}" ] || is_plus_key "CMAKE_INCLUDE_PATH"
+      then
+         value="$(tr ':' ';' <<< "${OPTION_INCLUDE_PATH}")"
+         r_concat "${OPTION_CMAKE_INCLUDE_PATH}" "${value}"
+         value="${RVAL}"
+      fi
+      r_concat "${cmake_flags}" "-DCMAKE_INCLUDE_PATH='${value}'"
       cmake_flags="${RVAL}"
    fi
-   if [ ! -z "${OPTION_LIB_PATH}" ]
-   then
-      local munged
 
-      munged="$(tr ':' ';' <<< "${OPTION_LIB_PATH}")"
-      r_concat "${cmake_flags}" "-DCMAKE_LIBRARY_PATH='${munged}'"
+   value=${OPTION_CMAKE_LIBRARY_PATH:-${OPTION_LIB_PATH}}
+   if [ ! -z "${OPTION_CMAKE_LIBRARY_PATH:-${OPTION_LIB_PATH}}" ]
+   then
+      if [ -z "${OPTION_CMAKE_LIBRARY_PATH}"  ]
+      then
+         value="$(tr ':' ';' <<< "${OPTION_LIB_PATH}")"
+         r_concat "${OPTION_CMAKE_LIBRARY_PATH}" "${value}"
+         value="${RVAL}"
+      fi
+      r_concat "${cmake_flags}" "-DCMAKE_LIBRARY_PATH='${value}'"
       cmake_flags="${RVAL}"
    fi
 
-   if [ ! -z "${OPTION_FRAMEWORKS_PATH}" ]
+   value=${OPTION_CMAKE_FRAMEWORK_PATH:-${OPTION_FRAMEWORKS_PATH}}
+   if [ ! -z "${value}" ]
    then
-      local munged
-
-      munged="$(tr ':' ';' <<< "${OPTION_FRAMEWORKS_PATH}")"
-      r_concat "${cmake_flags}" "-DCMAKE_FRAMEWORK_PATH='${munged}'"
+      if [ -z "${OPTION_CMAKE_FRAMEWORK_PATH}" ] || is_plus_key "CMAKE_FRAMEWORK_PATH"
+      then
+         value="$(tr ':' ';' <<< "${OPTION_FRAMEWORKS_PATH}")"
+         r_concat "${OPTION_CMAKE_FRAMEWORK_PATH}" "${value}"
+         value="${RVAL}"
+      fi
+      r_concat "${cmake_flags}" "-DCMAKE_FRAMEWORK_PATH='${value}'"
       cmake_flags="${RVAL}"
    fi
 
@@ -466,8 +501,7 @@ build_cmake()
    (
       exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
 
-      [ -z "${BUILDPATH}" ] && internal_fail "BUILDPATH not set"
-      PATH="${BUILDPATH}"
+      PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
 
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]

@@ -93,6 +93,7 @@ EOF
    --log-dir <dir>            : specify log directory
    --no-determine-sdk         : don't try to figure out the default SDK
    --project-name <name>      : explicitly set project name
+   --project-language <c|cpp> : set project language
    --sdk <name>               : SDK to use (Default)
    --tool-preferences <list>  : tool preference order. Tools are separated by ','
 EOF
@@ -324,17 +325,6 @@ build_with_configuration_sdk_preferences()
    builddir="`canonicalize_path "${builddir}"`"
    logsdir="`canonicalize_path "${logsdir}"`"
 
-   local BUILDPATH
-   local configbin
-
-   BUILDPATH="${PATH}"
-   configbin="${DEPENDENCY_DIR}/${configuration}/bin"
-   if [ -d "${configbin}" ]
-   then
-      log_debug "Added \""${configbin}"\" to BUILDPATH"
-      BUILDPATH="${configbin}:${BUILDPATH}"
-   fi
-
    local rval
    local preference
 
@@ -506,6 +496,8 @@ xcodebuild"
    local OPTION_LOG_DIR
    local OPTION_PREFIX
    local OPTION_INFO_DIR="DEFAULT"
+   local OPTION_ALLOW_SCRIPT="DEFAULT"
+
    local argument
 
    while read -r argument
@@ -513,6 +505,14 @@ xcodebuild"
       case "${argument}" in
          -h*|--help|help)
             "${usage}"
+         ;;
+
+         --allow-script)
+            OPTION_ALLOW_SCRIPT="YES"
+         ;;
+
+         --no-allow-script)
+            OPTION_ALLOW_SCRIPT="NO"
          ;;
 
          --allow-unknown-option)
@@ -549,6 +549,10 @@ xcodebuild"
 
          -n|--name|--project-name)
             read -r OPTION_PROJECT_NAME || fail "missing argument to \"${argument}\""
+         ;;
+
+         --language|--project-language)
+            read -r OPTION_PROJECT_LANGUAGE || fail "missing argument to \"${argument}\""
          ;;
 
          --tools|--tool-preferences)
@@ -618,6 +622,10 @@ xcodebuild"
             read -r OPTION_SDK || fail "missing argument to \"${argument}\""
          ;;
 
+         --path)
+            read -r OPTION_PATH || fail "missing argument to \"${argument}\""
+         ;;
+
          -D*+=*)
             if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
             then
@@ -685,6 +693,15 @@ xcodebuild"
    if [ -z "${MULLE_MAKE_PLUGIN_SH}" ]
    then
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-plugin.sh" || return 1
+   fi
+
+   if [ "${OPTION_ALLOW_SCRIPT}" = "YES" ]
+   then
+      if ! grep -x -q script <<< "${OPTION_TOOL_PREFERENCES}"
+      then
+         OPTION_TOOL_PREFERENCES="${OPTION_TOOL_PREFERENCES}
+script"
+      fi
    fi
 
    local srcdir
