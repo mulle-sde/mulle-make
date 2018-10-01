@@ -437,16 +437,16 @@ build_cmake()
             r_concat "${make_flags}" "-v"
             make_flags="${RVAL}"
          fi
+
+         if [ ! -z "${OPTION_LOAD}" ]
+         then
+            r_concat "${make_flags}" "-l '${OPTION_LOAD}'"
+            make_flags="${RVAL}"
+         fi
       ;;
 
       *make)
          makefile="${builddir}/Makefile"
-         if [ ! -z "${OPTION_CORES}" ]
-         then
-            r_concat "${make_flags}" "-j '${OPTION_CORES}'"
-            make_flags="${RVAL}"
-         fi
-
          if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
          then
             r_concat "${make_flags}" "VERBOSE=1"
@@ -454,6 +454,12 @@ build_cmake()
          fi
       ;;
    esac
+
+   if [ ! -z "${OPTION_CORES}" ]
+   then
+      r_concat "${make_flags}" "-j '${OPTION_CORES}'"
+      make_flags="${RVAL}"
+   fi
 
    local run_cmake
 

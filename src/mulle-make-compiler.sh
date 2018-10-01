@@ -255,6 +255,12 @@ r_compiler_ldflags_value()
 {
    log_entry "r_compiler_ldflags_value" "$@"
 
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   then
+      log_trace2 "LDFLAGS:         ${OPTION_LDFLAGS}"
+      log_trace2 "OTHER_LDFLAGS:   ${OPTION_OTHER_LDFLAGS}"
+   fi
+
    r_concat "${OPTION_LDFLAGS}" "${OPTION_OTHER_LDFLAGS}"
 }
 

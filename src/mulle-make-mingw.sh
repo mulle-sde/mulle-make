@@ -32,6 +32,8 @@
 MULLE_MAKE_MINGW_SH="included"
 
 
+# DO NOT USE MULLE_BASHFUNCTIONS HERE
+
 find_msvc_executable()
 {
    local exe="${1:-cl.exe}"
@@ -57,7 +59,7 @@ find_msvc_executable()
             executable="${path}/${exe}"
             if [ -x "${executable}" ]
             then
-               log_fluff "MSVC ${name} found as ${C_RESET}${executable}"
+               echo "MSVC ${name} found as ${C_RESET}${executable}" >&2
                echo "${executable}"
                break
             fi

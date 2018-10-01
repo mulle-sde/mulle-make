@@ -175,7 +175,7 @@ tools_environment_make()
       local ourmake
       local RVAL
 
-      r_platform_make "${CC}" "${plugin}"
+      r_platform_make "${OPTION_CC}" "${plugin}"
       ourmake="${RVAL}"
 
       r_find_make "${ourmake}" "${noninja}"

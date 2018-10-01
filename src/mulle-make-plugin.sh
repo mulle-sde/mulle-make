@@ -30,6 +30,7 @@
 #
 MULLE_MAKE_PLUGIN_SH="included"
 
+
 build_list_plugins()
 {
    log_entry "build_list_plugins"
@@ -38,12 +39,14 @@ build_list_plugins()
 
    local pluginpath
    local pluginname
+   local RVAL
 
    IFS="
 "
    for pluginpath in `exekutor ls -1 "${MULLE_MAKE_LIBEXEC_DIR}/plugins/"*.sh`
    do
-      pluginname="`basename -- "${pluginpath}" .sh`"
+      r_extensionless_basename "${pluginpath}"
+      pluginname="${RVAL}"
 
       # don't load xcodebuild on non macos platforms
       case "${MULLE_UNAME}" in

@@ -61,13 +61,13 @@ EOF
       darwin)
          cat <<EOF
    --frameworks-path <path>   : specify Frameworks search PATH, separated by :
-   -j                         : number of cores parameter for make (${CORES})
+   -j <cores>                 : number of cores parameter for make (${CORES})
 EOF
       ;;
 
       *)
          cat <<EOF
-   -j                         : number of cores parameter for make (${CORES})
+   -j <cores>                 : number of cores parameter for make (${CORES})
 EOF
       ;;
    esac
@@ -87,8 +87,7 @@ EOF
 
    cat <<EOF
    --configuration <name>     : configuration to build like Debug or Release
-   -K                         : always clean before building
-   -k                         : don't clean before building
+   --clean                    : always clean before building
    --no-ninja                 : prefer make over ninja
    --log-dir <dir>            : specify log directory
    --no-determine-sdk         : don't try to figure out the default SDK
@@ -497,6 +496,8 @@ xcodebuild"
    local OPTION_PREFIX
    local OPTION_INFO_DIR="DEFAULT"
    local OPTION_ALLOW_SCRIPT="DEFAULT"
+   local OPTION_CORES
+   local OPTION_LOAD
 
    local argument
 
@@ -547,7 +548,7 @@ xcodebuild"
             OPTION_DETERMINE_SDK="NO"
          ;;
 
-         -n|--name|--project-name)
+         --name|--project-name)
             read -r OPTION_PROJECT_NAME || fail "missing argument to \"${argument}\""
          ;;
 
@@ -572,15 +573,15 @@ xcodebuild"
          #
          # with shortcuts
          #
-         -b|--build-dir)
+         --build-dir)
             read -r OPTION_BUILD_DIR || fail "missing argument to \"${argument}\""
          ;;
 
-         -c|--configuration)
+         --configuration)
             read -r OPTION_CONFIGURATION || fail "missing argument to \"${argument}\""
          ;;
 
-         -i|--info-dir|--makeinfo-dir)
+         --info-dir|--makeinfo-dir)
             read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
          ;;
 
@@ -594,19 +595,29 @@ xcodebuild"
             esac
          ;;
 
-         -k|--clean)
+         --clean)
             OPTION_CLEAN_BEFORE_BUILD="YES"
          ;;
 
-         -K|--no-clean)
+         --no-clean)
             OPTION_CLEAN_BEFORE_BUILD="NO"
          ;;
 
-         -l|--log-dir)
+         --log-dir)
             read -r OPTION_LOG_DIR || fail "missing argument to \"${argument}\""
          ;;
 
-         -p|--prefix)
+         -l|--load)
+            read -r OPTION_LOAD || fail "missing argument to \"${argument}\""
+
+            case "${MULLE_UNAME}" in
+               mingw)
+                   "${usage}"
+               ;;
+            esac
+         ;;
+
+         --prefix)
             read -r OPTION_PREFIX || fail "missing argument to \"${argument}\""
             case "${OPTION_PREFIX}" in
                ""|/*)
@@ -618,7 +629,7 @@ xcodebuild"
             esac
          ;;
 
-         -s|--sdk)
+         --sdk)
             read -r OPTION_SDK || fail "missing argument to \"${argument}\""
          ;;
 
