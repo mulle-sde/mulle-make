@@ -28,9 +28,9 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_LIST_SH="included"
+MULLE_MAKE_PLUGIN_SH="included"
 
-list_usage()
+plugins_usage()
 {
    cat <<EOF >&2
 Usage:
@@ -43,9 +43,9 @@ EOF
 }
 
 
-make_list_main()
+make_plugins_main()
 {
-   log_entry "make_list_main" "$@"
+   log_entry "make_plugins_main" "$@"
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 

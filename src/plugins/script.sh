@@ -45,8 +45,8 @@ r_build_script_absolutepath()
       return
    fi
 
-   # use MULLE_MAKE_INFO_DIR otherwise PWD
-   r_absolutepath "${OPTION_BUILD_SCRIPT}" "${MULLE_MAKE_INFO_DIR}"
+   # use MULLE_MAKE_DEFINITION_DIR otherwise PWD
+   r_absolutepath "${OPTION_BUILD_SCRIPT}" "${MULLE_MAKE_DEFINITION_DIR}"
 }
 
 

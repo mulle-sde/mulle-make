@@ -39,7 +39,16 @@ make_definition_usage()
 Usage:
    ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} [option] <command>
 
-   Examine and change build settings.
+   Examine and change build definitions. A "definition" is a flag passed to the
+   buildtool. Specify a set of definitions with a "definition directory".
+   These dictionaries are conveniently maintained with this command.
+
+   Definitions maintained this way are persistent and shareable with other users.
+
+   There is also the possiblity of adding definitions on the commandline
+   during the build step. These definitions are useful for per-project tweaks,
+   that should not affect downstream users.
+   (see \`${MULLE_USAGE_NAME} project -h\` for more information).
 
 Commands:
    get   :  get a specific value
@@ -48,7 +57,7 @@ Commands:
    set   :  set a specific value
 
 Options:
-   --info-dir <path>  : specify info directory to edit (.mulle-make)
+   --definition-dir <path>  : specify info directory to edit (.mulle-make)
 EOF
    exit 1
 }
@@ -239,23 +248,23 @@ is_plus_key()
 #
 # defined for xcodebuild by default
 #
-emit_definitions()
+r_print_definitions()
 {
-   log_entry "emit_definitions" "$@"
+   log_entry "r_print_definitions" "$@"
 
-   local keys="$1"
-   local pluskeys="$2"
+   local keys="$1"      # list of -DFOO=XX keys separated by linefeed
+   local pluskeys="$2"  # list of -DFOO+=XX keys separated by linefeed
 
-   local prefix="$3"
+   local prefix="$3"    # prefix to prepend to key
    local sep="$4"
    local plussep="$5"
    local pluspref="$6"
-   local concatsep="$7"
+   local quote="$7"
+   local concatsep="$8"
 
    local s
    local key
    local value
-   local RVAL
 
    IFS="
 "
@@ -264,7 +273,7 @@ emit_definitions()
       IFS="${DEFAULT_IFS}"
 
       value="`eval echo "\\\$$key"`"
-      r_concat "${s}" "${prefix}${key#OPTION_}${sep}'${value}'" "${concatsep}"
+      r_concat "${s}" "${prefix}${key#OPTION_}${sep}${quote}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
@@ -279,14 +288,14 @@ emit_definitions()
       IFS="${DEFAULT_IFS}"
 
       value="`eval echo "\\\$$key"`"
-      r_concat "${s}" "${prefix}${key#OPTION_}${plussep}'${pluspref}${value}'" "${concatsep}"
+      r_concat "${s}" "${prefix}${key#OPTION_}${plussep}${quote}${pluspref}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
 
-   log_debug "User definition: ${s}"
+   RVAL="$s"
 
-   printf "%s" "${s}"
+   log_debug "User definition: ${s}"
 }
 
 
@@ -325,8 +334,9 @@ emit_userdefined_definitions()
       pluskeys="`all_userdefined_unknown_plus_keys`"
    fi
 
-   emit_definitions "${keys}" "${pluskeys}" \
-                     "${prefix}" "${sep}" "${plussep}" "${pluspref}" " "
+   r_print_definitions "${keys}" "${pluskeys}" \
+                       "${prefix}" "${sep}" "${plussep}" "${pluspref}" "\'" " "
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -335,7 +345,6 @@ check_option_key_without_prefix()
    log_entry "check_option_key_without_prefix" "$@"
 
    local key="$1"
-   local userkey="${2:-$1}"
 
    case "${key}" in
       "")
@@ -343,7 +352,7 @@ check_option_key_without_prefix()
       ;;
 
       OPTION_*)
-         fail "Key \"${userkey}\" must not have OPTION_ prefix"
+         fail "Key \"${key}\" must not have OPTION_ prefix"
       ;;
    esac
 
@@ -352,10 +361,11 @@ check_option_key_without_prefix()
    identifier="`printf "%s" "${key}" | tr -c 'a-zA-Z0-9' '_' | tr 'a-z' 'A-Z'`"
    if [ "${key}" != "${identifier}" ]
    then
-      fail "\"${userkey}\" is not a proper upcase identifier. Suggestion: \"${identifier}\""
+      fail "\"${key}\" is not a proper upcase identifier. Suggestion: \"${identifier}\""
    fi
 
    local match
+   local escaped
 
    if ! fgrep -q -s -x "OPTION_${key}" <<< "${KNOWN_OPTIONS}"
    then
@@ -368,7 +378,7 @@ check_option_key_without_prefix()
          ;;
       esac
 
-      message="\"${userkey}\" is not a known option"
+      message="\"${key}\" is not a known option"
       if [ "${OPTION_ALLOW_UNKNOWN_OPTION}" != "NO" ]
       then
          log_fluff "${message}. Maybe OK, especially with cmake and xcode."
@@ -376,11 +386,23 @@ check_option_key_without_prefix()
          fail "${message}${hint}"
       fi
    fi
+}
 
-   if LC_ALL="C" fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
-      LC_ALL="C" fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
+
+check_key_without_prefix_exists()
+{
+   log_entry "check_key_without_prefix_exists" "$@"
+
+   local key="$1"
+   local option="$2"
+
+   if [ -z "${option}" ]
    then
-      log_warning "\"${key}\" has already been defined"
+      if LC_ALL="C" fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
+         LC_ALL="C" fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
+      then
+         log_warning "\"${key}\" has already been defined"
+      fi
    fi
 }
 
@@ -389,26 +411,105 @@ check_option_key_without_prefix()
 # this defines a non-exported variable with prefix
 # OPTION_
 #
-make_define_option()
+_make_define_option()
 {
-   log_entry "make_define_option" "$@"
+   log_entry "_make_define_option" "$@"
 
    local key="$1"
    local value="$2"
-   local userkey="$3"
+   local option="$3"
 
-   check_option_key_without_prefix "${key}" "${userkey}"
+   check_option_key_without_prefix "${key}"
+   check_key_without_prefix_exists "${key}" "${option}"
 
+   local oldvalue
    local escaped
    local RVAL
+
+   if [ ! -z "${option}" ]
+   then
+      oldvalue="`eval echo "\\\$OPTION_$key"`"
+      case "${option}" in
+         'ifempty')
+            if [ ! -z "${oldvalue}" ]
+            then
+               log_debug "Skip as ${key} is already defined as \"${oldvalue}"
+               return 1
+            fi
+         ;;
+
+         'remove')
+            if [ -z "${oldvalue}" ]
+            then
+               log_debug "${key} is already empty"
+               return 1
+            fi
+
+            r_escaped_sed_pattern "${value}"
+            value="`sed "s/${RVAL}//g" <<< "${oldvalue}"`"
+
+            if [ "${value}" = "${oldvalue}" ]
+            then
+               log_debug "Remove did not remove anything"
+            fi
+         ;;
+
+         'append')
+            r_concat "${oldvalue}" "${value}"
+            value="${RVAL}"
+         ;;
+
+         'append0')
+            value="${oldvalue}${value}"
+         ;;
+      esac
+   fi
 
    r_escaped_doublequotes "${value}"
    escaped="${RVAL}"
    eval "OPTION_${key}=\"${escaped}\""
 
    log_fluff "OPTION_${key} defined as \"${value}\""
+}
 
-   DEFINED_OPTIONS="`add_line "${DEFINED_OPTIONS}" "OPTION_${key}"`"
+
+
+make_undefine_option()
+{
+   log_entry "make_undefine_option" "$@"
+
+   local key="$1"
+
+   unset "OPTION_${key}"
+
+   DEFINED_OPTIONS="`fgrep -v -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" `"
+   DEFINED_PLUS_OPTIONS="`fgrep -v -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}" `"
+}
+
+
+
+make_define_option()
+{
+   log_entry "make_define_option" "$@"
+
+   local key="$1"
+
+   local RVAL
+
+   if ! _make_define_option "$@"
+   then
+      return 1
+   fi
+
+   # ensure append doesn't duplicate
+   case "${DEFINED_OPTIONS}" in
+      "OPTION_${key}")
+         DEFINED_OPTIONS="`fgrep -v -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" `"
+      ;;
+   esac
+
+   r_add_line "${DEFINED_OPTIONS}" "OPTION_${key}"
+   DEFINED_OPTIONS="${RVAL}"
 }
 
 
@@ -417,21 +518,21 @@ make_define_plusoption()
    log_entry "make_define_plusoption" "$@"
 
    local key="$1"
-   local value="$2"
-   local userkey="$3"
 
-   check_option_key_without_prefix "${key}" "${userkey}"
+   if ! _make_define_option "$@"
+   then
+      return 1
+   fi
 
-   local escaped
-   local RVAL
+   # ensure append doesn't duplicate
+   case "${DEFINED_PLUS_OPTIONS}" in
+      "OPTION_${key}")
+         DEFINED_PLUS_OPTIONS="`fgrep -v -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}" `"
+      ;;
+   esac
 
-   r_escaped_doublequotes "${value}"
-   escaped="${RVAL}"
-   eval "OPTION_${key}=\"${escaped}\""
-
-   log_fluff "OPTION_${key} defined as \"${value}\""
-
-   DEFINED_PLUS_OPTIONS="`add_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"`"
+   r_add_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"
+   DEFINED_PLUS_OPTIONS="${RVAL}"
 }
 
 
@@ -440,6 +541,7 @@ make_define_option_keyvalue()
    log_entry "make_define_option_keyvalue" "$@"
 
    local keyvalue="$1"
+   local option="$2"
 
    if [ -z "${keyvalue}" ]
    then
@@ -449,15 +551,12 @@ make_define_option_keyvalue()
    local key
    local value
 
-   key="`echo "${keyvalue}" | cut -d= -f1`"
-   if [ -z "${key}" ]
+   key="${keyvalue%%=*}"
+   if [ "${key}" != "${keyvalue}" ]
    then
-      key="${keyvalue}"
-   else
-      value="`echo "${keyvalue}" | cut -d= -f2-`"
+      value="${keyvalue#*=}"
    fi
-
-   make_define_option "${key}" "${value}"
+   make_define_option "${key}" "${value}" "${option}"
 }
 
 
@@ -466,6 +565,7 @@ make_define_plusoption_keyvalue()
    log_entry "make_define_plusoption_keyvalue" "$@"
 
    local keyvalue="$1"
+   local option="$2"
 
    if [ -z "${keyvalue}" ]
    then
@@ -475,15 +575,13 @@ make_define_plusoption_keyvalue()
    local key
    local value
 
-   key="`echo "${keyvalue}" | cut '-d+' -f1`"
-   if [ -z "${key}" ]
+   key="${keyvalue%%+=*}"
+   if [ "${key}" != "${keyvalue}" ]
    then
-      key="${keyvalue}"
-   else
-      value="`echo "${keyvalue}" | cut '-d=' -f2-`"
+      value="${keyvalue#*+=}"
    fi
 
-   make_define_plusoption "${key}" "${value}"
+   make_define_plusoption "${key}" "${value}" "${option}"
 }
 
 
@@ -493,28 +591,21 @@ read_defines_dir()
 
    local directory="$1"
    local callback="$2"
+   local option="$3"
 
    local key
    local value
    local filename
+
+   log_fluff "Searching in \"${directory}\" for definitions (${option})"
 
    shopt -s nullglob
    for filename in "${directory}"/[A-Z_][A-Z0-9_]*
    do
       shopt -u nullglob
 
-      if [ ! -f "${filename}" ]
-      then
-         continue
-      fi
-
-      value="`egrep -v '^#' "${filename}"`"
-#      if [ -z "${value}" ]
-#      then
-#         continue
-#      fi
-
-      key="`basename -- "${filename}"`"
+      r_fast_basename "${filename}"
+      key="${RVAL}"
 
       # ignore files with an extension
       case "${key}" in
@@ -523,10 +614,21 @@ read_defines_dir()
          ;;
       esac
 
+      if [ ! -f "${filename}" ]
+      then
+         continue
+      fi
+
       # case insensitive fs need this
       key="$(tr '[a-z]' '[A-Z]' <<< "${key}")"
 
-      "${callback}" "$(tr '[a-z]' '[A-Z]' <<< "${key}")" "${value}" "${key}"
+      value="`egrep -v '^#' "${filename}"`"
+#      if [ -z "${value}" ]
+#      then
+#         continue
+#      fi
+
+      "${callback}" "${key}" "${value}" "${option}"
    done
    shopt -u nullglob
 }
@@ -535,43 +637,76 @@ read_defines_dir()
 #
 # it is assumed that the caller (mulle-craft) resolved the UNAME already
 #
-read_info_dir()
+read_definition_dir()
 {
-   log_entry "read_info_dir" "$@"
+   log_entry "read_definition_dir" "$@"
 
-   local infodir="$1"
+   local directory="$1"
 
-   [ "${infodir}" = "NONE" ] && return
+   [ "${directory}" = "NONE" ] && return
 
-   if [ ! -d "${infodir}" ]
+   if [ ! -d "${directory}" ]
    then
-      if [ ! -z "${infodir}" ]
+      if [ ! -z "${directory}" ]
       then
-         log_fluff "There is no \"${infodir}\" here ($PWD)"
+         log_fluff "There is no \"${directory}\" here ($PWD)"
       fi
       return
    fi
 
-   log_verbose "Read info ${C_RESET_BOLD}${infodir}${C_VERBOSE}"
+   log_verbose "Read info ${C_RESET_BOLD}${directory}${C_VERBOSE}"
 
-   infodir="${infodir}"
+   directory="${directory}"
 
-   read_defines_dir "${infodir}/set"  "make_define_option"
-   read_defines_dir "${infodir}/plus" "make_define_plusoption"
+   read_defines_dir "${directory}/set/remove"   "make_define_option" "remove"
+   read_defines_dir "${directory}/set/ifempty"  "make_define_option" "ifempty"
+   read_defines_dir "${directory}/set/append"   "make_define_option" "append"
+   read_defines_dir "${directory}/set/append0"  "make_define_option" "append0"
+   read_defines_dir "${directory}/set"          "make_define_option"
+
+   read_defines_dir "${directory}/plus/remove"  "make_define_plusoption" "remove"
+   read_defines_dir "${directory}/plus/ifempty" "make_define_plusoption" "ifempty"
+   read_defines_dir "${directory}/plus/append"  "make_define_plusoption" "append"
+   read_defines_dir "${directory}/plus/append0" "make_define_plusoption" "append0"
+   read_defines_dir "${directory}/plus"         "make_define_plusoption"
 }
+
+
+remove_other_keyfiles_than()
+{
+   log_entry "remove_other_keyfiles_than" "$@"
+
+   local keyfile="$1" ; shift
+
+   local otherfile
+
+   while [ $# -ne 0 ]
+   do
+      otherfile="$1" ; shift
+
+      if [ "${otherfile}" = "${keyfile}" ]
+      then
+         continue
+      fi
+
+      remove_file_if_present "${otherfile}"
+   done
+}
+
 
 #
 # Commands
 #
 
-set_info_dir()
+set_definition_dir()
 {
-   log_entry "set_info_dir" "$@"
+   log_entry "set_definition_dir" "$@"
 
-   local info_dir="$1"
+   local directory="$1"
 
    local argument
    local OPTION_ADDITIVE="NO"
+   local OPTION_MODIFIER=
 
    while read -r argument
    do
@@ -582,6 +717,10 @@ set_info_dir()
 
          -+|--additive)
             OPTION_ADDITIVE="YES"
+         ;;
+
+         --append|--append0|--ifempty|--remove)
+            OPTION_MODIFIER="${argument:2}"
          ;;
 
          -*)
@@ -614,27 +753,47 @@ set_info_dir()
       make_definition_set_usage "Superflous argument \"${argument}\""
    fi
 
-   read_info_dir "${info_dir}"
+   read_definition_dir "${directory}"
 
    check_option_key_without_prefix "${key}"
 
+
+   local finaldirectory
+
    if [ "${OPTION_ADDITIVE}" = "YES" ]
    then
-      info_dir="${info_dir}/plus"
+      finaldirectory="${directory}/plus"
    else
-      info_dir="${info_dir}/set"
+      finaldirectory="${directory}/set"
    fi
 
-   mkdir_if_missing "${info_dir}"
-   redirect_exekutor "${info_dir}/${key}" echo "${value}"
+   r_filepath_concat "${directory}" "${OPTION_MODIFIER}"
+   finaldirectory="${RVAL}"
+
+   # remove all possible old settings
+   remove_other_keyfiles_than "${finaldirectory}/${key}" \
+                              "${directory}/set/${key}" \
+                              "${directory}/set/append/${key}" \
+                              "${directory}/set/append0/${key}" \
+                              "${directory}/set/ifempty/${key}"\
+                              "${directory}/set/remove/${key}"  \
+                              "${directory}/plus/${key}"\
+                              "${directory}/plus/append/${key}"\
+                              "${directory}/plus/append0/${key}"\
+                              "${directory}/plus/ifempty/${key}"\
+                              "${directory}/plus/remove/${key}"
+
+
+   mkdir_if_missing "${finaldirectory}"
+   redirect_exekutor "${finaldirectory}/${key}" echo "${value}"
 }
 
 
-get_info_dir()
+get_definition_dir()
 {
-   log_entry "get_info_dir" "$@"
+   log_entry "get_definition_dir" "$@"
 
-   local info_dir="$1"
+   local directory="$1"
 
    local argument
 
@@ -668,7 +827,7 @@ get_info_dir()
       make_definition_list_usage "Superflous argument \"${argument}\""
    fi
 
-   read_info_dir "${info_dir}"
+   read_definition_dir "${directory}"
 
    key="OPTION_${key}"
    eval echo "\\\$$key"
@@ -681,11 +840,11 @@ get_info_dir()
 }
 
 
-list_info_dir()
+list_definition_dir()
 {
-   log_entry "list_info_dir" "$@"
+   log_entry "list_definition_dir" "$@"
 
-   local info_dir="$1"
+   local directory="$1"
 
    local argument
 
@@ -711,12 +870,12 @@ list_info_dir()
       make_definition_list_usage "Superflous argument \"${argument}\""
    fi
 
-   read_info_dir "${info_dir}"
+   read_definition_dir "${directory}"
 
-   emit_definitions "${DEFINED_OPTIONS}" "${DEFINED_PLUS_OPTIONS}" \
-                     "" "=" "+=" "" "" "
+   r_print_definitions "${DEFINED_OPTIONS}" "${DEFINED_PLUS_OPTIONS}" \
+                     "" "=" "+=" "" "" "\'" "
 "
-   echo
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -727,7 +886,7 @@ make_definition_main()
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
    local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
-   local OPTION_INFO_DIR=".mulle-make"
+   local OPTION_DEFINITION_DIR=".mulle-make"
 
    local argument
 
@@ -749,8 +908,9 @@ make_definition_main()
          #
          # with shortcuts
          #
-         -i|--info-dir)
-            read -r OPTION_INFO_DIR || make_definition_usage "missing argument to \"${argument}\""
+         --definition-dir)
+            read -r OPTION_DEFINITION_DIR ||
+               make_definition_usage "missing argument to \"${argument}\""
          ;;
 
          -*)
@@ -772,13 +932,13 @@ make_definition_main()
 
    case "${cmd}" in
       list|get)
-         if ! [ -d "${OPTION_INFO_DIR}" ]
+         if ! [ -d "${OPTION_DEFINITION_DIR}" ]
          then
-            log_verbose "Directory \"${OPTION_INFO_DIR}\" not found"
+            log_verbose "Directory \"${OPTION_DEFINITION_DIR}\" not found"
             return 2
          fi
 
-         ${cmd}_info_dir "${OPTION_INFO_DIR}"
+         ${cmd}_definition_dir "${OPTION_DEFINITION_DIR}"
       ;;
 
       keys)
@@ -786,7 +946,7 @@ make_definition_main()
       ;;
 
       set)
-         set_info_dir "${OPTION_INFO_DIR}"
+         set_definition_dir "${OPTION_DEFINITION_DIR}"
       ;;
 
       "")

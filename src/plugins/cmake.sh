@@ -119,9 +119,11 @@ cmake_files_are_newer_than_makefile()
    local absprojectdir="$1"
    local makefile="$2"
 
-   if [ -z "${MULLE_MATCH_FIND_LOCATIONS}" ]
+   MULLE_MATCH_PATH="${MULLE_MATCH_PATH:-${MULLE_MATCH_PATH}}"
+
+   if [ -z "${MULLE_MATCH_PATH}" ]
    then
-      log_debug "MULLE_MATCH_FIND_LOCATIONS are undefined, so run cmake"
+      log_debug "MULLE_MATCH_PATH are undefined, so run cmake"
       return 0
    fi
 
@@ -135,10 +137,10 @@ cmake_files_are_newer_than_makefile()
    local location
 
    IFS=":"
-   for location in ${MULLE_MATCH_FIND_LOCATIONS}
+   for location in ${MULLE_MATCH_PATH}
    do
       [ -z "${location}" ] && fail "Environment variable \
-MULLE_MATCH_FIND_LOCATIONS must not contain empty paths"
+MULLE_MATCH_PATH must not contain empty paths"
 
       if ! is_absolutepath "${location}"
       then
@@ -154,7 +156,7 @@ MULLE_MATCH_FIND_LOCATIONS must not contain empty paths"
 
    if [ -z "${arguments}" ]
    then
-      log_debug "No location of MULLE_MATCH_FIND_LOCATIONS exists"
+      log_debug "No location of MULLE_MATCH_PATH exists"
       return 0
    fi
 
@@ -296,9 +298,9 @@ build_cmake()
       ;;
    esac
 
-   if [ ! -z "${configuration}" ]
+   if [ ! -z "${OPTION_CMAKE_BUILD_TYPE:-${configuration}}" ]
    then
-      r_concat "${cmake_flags}" "-DCMAKE_BUILD_TYPE='${configuration}'"
+      r_concat "${cmake_flags}" "-DCMAKE_BUILD_TYPE='${OPTION_CMAKE_BUILD_TYPE:-${configuration}}'"
       cmake_flags="${RVAL}"
    fi
 

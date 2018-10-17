@@ -89,11 +89,12 @@ usage()
 Usage:
    ${MULLE_USAGE_NAME} [flags] [command] [options]
 
-   Build a project using cmake or configure or something else.
-   At it's simplest, this is a shortcut for:
+   Build a project using a buildtool like cmake or configure. At its simplest,
+   this is a shortcut for: \`mkdir build; cd build; cmake .. ; make; cd ..\`.
 
-   \`mkdir build ; cd build ; cmake .. ; make ; cd ..\`
-
+   mulle-make ignores environment variables. They may affect the buildtool
+   though. To pass flags to the buildtool use the provided definitions facility
+   (see \`${MULLE_USAGE_NAME} definition -h\` for more information).
 
 Flags:
 EOF
@@ -110,7 +111,7 @@ EOF
    if [ "${verbose}" = "NO" ]
    then
       cat <<EOF
-      (use mulle-make -v help to show more commands)
+      (use \`mulle-make -v help\` to show more commands)
 EOF
    fi
 
@@ -208,11 +209,18 @@ _main()
          make_install_main "$@"
       ;;
 
-      list|plugins)
+      list)
+         # shellcheck source=src/mulle-make-build.sh
+         . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
+
+         make_list_main "$@"
+      ;;
+
+      plugins)
          # shellcheck source=src/mulle-make-systeminstall.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-list.sh"
 
-         make_list_main "$@"
+         make_plugins_main "$@"
       ;;
 
       libexec-dir|library-path)

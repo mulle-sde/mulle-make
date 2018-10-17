@@ -42,18 +42,21 @@ _emit_common_options()
 EOF
    fi
 
-   cat <<EOF
-   -D<key>=<value>            : set definition (can't mix with += definitions)
-   -D<key>+=<value>           : add to definition
+      cat <<EOF
+   --append <key>[+]=<value>  : like -D, but appends value to a previous value
+   -D<key>=<value>            : set the definition named key to value
+   -D<key>+=<value>           : set a += definition for the buildtool
    --build-dir <dir>          : specify build directory
-   --info-dir <path>          : specify info directory
    --debug                    : build with configuration Debug
+   --ifempty <key>[+]=<value> : like -D, but only if no previous value exists
    --include-path <path>      : specify header search PATH, separated by :
+   --info-dir <path>          : specify info directory
    --lib-path <path>          : specify library search PATH, separated by :
    --release                  : build with configuration Release (Default)
+   --remove<key>[+]=<value>   : like -D,but removes value from a previous value
+   -U<key>                    : undefine a definition or += definition
    --verbose-make             : verbose make output
 EOF
-
    case "${MULLE_UNAME}" in
       mingw*)
       ;;
@@ -143,6 +146,22 @@ Usage:
    Build the project in src. Then the build results are installed in
    dst.  If dst is omitted '/tmp' is used. If --prefix is specified, do not
    specify dst.
+
+Options:
+EOF
+   emit_options "common-prefix" | LC_ALL=C sort
+
+   exit 1
+}
+
+
+list_usage()
+{
+   cat <<EOF >&2
+Usage:
+   ${MULLE_USAGE_NAME} list [options]
+
+   Do not build anything but list definitions as defined.
 
 Options:
 EOF
@@ -374,7 +393,7 @@ build()
    local cmd="$1"
    local srcdir="$2"
    local dstdir="$3"
-   local infodir="$4"
+   local definitiondir="$4"
 
    #
    # need these three defined before read_info_dir
@@ -383,16 +402,15 @@ build()
    MULLE_MAKE_PROJECT_DIR="${RVAL}"
    r_simplified_absolutepath "${dstdir}"
    MULLE_MAKE_DESTINATION_DIR="${RVAL}"
-   MULLE_MAKE_INFO_DIR=
+   MULLE_MAKE_DEFINITION_DIR=
 
-   if [ ! -z "${infodir}" ]
+   if [ ! -z "${definitiondir}" ]
    then
-      r_simplified_absolutepath "${infodir}"
-      MULLE_MAKE_INFO_DIR="${RVAL}"
+      r_simplified_absolutepath "${definitiondir}"
+      MULLE_MAKE_DEFINITION_DIR="${RVAL}"
 
-      read_info_dir "${infodir}"
+      read_definition_dir "${definitiondir}"
    fi
-
 
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
@@ -446,7 +464,6 @@ There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERE
                                             "${configuration}" \
                                             "${sdk}" \
                                             "${AVAILABLE_PLUGINS}"
-
    case "$?" in
       0)
       ;;
@@ -461,6 +478,25 @@ There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERE
    esac
 }
 
+
+list_main()
+{
+   log_info "Definitions"
+
+   local lf="
+"
+   r_print_definitions "${DEFINED_OPTIONS}" \
+                       "${DEFINED_PLUS_OPTIONS}" \
+                       "" \
+                       "=" \
+                       "+=" \
+                       "" \
+                       "" \
+                       "${lf}"
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+
+   :
+}
 
 
 _make_build_main()
@@ -637,22 +673,50 @@ xcodebuild"
             read -r OPTION_PATH || fail "missing argument to \"${argument}\""
          ;;
 
-         -D*+=*)
+
+         '-D'*'+='*)
             if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
             then
                . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
             fi
 
-            make_define_plusoption_keyvalue "`echo "${argument}" | sed s'/^-D[ ]*//'`"
+            make_define_plusoption_keyvalue "${argument:2}"
          ;;
 
-         -D*)
+         '-D'*)
             if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
             then
                . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
             fi
 
-            make_define_option_keyvalue "`echo "${argument}" | sed s'/^-D[ ]*//'`"
+            make_define_option_keyvalue "${argument:2}"
+         ;;
+
+         '--ifempty'|'--append'|'--append0'|'--remove')
+            if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
+            then
+               . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
+            fi
+
+            read -r keyvalue || fail "missing argument to \"${argument}\""
+            case "${keyvalue}" in
+               *'+='*)
+                  make_define_plusoption_keyvalue "${keyvalue}" "${argument:2}"
+               ;;
+
+               *)
+                  make_define_option_keyvalue "${keyvalue}" "${argument:2}"
+               ;;
+            esac
+         ;;
+
+         '-U'*)
+            if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
+            then
+               . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
+            fi
+
+            make_undefine_option "${argument:2}"
          ;;
 
          # as in /Library/Frameworks:Frameworks etc.
@@ -736,6 +800,15 @@ script"
    esac
 
    case "${cmd}" in
+      list)
+         if read -r argument
+         then
+            log_error "Superflous argument \"${argument}\""
+            list_usage
+         fi
+         list_main
+      ;;
+
       project)
          if read -r argument
          then
@@ -799,4 +872,13 @@ make_install_main()
 
    usage="install_usage"
    _make_build_main "install" "$@"
+}
+
+
+make_list_main()
+{
+   log_entry "make_list_main" "$@"
+
+   usage="list_usage"
+   _make_build_main "list" "$@"
 }

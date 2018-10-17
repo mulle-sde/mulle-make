@@ -1,0 +1,140 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = "YES" ] && set -x
+
+
+run_mulle_make()
+{
+   log_fluff "####################################"
+   log_fluff ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
+   log_fluff "####################################"
+
+   exekutor ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
+}
+
+
+expect_content()
+{
+   local result="$1"
+   local expect="$2"
+
+   if [ -z "${result}" ]
+   then
+      if [ -z "${expect}" ]
+      then
+         return
+      fi
+      fail "Did not produce \"${expect}\" as expected"
+   else
+      if [ -z "${expect}" ]
+      then
+         fail "Did produce \"${result}\" unexpectedly. Nothing was expected"
+      fi
+   fi
+
+   local diffs
+
+   diffs="`diff -b <(echo "${result}") <(echo "${expect}") `"
+   if [ $? -ne 0 ]
+   then
+      log_error "Unexpected result generated"
+      cat <<EOF >&2
+----------------
+Output:
+----------------
+${output}
+----------------
+Expected:
+----------------
+${expect}
+----------------
+Diff:
+----------------
+${diffs}
+----------------
+EOF
+      exit 1
+   fi
+}
+
+
+run_test()
+{
+   local expect="$1"; shift
+
+   local result
+
+   result="`run_mulle_make ${MULLE_MAKE_FLAGS} -s list "$@"`"
+
+   if [ "$?" -ne 0 ]
+   then
+      fail "mulle-make failed"
+   fi
+
+   expect_content "${result}" "${expect}"
+}
+
+
+
+main()
+{
+   MULLE_MAKE_FLAGS="$@"
+
+   _options_mini_main "$@"
+
+
+   #
+   # Default is release
+   #
+   run_test "BAR=y" -DBAR="y"
+   log_verbose "----- #1 PASSED -----"
+
+   run_test "FOO=x y" -DFOO="x y"
+   log_verbose "----- #2 PASSED -----"
+
+   run_test "FOO=x" -DFOO="x y" -DFOO="x"
+   log_verbose "----- #3 PASSED -----"
+
+   run_test "" -DFOO="x y" -UFOO
+   log_verbose "----- #4 PASSED -----"
+
+   run_test "FOO=y" --append FOO="y"
+   log_verbose "----- #5 PASSED -----"
+
+   run_test "FOO=x y" -DFOO="x" --append FOO="y"
+   log_verbose "----- #6 PASSED -----"
+
+   run_test "FOO=xy" -DFOO="x" --append0 FOO="y"
+   log_verbose "----- #7 PASSED -----"
+
+   run_test "FOO=x  z" -DFOO="x y z" --remove FOO="y"
+   log_verbose "----- #8 PASSED -----"
+
+   run_test "FOO=y" -DFOO="y" --ifempty FOO="x"
+   log_verbose "----- #9 PASSED -----"
+
+   run_test "FOO=x" --ifempty FOO="x" --ifempty FOO="y"
+   log_verbose "----- #10 PASSED -----"
+
+   run_test "FOO=x" --ifempty FOO="x"
+   log_verbose "----- #11 PASSED -----"
+
+   log_info "----- ALL PASSED -----"
+}
+
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`" || exit 1
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+
+   MULLE_MAKE="${MULLE_MAKE:-${PWD}/../../mulle-make}"
+}
+
+
+
+init "$@"
+main "$@"
+
