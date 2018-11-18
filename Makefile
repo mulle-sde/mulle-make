@@ -1,4 +1,4 @@
-SCRIPTS=installer \
+SCRIPTS=./bin/installer \
 src/mulle-make-bash-completion.sh \
 src/mulle-make-build.sh \
 src/mulle-make-command.sh \
@@ -36,7 +36,7 @@ mulle-make.chk:	mulle-make
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 
 installer:
-	@ ./installer
+	@ ./bin/installer
 
 clean:
 	@- rm src/*.chk

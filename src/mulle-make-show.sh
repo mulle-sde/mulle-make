@@ -28,24 +28,24 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_PLUGIN_SH="included"
+MULLE_MAKE_SHOW_SH="included"
 
-plugins_usage()
+show_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} list
+   ${MULLE_USAGE_NAME} show
 
-   List build tools known to ${MULLE_USAGE_NAME}.
+   Show buildtools known to ${MULLE_USAGE_NAME} via plugins.
 
 EOF
    exit 1
 }
 
 
-make_plugins_main()
+make_show_main()
 {
-   log_entry "make_plugins_main" "$@"
+   log_entry "make_show_main" "$@"
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
@@ -54,5 +54,6 @@ make_plugins_main()
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-plugin.sh" || return 1
    fi
 
+   log_info "Supported Buildtools"
    build_list_plugins
 }

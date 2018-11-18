@@ -140,44 +140,59 @@ build_configure()
 
    if [ ! -z "${OPTION_CC}" ]
    then
-      env_flags="`concat "${env_flags}" "CC='${OPTION_CC}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CC"`"
+      r_concat "${env_flags}" "CC='${OPTION_CC}'"
+      env_flags="${RVAL}"
+      r_colon_concat "${passed_keys}" "CC"
+      passed_keys="${RVAL}"
    fi
    if [ ! -z "${OPTION_CXX}" ]
    then
-      env_flags="`concat "${env_flags}" "CXX='${OPTION_CXX}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CXX"`"
+      r_concat "${env_flags}" "CXX='${OPTION_CXX}'"
+      env_flags="${RVAL}"
+      r_colon_concat "${passed_keys}" "CXX"
+      passed_keys="${RVAL}"
    fi
    if [ ! -z "${cppflags}" ]
    then
-      env_flags="`concat "${env_flags}" "CPPFLAGS='${cppflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CPPFLAGS"`"
+      r_concat "${env_flags}" "CPPFLAGS='${cppflags}'"
+      env_flags="${RVAL}"
+      r_colon_concat "${passed_keys}" "CPPFLAGS"
+      passed_keys="${RVAL}"
    fi
    if [ ! -z "${cflags}" ]
    then
-      env_flags="`concat "${env_flags}" "CFLAGS='${cflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CFLAGS"`"
+      r_concat "${env_flags}" "CFLAGS='${cflags}'"
+      env_flags="${RVAL}"
+      r_colon_concat "${passed_keys}" "CFLAGS"
+      passed_keys="${RVAL}"
    fi
    if [ ! -z "${cxxflags}" ]
    then
-      env_flags="`concat "${env_flags}" "CXXFLAGS='${cxxflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "CXXFLAGS"`"
+      r_concat "${env_flags}" "CXXFLAGS='${cxxflags}'"
+      env_flags="${RVAL}"
+      r_colon_concat "${passed_keys}" "CXXFLAGS"
+      passed_keys="${RVAL}"
    fi
    if [ ! -z "${ldflags}" ]
    then
-      env_flags="`concat "${env_flags}" "LDFLAGS='${ldflags}'"`"
-      passed_keys="`colon_concat "${passed_keys}" "LDFLAGS"`"
+      r_concat "${env_flags}" "LDFLAGS='${LDFLAGS}'"
+      env_flags="${RVAL}"
+      r_colon_concat "${passed_keys}" "LDFLAGS"
+      passed_keys="${RVAL}"
    fi
 
    # always pass at least a trailing :
 
-   env_flags="`concat "${env_flags}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"`"
+   r_concat "${env_flags}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"
+   env_flags="${RVAL}"
 
    local absprojectdir
    local projectdir
 
-   projectdir="`dirname -- "${projectfile}"`"
-   absprojectdir="`absolutepath "${projectdir}"`"
+   r_fast_dirname "${projectfile}"
+   projectdir="${RVAL}"
+   r_absolutepath "${projectdir}"
+   absprojectdir="${RVAL}"
 
    local logfile1
    local logfile2
@@ -189,12 +204,12 @@ build_configure()
    r_build_log_name "${logsdir}" "make" "${srcdir}" "${configuration}" "${sdk}"
    logfile2="${RVAL}"
 
-   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
       then
          logfile1="`safe_tty`"
          logfile2="${logfile1}"
@@ -208,7 +223,7 @@ build_configure()
 
       PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
-      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
       fi
@@ -255,12 +270,16 @@ test_configure()
    r_fast_dirname "${projectfile}"
    projectdir="${RVAL}"
 
+   if [ ! -z "${OPTION_PHASE}" ]
+   then
+      fail "configure does not support build phases"
+   fi
+
    if ! [ -x "${projectdir}/configure" ]
    then
       log_fluff "Configure script in \"${projectdir}\" is not executable"
       return 1
    fi
-
 
    case "${MULLE_UNAME}" in
       mingw*)

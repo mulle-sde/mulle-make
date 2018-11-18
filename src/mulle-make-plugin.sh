@@ -103,7 +103,7 @@ build_load_plugin()
       #
       # too costly normally
       #
-      if [ "${MULLE_FLAG_LOG_VERBOSE}"  = "YES" ]
+      if [ "${MULLE_FLAG_LOG_VERBOSE}"  = 'YES' ]
       then
          if [ "`type -t "test_${preference}"`" != "function" ]
          then

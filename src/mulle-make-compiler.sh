@@ -35,7 +35,7 @@ r_platform_c_compiler()
 {
    local name
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "CC:  ${OPTION_CC}"
    fi
@@ -58,7 +58,7 @@ r_platform_cxx_compiler()
 {
    local name
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "CXX:  ${OPTION_CXX}"
    fi
@@ -106,7 +106,7 @@ r_compiler_sdk_parameter()
 
    RVAL=""
 
-   if [ "${OPTION_DETERMINE_SDK}" = "NO" ]
+   if [ "${OPTION_DETERMINE_SDK}" = 'NO' ]
    then
       return
    fi
@@ -141,7 +141,7 @@ r_compiler_cppflags_value()
 {
    log_entry "r_compiler_cppflags_value" "$@"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "CPPFLAGS:       ${OPTION_CPPFLAGS}"
       log_trace2 "OTHER_CPPFLAG:  ${OPTION_OTHER_CPPFLAGS}"
@@ -151,7 +151,7 @@ r_compiler_cppflags_value()
 
    case "${compiler%.*}" in
       c++|cc|gcc*|*clang*|"")
-         if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+         if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
          then
             log_trace2 "OPTION_GCC_PREPROCESSOR_DEFINITIONS:  ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}"
          fi
@@ -179,14 +179,14 @@ _r_compiler_cflags_value()
    local result
    local i
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "WARNING_CFLAGS:  ${OPTION_WARNING_CFLAGS}"
    fi
 
    result="${OPTION_WARNING_CFLAGS}"
 
-   if [ "${addoptflags}" = "YES" ]
+   if [ "${addoptflags}" = 'YES' ]
    then
       case "${configuration}" in
          Debug)
@@ -211,7 +211,7 @@ r_compiler_cflags_value()
 
    local result
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "CFLAGS:          ${OPTION_CFLAGS}"
       log_trace2 "OTHER_CFLAGS:    ${OPTION_OTHER_CFLAGS}"
@@ -237,7 +237,7 @@ r_compiler_cxxflags_value()
 
    local result
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "CXXFLAGS:        ${OPTION_CXXFLAGS}"
       log_trace2 "OTHER_CXXFLAGS:  ${OPTION_OTHER_CXXFLAGS}"
@@ -255,7 +255,7 @@ r_compiler_ldflags_value()
 {
    log_entry "r_compiler_ldflags_value" "$@"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "LDFLAGS:         ${OPTION_LDFLAGS}"
       log_trace2 "OTHER_LDFLAGS:   ${OPTION_OTHER_LDFLAGS}"

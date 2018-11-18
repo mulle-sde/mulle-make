@@ -3,8 +3,8 @@ digraph G {
 
     node[ shape=folder];
 
-    "--info-dir <dir>"                  [ shape="none", fontcolor="#3867d6" ]
-    "--info-dir <dir>" -> "project.darwin"  [ style="dotted"]
+    "--definition-dir <dir>"                  [ shape="none", fontcolor="#3867d6" ]
+    "--definition-dir <dir>" -> "project.darwin"  [ style="dotted"]
 
     "--build-dir <dir>"                  [ shape="none", fontcolor="#3867d6" ]
     "--build-dir <dir>" -> "build"       [ style="dotted"]

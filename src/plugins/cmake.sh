@@ -31,7 +31,6 @@
 MULLE_MAKE_PLUGIN_CMAKE_SH="included"
 
 
-
 r_platform_cmake_generator()
 {
    local makepath="$1"
@@ -123,7 +122,7 @@ cmake_files_are_newer_than_makefile()
 
    if [ -z "${MULLE_MATCH_PATH}" ]
    then
-      log_debug "MULLE_MATCH_PATH are undefined, so run cmake"
+      log_debug "MULLE_MATCH_PATH is undefined, so run cmake"
       return 0
    fi
 
@@ -207,13 +206,16 @@ build_cmake()
    local cppflags
    local ldflags
 
-   r_compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO"
+   r_compiler_cflags_value "${OPTION_CC}" "${configuration}" 'NO'
    cflags="${RVAL}"
-   if [ "${OPTION_PROJECT_LANGUAGE}" != "c" ]
-   then
-      r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO"
-      cxxflags="${RVAL}"
-   fi
+
+   case "${OPTION_PROJECT_LANGUAGE}" in
+      [cC]|[oO][bB][jJ]*[cC])
+         r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" 'NO'
+         cxxflags="${RVAL}"
+      ;;
+   esac
+
    r_compiler_cppflags_value
    cppflags="${RVAL}"
    r_compiler_ldflags_value
@@ -255,7 +257,7 @@ build_cmake()
       ;;
    esac
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "cflags:        ${cflags}"
       log_trace2 "cppflags:      ${cppflags}"
@@ -271,6 +273,15 @@ build_cmake()
    local cmake_flags
 
    cmake_flags="${OPTION_CMAKEFLAGS}"
+
+   if [ ! -z "${OPTION_PHASE}" ]
+   then
+      local phase
+
+      phase="`tr 'a-z' 'A-Z' <<< "${OPTION_PHASE}"`"
+      r_concat "${cmake_flags}" "-DMULLE_MAKE_PHASE='${phase}'"
+      cmake_flags="${RVAL}"
+   fi
 
    local maketarget
 
@@ -304,7 +315,7 @@ build_cmake()
       cmake_flags="${RVAL}"
    fi
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "PREFIX:        ${OPTION_PREFIX}"
       log_trace2 "CMAKEFLAGS:    ${OPTION_CMAKEFLAGS}"
@@ -434,7 +445,7 @@ build_cmake()
    case "${MAKE}" in
       *ninja)
          makefile="${builddir}/build.ninja"
-         if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+         if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
          then
             r_concat "${make_flags}" "-v"
             make_flags="${RVAL}"
@@ -449,7 +460,7 @@ build_cmake()
 
       *make)
          makefile="${builddir}/Makefile"
-         if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+         if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
          then
             r_concat "${make_flags}" "VERBOSE=1"
             make_flags="${RVAL}"
@@ -465,11 +476,16 @@ build_cmake()
 
    local run_cmake
 
-   run_cmake="YES"
-   if ! cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
+   run_cmake='YES'
+
+   # phases need to rerun cmake
+   if [ -z "${OPTION_PHASE}" ]
    then
-      run_cmake="NO"
-      log_fluff "cmake run skipped as no changes to cmake files have been detected"
+      if ! cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
+      then
+         run_cmake='NO'
+         log_fluff "Cmake run skipped as no changes to cmake files have been found in \"${absprojectdir}\""
+      fi
    fi
 
    local env_common
@@ -492,12 +508,12 @@ build_cmake()
    r_build_log_name "${logsdir}" "${logname2}" "${srcdir}" "${configuration}" "${sdk}"
    logfile2="${RVAL}"
 
-   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
       then
          logfile1="`safe_tty`"
          logfile2="${logfile1}"
@@ -512,12 +528,12 @@ build_cmake()
       PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
 
-      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
       fi
 
-      if [ "${run_cmake}" = "YES" ]
+      if [ "${run_cmake}" = 'YES' ]
       then
          if ! logging_redirect_eval_exekutor "${logfile1}" \
                   "${env_common}" \

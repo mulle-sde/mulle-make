@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${TRACE}" = "YES" ] && set -x && : "$0" "$@"
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
 _mulle_make_complete()
@@ -64,7 +64,7 @@ _mulle_make_complete()
 
    # handle options with arguments
    case "${prev}" in
-      -i|--info-dir)
+      -i|--definition-dir)
          COMPREPLY=( $( compgen -d -- "$cur" ) )
          return 0
       ;;
@@ -82,7 +82,7 @@ _mulle_make_complete()
 
          case "${context}" in
             definition)
-               COMPREPLY=( $( compgen -W "--info-dir" -- $cur ) )
+               COMPREPLY=( $( compgen -W "--definition-dir" -- $cur ) )
                return 0
             ;;
          esac

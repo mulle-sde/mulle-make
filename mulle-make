@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${TRACE}" = "YES" -o "${MULLE_MAKE_TRACE}" = "YES" ] && set -x && : "$0" "$@"
+[ "${TRACE}" = 'YES' -o "${MULLE_MAKE_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
 MULLE_EXECUTABLE_VERSION=0.7.0
@@ -56,14 +56,14 @@ print_commands()
 
    HIDDEN_COMMANDS="\
    libexec-dir   : print path to ${MULLE_USAGE_NAME} libexec
-   plugins       : list available plugins
+   show          : show available buildtools
    uname         : ${MULLE_USAGE_NAME}'s simplified uname(1)
    version       : print mulle-make version"
 
 
    echo "${SHOWN_COMMANDS}"
 
-   if [ "${show_all}" != "NO" ]
+   if [ "${show_all}" != 'NO' ]
    then
       echo "${HIDDEN_COMMANDS}"
    fi
@@ -108,7 +108,7 @@ EOF
 
    print_commands "${verbose}"
 
-   if [ "${verbose}" = "NO" ]
+   if [ "${verbose}" = 'NO' ]
    then
       cat <<EOF
       (use \`mulle-make -v help\` to show more commands)
@@ -126,22 +126,22 @@ EOF
 
 _main()
 {
-   local MULLE_FLAG_MAGNUM_FORCE="NO"
-   local MULLE_FLAG_IGNORE_GRAVEYARD="NO"
+   local MULLE_FLAG_MAGNUM_FORCE='NO'
+   local MULLE_FLAG_IGNORE_GRAVEYARD='NO'
 
    # technical flags
    local MULLE_TRACE
-   local MULLE_FLAG_EXEKUTOR_DRY_RUN="NO"
-   local MULLE_FLAG_LOG_LOCAL="NO"
-   local MULLE_FLAG_LOG_DEBUG="NO"
-   local MULLE_FLAG_LOG_EXEKUTOR="NO"
-   local MULLE_FLAG_LOG_FLUFF="NO"
-   local MULLE_FLAG_LOG_SCRIPTS="NO"
-   local MULLE_FLAG_LOG_SETTINGS="NO"
-   local MULLE_FLAG_LOG_VERBOSE="NO"
-   local MULLE_FLAG_LOG_MERGE="NO"
-   local MULLE_TRACE_POSTPONE="NO"
-   local MULLE_FLAG_VERBOSE_MAKE="NO"
+   local MULLE_FLAG_EXEKUTOR_DRY_RUN='NO'
+   local MULLE_FLAG_LOG_LOCAL='NO'
+   local MULLE_FLAG_LOG_DEBUG='NO'
+   local MULLE_FLAG_LOG_EXEKUTOR='NO'
+   local MULLE_FLAG_LOG_FLUFF='NO'
+   local MULLE_FLAG_LOG_SCRIPTS='NO'
+   local MULLE_FLAG_LOG_SETTINGS='NO'
+   local MULLE_FLAG_LOG_VERBOSE='NO'
+   local MULLE_FLAG_LOG_MERGE='NO'
+   local MULLE_TRACE_POSTPONE='NO'
+   local MULLE_FLAG_VERBOSE_MAKE='NO'
 
    #
    # simple option handling
@@ -157,7 +157,7 @@ _main()
 
       case "${argument}" in
          -f|--force)
-            MULLE_FLAG_MAGNUM_FORCE="YES"
+            MULLE_FLAG_MAGNUM_FORCE='YES'
          ;;
 
          -h*|--help|help)
@@ -216,11 +216,11 @@ _main()
          make_list_main "$@"
       ;;
 
-      plugins)
+      show)
          # shellcheck source=src/mulle-make-systeminstall.sh
-         . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-list.sh"
+         . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-show.sh"
 
-         make_plugins_main "$@"
+         make_show_main "$@"
       ;;
 
       libexec-dir|library-path)

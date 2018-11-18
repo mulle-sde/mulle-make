@@ -127,9 +127,9 @@ build_meson()
    local cppflags
    local ldflags
 
-   r_compiler_cflags_value "${OPTION_CC}" "${configuration}" "NO"
+   r_compiler_cflags_value "${OPTION_CC}" "${configuration}" 'NO'
    cflags="${RVAL}"
-   r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" "NO"
+   r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" 'NO'
    cxxflags="${RVAL}"
    r_compiler_cppflags_value "${OPTION_INCLUDE_PATH}"
    cppflags="${RVAL}"
@@ -153,7 +153,7 @@ build_meson()
    r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
    rel_project_dir="${RVAL}"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "cflags:          ${cflags}"
       log_trace2 "cppflags:        ${cppflags}"
@@ -272,7 +272,7 @@ build_meson()
       ninja_flags="${RVAL}"
    fi
 
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
       r_concat "${ninja_flags}" "-v"
       ninja_flags="${RVAL}"
@@ -302,12 +302,12 @@ build_meson()
    r_build_log_name "${logsdir}" "ninja" "${srcdir}" "${configuration}" "${sdk}"
    logfile2="${RVAL}"
 
-   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
       then
          logfile1="`safe_tty`"
          logfile2="$logfile1"
@@ -319,7 +319,7 @@ build_meson()
    (
       PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
-      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
       fi
@@ -377,6 +377,11 @@ test_meson()
       return 1
    fi
    projectfile="${RVAL}"
+
+   if [ ! -z "${OPTION_PHASE}" ]
+   then
+      fail "meson does not support build phases"
+   fi
 
    tools_environment_meson
 

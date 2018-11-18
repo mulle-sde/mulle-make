@@ -35,18 +35,33 @@ r_build_script_absolutepath()
 {
    if [ -z "${OPTION_BUILD_SCRIPT}" ]
    then
-      log_fluff "There was no mulle-make info directory defined on the commandline"
+      log_fluff "There is no BUILD_SCRIPT defined"
       return 1
    fi
 
    RVAL="${OPTION_BUILD_SCRIPT}"
    if is_absolutepath "${OPTION_BUILD_SCRIPT}"
    then
-      return
+      return 0
    fi
 
-   # use MULLE_MAKE_DEFINITION_DIR otherwise PWD
-   r_absolutepath "${OPTION_BUILD_SCRIPT}" "${MULLE_MAKE_DEFINITION_DIR}"
+   local dir
+   local scriptpath
+   local searchpath
+
+   dir="${MULLE_MAKE_DEFINITION_DIR}"
+
+   #
+   # Look in craftinfo bin first
+   #
+   searchpath="${dir}/bin:$PATH"
+   log_fluff "Looking for \"${OPTION_BUILD_SCRIPT}\" in \"${searchpath}\""
+
+   RVAL="`PATH="${searchpath}" command -v "${OPTION_BUILD_SCRIPT}"`"
+
+   log_debug "Found \"${RVAL}\""
+
+   [ ! -z "${RVAL}" ]
 }
 
 
@@ -96,11 +111,11 @@ build_script()
    r_build_log_name "${logsdir}" "${scriptname}" "${srcdir}" "${configuration}" "${sdk}"
    logfile1="${RVAL}"
 
-   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
       then
          logfile1="`safe_tty`"
       else
@@ -113,7 +128,7 @@ build_script()
 
       PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
-      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
       fi
@@ -153,9 +168,9 @@ test_script()
    then
       if [ -e "${scriptfile}" ]
       then
-         log_warning "There is a build script \"${scriptfile}\" but its not executable"
+         log_warning "There is a build script \"${scriptfile#${MULLE_USER_PWD}/}\" but its not executable"
       else
-         log_fluff "There is no build script \"${scriptfile}\""
+         log_fluff "There is no build script \"${scriptfile#${MULLE_USER_PWD}/}\""
       fi
       return 1
    fi

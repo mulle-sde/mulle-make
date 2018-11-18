@@ -106,12 +106,12 @@ build_autoconf()
    r_build_log_name "${logsdir}" "autoconf" "${srcdir}" "${configuration}" "${sdk}"
    logfile2="${RVAL}"
 
-   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = "YES" ]
+      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
       then
          logfile1="`safe_tty`"
          logfile2="${logfile1}"
@@ -126,7 +126,7 @@ build_autoconf()
 
       PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
-      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
       fi
@@ -155,7 +155,7 @@ build_autoconf()
    #
    # daisy chain configure step
    #
-   local WASXCODE="NO"
+   local WASXCODE='NO'
    local PROJECTFILE
    local TOOLNAME=configure
    local AUX_INFO
@@ -208,7 +208,12 @@ test_autoconf()
    fi
    projectfile="${RVAL}"
 
-   if [ "${OPTION_AUTOCONF_CLEAN}" != "NO" ]
+   if [ ! -z "${OPTION_PHASE}" ]
+   then
+      fail "configure does not support build phases"
+   fi
+
+   if [ "${OPTION_AUTOCONF_CLEAN}" != 'NO' ]
    then
       local configurefile
 

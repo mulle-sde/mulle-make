@@ -100,14 +100,14 @@ r_find_make()
             internal_fail "OPTION_NINJA must not be empty"
          ;;
 
-         "YES"|"DEFAULT")
+         'YES'|"DEFAULT")
             if [ ! -z "`command -v ninja`" ]
             then
                RVAL="ninja"
                return
             fi
 
-            if [ "${OPTION_NINJA}" = "YES" ]
+            if [ "${OPTION_NINJA}" = 'YES' ]
             then
                fail "ninja not found"
             fi
@@ -118,7 +118,7 @@ r_find_make()
    toolname="${OPTION_MAKE:-${defaultname:-make}}"
    RVAL="${toolname}"
 
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
       r_verify_binary "${toolname}" "make" "${defaultname}"
    fi
@@ -140,7 +140,7 @@ tools_environment_common()
       CXX="${OPTION_CXX}"
    fi
 
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
       local RVAL
 

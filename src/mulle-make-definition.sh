@@ -51,10 +51,11 @@ Usage:
    (see \`${MULLE_USAGE_NAME} project -h\` for more information).
 
 Commands:
-   get   :  get a specific value
-   keys  :  list all known builtin keys
-   list  :  list defined values
-   set   :  set a specific value
+   get    :  get a specific value
+   keys   :  list all known builtin keys
+   list   :  list defined values
+   remove :  remove a key from the definitions
+   set    :  set a specific value
 
 Options:
    --definition-dir <path>  : specify info directory to edit (.mulle-make)
@@ -114,6 +115,22 @@ Options:
 EOF
    exit 1
 }
+
+
+make_definition_remove_usage()
+{
+   [ $# -ne 0 ] && log_error "$1"
+
+   cat <<EOF >&2
+Usage:
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} remove <key>
+
+   Remove a build setting.
+
+EOF
+   exit 1
+}
+
 
 
 #
@@ -300,7 +317,7 @@ r_print_definitions()
 
 
 #
-# defined for xcodebuild by default
+# defined for xcodebuild by default (\$(inherited))
 #
 emit_userdefined_definitions()
 {
@@ -335,7 +352,12 @@ emit_userdefined_definitions()
    fi
 
    r_print_definitions "${keys}" "${pluskeys}" \
-                       "${prefix}" "${sep}" "${plussep}" "${pluspref}" "\'" " "
+                       "${prefix}" \
+                       "${sep}" \
+                       "${plussep}" \
+                       "${pluspref}" \
+                       "'" \
+                       " "
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
@@ -379,7 +401,7 @@ check_option_key_without_prefix()
       esac
 
       message="\"${key}\" is not a known option"
-      if [ "${OPTION_ALLOW_UNKNOWN_OPTION}" != "NO" ]
+      if [ "${OPTION_ALLOW_UNKNOWN_OPTION}" != 'NO' ]
       then
          log_fluff "${message}. Maybe OK, especially with cmake and xcode."
       else
@@ -679,6 +701,7 @@ remove_other_keyfiles_than()
    local keyfile="$1" ; shift
 
    local otherfile
+   local RVAL
 
    while [ $# -ne 0 ]
    do
@@ -690,6 +713,8 @@ remove_other_keyfiles_than()
       fi
 
       remove_file_if_present "${otherfile}"
+      r_fast_dirname "${otherfile}"
+      rmdir_if_empty "${RVAL}"
    done
 }
 
@@ -698,6 +723,64 @@ remove_other_keyfiles_than()
 # Commands
 #
 
+remove_definition_dir()
+{
+   log_entry "remove_definition_dir" "$@"
+
+   local directory="$1"
+
+   local argument
+
+	while read -r argument
+   do
+      case "${argument}" in
+         -h*|--help|help)
+            make_definition_remove_usage
+         ;;
+
+	      -*)
+            make_definition_remove_usage "unknown option \"${argument}\""
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+   done
+
+   local key
+   local value
+
+   if [ -z "${argument}" ]
+   then
+      make_definition_remove_usage "Missing key"
+   fi
+   key="${argument}"
+
+   if read -r argument
+   then
+      make_definition_remove_usage "Superflous argument \"${argument}\""
+   fi
+
+   # remove all possible old settings
+   remove_other_keyfiles_than "" \
+                              "${directory}/set/${key}" \
+                              "${directory}/set/append/${key}" \
+                              "${directory}/set/append0/${key}" \
+                              "${directory}/set/ifempty/${key}"\
+                              "${directory}/set/remove/${key}"  \
+                              "${directory}/plus/${key}"\
+                              "${directory}/plus/append/${key}"\
+                              "${directory}/plus/append0/${key}"\
+                              "${directory}/plus/ifempty/${key}"\
+                              "${directory}/plus/remove/${key}"
+
+   rmdir_if_empty "${directory}/plus"
+   rmdir_if_empty "${directory}/set"
+   rmdir_if_empty "${directory}"
+}
+
+
 set_definition_dir()
 {
    log_entry "set_definition_dir" "$@"
@@ -705,8 +788,8 @@ set_definition_dir()
    local directory="$1"
 
    local argument
-   local OPTION_ADDITIVE="NO"
-   local OPTION_MODIFIER=
+   local OPTION_ADDITIVE='NO'
+   local OPTION_MODIFIER='set'
 
    while read -r argument
    do
@@ -716,7 +799,7 @@ set_definition_dir()
          ;;
 
          -+|--additive)
-            OPTION_ADDITIVE="YES"
+            OPTION_ADDITIVE='YES'
          ;;
 
          --append|--append0|--ifempty|--remove)
@@ -760,7 +843,7 @@ set_definition_dir()
 
    local finaldirectory
 
-   if [ "${OPTION_ADDITIVE}" = "YES" ]
+   if [ "${OPTION_ADDITIVE}" = 'YES' ]
    then
       finaldirectory="${directory}/plus"
    else
@@ -796,12 +879,17 @@ get_definition_dir()
    local directory="$1"
 
    local argument
+   local OPTION_OUTPUT_KEY='NO'
 
    while read -r argument
    do
       case "${argument}" in
          -h*|--help|help)
             make_definition_get_usage
+         ;;
+
+         --output-key)
+            OPTION_OUTPUT_KEY='YES'
          ;;
 
          -*)
@@ -829,11 +917,19 @@ get_definition_dir()
 
    read_definition_dir "${directory}"
 
-   key="OPTION_${key}"
-   eval echo "\\\$$key"
+   local varkey
+
+   varkey="OPTION_${key}"
+   if [ "${OPTION_OUTPUT_KEY}" = 'YES' ]
+   then
+      value="`eval echo "\\\$$varkey"`"
+      echo "${key}='${value}'"
+   else
+      eval echo "\$$varkey"
+   fi
 
    # https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
-   if [ -z ${key+x} ]
+   if [ -z ${varkey+x} ]
    then
       return 2
    fi
@@ -872,9 +968,16 @@ list_definition_dir()
 
    read_definition_dir "${directory}"
 
-   r_print_definitions "${DEFINED_OPTIONS}" "${DEFINED_PLUS_OPTIONS}" \
-                     "" "=" "+=" "" "" "\'" "
+   local lf="
 "
+   r_print_definitions "${DEFINED_OPTIONS}" "${DEFINED_PLUS_OPTIONS}" \
+                       "" \
+                       "=" \
+                       "+=" \
+                       "" \
+                       "'" \
+                       "${lf}"
+
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
@@ -898,11 +1001,11 @@ make_definition_main()
          ;;
 
          --allow-unknown-option)
-            OPTION_ALLOW_UNKNOWN_OPTION="YES"
+            OPTION_ALLOW_UNKNOWN_OPTION='YES'
          ;;
 
          --no-allow-unknown-option)
-            OPTION_ALLOW_UNKNOWN_OPTION="NO"
+            OPTION_ALLOW_UNKNOWN_OPTION='NO'
          ;;
 
          #
@@ -914,7 +1017,7 @@ make_definition_main()
          ;;
 
          -*)
-            make_definition_usage "Unknown definition option ${argument}"
+            make_definition_usage "Unknown definition option \"${argument}\""
          ;;
 
          *)
@@ -947,6 +1050,10 @@ make_definition_main()
 
       set)
          set_definition_dir "${OPTION_DEFINITION_DIR}"
+      ;;
+
+      remove)
+         remove_definition_dir "${OPTION_DEFINITION_DIR}"
       ;;
 
       "")

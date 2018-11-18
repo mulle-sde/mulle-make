@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-[ "${TRACE}" = "YES" ] && set -x
+[ "${TRACE}" = 'YES' ] && set -x
 
 
 run_mulle_make()
@@ -48,15 +48,15 @@ expect_content()
    if [ $? -ne 0 ]
    then
       # fix for mingw
-      if [ `wc -l <<< "${diffs}"` -eq 2 ] 
+      if [ `wc -l <<< "${diffs}"` -eq 2 ]
       then
          if egrep -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
-         then 
+         then
             return 0
          fi
       fi
 
-      
+
       log_error "Unexpected output generated"
       cat <<EOF >&2
 ----------------
@@ -143,7 +143,7 @@ main()
    #
    # check -I -L -F
    #
-   run_test "paths_meson.txt" "ninja.txt" -DDETERMINE_SDK="NO" \
+   run_test "paths_meson.txt" "ninja.txt" -DDETERMINE_SDK='NO' \
                                              -I /usr/local/include:/usr/include \
                                              -L /usr/local/lib:/usr/lib \
                                              -F /Network/Library/Frameworks:/Library/Frameworks

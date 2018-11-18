@@ -50,7 +50,7 @@ EOF
    --debug                    : build with configuration Debug
    --ifempty <key>[+]=<value> : like -D, but only if no previous value exists
    --include-path <path>      : specify header search PATH, separated by :
-   --info-dir <path>          : specify info directory
+   --definition-dir <path>    : specify definition directory
    --lib-path <path>          : specify library search PATH, separated by :
    --release                  : build with configuration Release (Default)
    --remove<key>[+]=<value>   : like -D,but removes value from a previous value
@@ -94,6 +94,7 @@ EOF
    --no-ninja                 : prefer make over ninja
    --log-dir <dir>            : specify log directory
    --no-determine-sdk         : don't try to figure out the default SDK
+   --phase <name>             : run make phase (for parallel builds)
    --project-name <name>      : explicitly set project name
    --project-language <c|cpp> : set project language
    --sdk <name>               : SDK to use (Default)
@@ -112,7 +113,7 @@ emit_options()
 {
    local marks="$1"
 
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
       _emit_uncommon_options "${marks}"
    fi
@@ -178,7 +179,7 @@ mkdir_build_directories()
 
    [ -z "${builddir}" ] && internal_fail "builddir is empty"
 
-   if [ -d "${builddir}" -a "${OPTION_CLEAN_BEFORE_BUILD}" = "YES" ]
+   if [ -d "${builddir}" -a "${OPTION_CLEAN_BEFORE_BUILD}" = 'YES' ]
    then
       log_fluff "Cleaning build directory \"${builddir}\""
       rmdir_safer "${builddir}"
@@ -237,7 +238,7 @@ build_with_preference_if_possible()
    [ ! -z "${logsdir}" ]       || internal_fail "logsdir not defined"
 
    (
-      local WASXCODE="NO"
+      local WASXCODE='NO'
       local PROJECTFILE
       local TOOLNAME="${preference}"
       local AUX_INFO
@@ -251,10 +252,18 @@ build_with_preference_if_possible()
          internal_fail "test_${preference} did not set PROJECTFILE"
       #statements
 
-      log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
-${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build of \
+      local blurb
+
+      blurb="Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
+${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build"
+      if [ ! -z "${OPTION_PHASE}" ]
+      then
+         blurb="${blurb} ${C_MAGENTA}${C_BOLD}${OPTION_PHASE}${C_INFO} phase"
+      fi
+      blurb="${blurb} of \
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
 ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir#${PWD}/}\" ..."
+      log_info "${blurb}"
 
       if ! "build_${preference}" "${cmd}" \
                                  "${PROJECTFILE}" \
@@ -412,6 +421,23 @@ build()
       read_definition_dir "${definitiondir}"
    fi
 
+   #
+   # If we have a script, can we use it ?
+   # If yes, we only use the script and fail for every other plugin
+   #
+   if [ ! -z "${OPTION_BUILD_SCRIPT}" ]
+   then
+      if [ "${OPTION_ALLOW_SCRIPT}" != 'YES' ]
+      then
+         fail "No permission to run scripts. Use ---allow-script."
+      fi
+      OPTION_TOOL_PREFERENCES="script"
+      log_verbose "A script is defined, only considering a script build now"
+   else
+      log_debug "No script defined"
+   fi
+
+
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
 
@@ -527,7 +553,6 @@ xcodebuild"
    local OPTION_NINJA="DEFAULT"
 
    local OPTION_BUILD_DIR
-   local OPTION_INFO_DIR
    local OPTION_LOG_DIR
    local OPTION_PREFIX
    local OPTION_INFO_DIR="DEFAULT"
@@ -545,19 +570,19 @@ xcodebuild"
          ;;
 
          --allow-script)
-            OPTION_ALLOW_SCRIPT="YES"
+            OPTION_ALLOW_SCRIPT='YES'
          ;;
 
          --no-allow-script)
-            OPTION_ALLOW_SCRIPT="NO"
+            OPTION_ALLOW_SCRIPT='NO'
          ;;
 
          --allow-unknown-option)
-            OPTION_ALLOW_UNKNOWN_OPTION="YES"
+            OPTION_ALLOW_UNKNOWN_OPTION='YES'
          ;;
 
          --no-allow-unknown-option)
-            OPTION_ALLOW_UNKNOWN_OPTION="NO"
+            OPTION_ALLOW_UNKNOWN_OPTION='NO'
          ;;
 
          --debug)
@@ -569,19 +594,19 @@ xcodebuild"
          ;;
 
          --ninja)
-            OPTION_NINJA="YES"
+            OPTION_NINJA='YES'
          ;;
 
          --no-ninja)
-            OPTION_NINJA="NO"
+            OPTION_NINJA='NO'
          ;;
 
          --determine-sdk)
-            OPTION_DETERMINE_SDK="YES"
+            OPTION_DETERMINE_SDK='YES'
          ;;
 
          --no-determine-sdk)
-            OPTION_DETERMINE_SDK="NO"
+            OPTION_DETERMINE_SDK='NO'
          ;;
 
          --name|--project-name)
@@ -617,7 +642,7 @@ xcodebuild"
             read -r OPTION_CONFIGURATION || fail "missing argument to \"${argument}\""
          ;;
 
-         --info-dir|--makeinfo-dir)
+         --definition-dir|--info-dir|--makeinfo-dir)
             read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
          ;;
 
@@ -632,11 +657,11 @@ xcodebuild"
          ;;
 
          --clean)
-            OPTION_CLEAN_BEFORE_BUILD="YES"
+            OPTION_CLEAN_BEFORE_BUILD='YES'
          ;;
 
          --no-clean)
-            OPTION_CLEAN_BEFORE_BUILD="NO"
+            OPTION_CLEAN_BEFORE_BUILD='NO'
          ;;
 
          --log-dir)
@@ -651,6 +676,14 @@ xcodebuild"
                    "${usage}"
                ;;
             esac
+         ;;
+
+         --path)
+            read -r OPTION_PATH || fail "missing argument to \"${argument}\""
+         ;;
+
+         --phase)
+            read -r OPTION_PHASE || fail "missing argument to \"${argument}\""
          ;;
 
          --prefix)
@@ -668,11 +701,6 @@ xcodebuild"
          --sdk)
             read -r OPTION_SDK || fail "missing argument to \"${argument}\""
          ;;
-
-         --path)
-            read -r OPTION_PATH || fail "missing argument to \"${argument}\""
-         ;;
-
 
          '-D'*'+='*)
             if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
@@ -770,15 +798,6 @@ xcodebuild"
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-plugin.sh" || return 1
    fi
 
-   if [ "${OPTION_ALLOW_SCRIPT}" = "YES" ]
-   then
-      if ! grep -x -q script <<< "${OPTION_TOOL_PREFERENCES}"
-      then
-         OPTION_TOOL_PREFERENCES="${OPTION_TOOL_PREFERENCES}
-script"
-      fi
-   fi
-
    local srcdir
 
    # export some variables
@@ -786,6 +805,17 @@ script"
    srcdir="${argument:-$PWD}"
    if [ ! -d "${srcdir}" ]
    then
+      if [ ! -z "${MULLE_VIRTUAL_ROOT}" ]
+      then
+         case "${srcdir}" in
+            */stash/*)
+               fail "Source directory \"${srcdir}\" is missing.
+Maybe repair with:
+   ${C_RESET_BOLD}mulle-sde fetch
+   mulle-sde clean all"
+            ;;
+         esac
+      fi
       fail "Source directory \"${srcdir}\" is missing"
    fi
 
@@ -851,7 +881,7 @@ script"
          build "install" \
                "${srcdir}" \
                "${dstdir}" \
-               "${OPTION_INFO_DIR:-${srcdir}/.mulle-make}"
+               "${OPTION_INFO_DIR}"
       ;;
    esac
 }

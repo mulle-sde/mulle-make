@@ -10,5 +10,5 @@ before_install:
   - sudo apt-get -y install mulle-bashfunctions
 
 script:
-  - ./install.sh /tmp
+  - ./bin/installer /tmp
   - cd test ; ./run-test -v

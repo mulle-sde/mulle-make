@@ -31,12 +31,12 @@
 MULLE_MAKE_PLUGIN_XCODEBUILD_SH="included"
 
 
-find_xcodebuild()
+r_find_xcodebuild()
 {
    local toolname
 
    toolname="${OPTION_XCODEBUILD:-${XCODEBUILD:-xcodebuild}}"
-   verify_binary "${toolname}" "xcodebuild" "xcodebuild"
+   r_verify_binary "${toolname}" "xcodebuild" "xcodebuild"
 }
 
 
@@ -44,7 +44,10 @@ tools_environment_xcodebuild()
 {
    tools_environment_common
 
-   XCODEBUILD="`find_xcodebuild`"
+   local RVAL
+
+   r_find_xcodebuild "$@"
+   XCODEBUILD="${RVAL}"
 }
 
 
@@ -88,7 +91,7 @@ r_convert_path_to_value()
    IFS="${DEFAULT_IFS}"
    set +o noglob
 
-   if [ "${inherit}" = "YES" -a ! -z "${inherit}" ]
+   if [ "${inherit}" = 'YES' -a ! -z "${inherit}" ]
    then
       r_concat "${output}" "\$(inherited)"
       output="${RVAL}"
@@ -234,7 +237,7 @@ EOF
    buildsettings="${RVAL}"
    r_concat "${buildsettings}" "SYMROOT='${absbuilddir}/'"
    buildsettings="${RVAL}"
-   r_concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${ONLY_ACTIVE_ARCH:-NO}'"
+   r_concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${OPTION_ONLY_ACTIVE_ARCH:-NO}'"
    buildsettings="${RVAL}"
 
    local env_common
@@ -284,7 +287,7 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   if [ "${OPTION_XCODE_HAS_PROPER_SKIP_INSTALL:-NO}" = "NO" ]
+   if [ "${OPTION_XCODE_HAS_PROPER_SKIP_INSTALL:-NO}" = 'NO' ]
    then
       r_concat "${buildsettings}" "SKIP_INSTALL=NO"
       buildsettings="${RVAL}"
@@ -334,11 +337,11 @@ EOF
                             "${configuration}" "${targetname}" "${schemename}" \
                             "${sdk}"
    logfile="${RVAL}"
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
       logfile="`safe_tty`"
    fi
-   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = "YES" ]
+   if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile="/dev/null"
    fi
@@ -354,7 +357,7 @@ EOF
 
       PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
-      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = "YES" ]
+      if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
       fi
@@ -443,7 +446,8 @@ test_xcodebuild()
 
    if [ ! -d "${projectfile}" ]
    then
-      projectfile="`find_nearest_matching_pattern "${srcdir}" "*.xcodeproj" "${name}.xcodeproj" `"
+      r_find_nearest_matching_pattern "${srcdir}" "*.xcodeproj" "${name}.xcodeproj"
+      projectfile="${RVAL}"
       if [ -z "${projectfile}" ]
       then
          log_fluff "There is no Xcode project in \"${srcdir}\""
@@ -451,12 +455,18 @@ test_xcodebuild()
       fi
    fi
 
-   projectdir="`dirname -- "${projectfile}" `"
+   if [ ! -z "${OPTION_PHASE}" ]
+   then
+      fail "Xcode does not support build phases"
+   fi
+
+   r_fast_dirname "${projectfile}"
+   projectdir="${RVAL}"
    tools_environment_xcodebuild "${projectdir}"
 
    if [ -z "${XCODEBUILD}" ]
    then
-      log_fluff "No xcodebuild found."
+      log_verbose "No xcodebuild found."
       return 1
    fi
 
@@ -470,9 +480,10 @@ test_xcodebuild()
       AUXINFO=" Scheme ${C_MAGENTA}${C_BOLD}${schemename}${C_INFO}"
    fi
 
-   TOOLNAME="`basename -- "${XCODEBUILD}" `"
+   r_fast_basename "${XCODEBUILD}"
+   TOOLNAME="${RVAL}"
    PROJECTFILE="${projectfile}"
-   WASXCODE="YES"
+   WASXCODE='YES'
 
    return 0
 }
