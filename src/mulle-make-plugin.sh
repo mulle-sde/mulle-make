@@ -94,7 +94,7 @@ build_load_plugin()
       pluginpath="${MULLE_MAKE_LIBEXEC_DIR}/plugins/${preference}.sh"
       if [ ! -f "${pluginpath}" ]
       then
-         log_warning "No Build plugin for \"${preference}\" found"
+         log_warning "No mulle-make plugin for \"${preference}\" found"
          return 1
       fi
 
@@ -133,13 +133,10 @@ build_load_plugins()
    local RVAL
 
    AVAILABLE_PLUGINS=
-   IFS="
-"
-   set -o noglob
+   IFS=":"; set -o noglob
    for preference in ${preferences}
    do
-      IFS="${DEFAULT_IFS}"
-      set +o noglob
+      IFS="${DEFAULT_IFS}"; set +o noglob
 
       if ! build_load_plugin "${preference}"
       then
@@ -149,8 +146,7 @@ build_load_plugins()
       AVAILABLE_PLUGINS="${RVAL}"
    done
 
-   IFS="${DEFAULT_IFS}"
-   set +o noglob
+   IFS="${DEFAULT_IFS}"; set +o noglob
 }
 
 :

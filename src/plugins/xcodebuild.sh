@@ -330,23 +330,31 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   local logfile
+   local logfile1
 
    mkdir_if_missing "${logsdir}"
    r_build_log_name "${logsdir}" "${TOOLNAME}" "${srcdir}" \
                             "${configuration}" "${targetname}" "${schemename}" \
                             "${sdk}"
-   logfile="${RVAL}"
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
-   then
-      logfile="`safe_tty`"
-   fi
+   logfile1="${RVAL}"
+
+
+   local teefile1
+   local teefile2
+
+   teefile1="/dev/null"
+
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
-      logfile="/dev/null"
+      logfile1="/dev/null"
+   else
+      log_verbose "Build logs will be in \"${logfile1}\""
    fi
-   log_verbose "Build log will be in: ${C_RESET_BOLD}${logfile}${C_VERBOSE}"
 
+   if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
+   then
+      teefile1="`safe_tty`"
+   fi
 
    (
       set -f  # prevent bash from expanding glob
@@ -364,7 +372,7 @@ EOF
 
 
       # if it doesn't install, probably SKIP_INSTALL is set
-      if ! logging_redirect_eval_exekutor "${logfile}" \
+      if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                                           "${env_common}" \
             "'${XCODEBUILD}'" ${action} "${arguments}" "${buildsettings}"
       then

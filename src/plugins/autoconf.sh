@@ -101,25 +101,30 @@ build_autoconf()
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "autoreconf" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "autoreconf"
    logfile1="${RVAL}"
-   r_build_log_name "${logsdir}" "autoconf" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "autoconf"
    logfile2="${RVAL}"
+
+   local teefile1
+   local teefile2
+
+   teefile1="/dev/null"
+   teefile2="/dev/null"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
-      then
-         logfile1="`safe_tty`"
-         logfile2="${logfile1}"
-      else
-         log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
-      fi
+      log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
    fi
 
+   if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
+   then
+      teefile1="`safe_tty`"
+      teefile2="${teefile1}"
+   fi
 
    (
       exekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
@@ -134,19 +139,19 @@ build_autoconf()
       if ! [ -f "aclocal4.am" ]
       then
           # use absolute paths for configure, safer (and easier to read IMO)
-         if ! logging_redirect_eval_exekutor "${logfile1}" \
-                                             "${env_common}" \
-                                             "${AUTORECONF}" \
-                                             "${autoreconf_flags}"
+         if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+                                                 "${env_common}" \
+                                                 "${AUTORECONF}" \
+                                                 "${autoreconf_flags}"
          then
             build_fail "${logfile1}" "autoreconf"
          fi
       fi
 
        # use absolute paths for configure, safer (and easier to read IMO)
-      if ! logging_redirect_eval_exekutor "${logfile2}" \
-                                          "${AUTOCONF}" \
-                                          "${autoconf_flags}"
+      if ! logging_redirect_tee_eval_exekutor "${logfile2}" "${teefile2}" \
+                                              "${AUTOCONF}" \
+                                              "${autoconf_flags}"
       then
          build_fail "${logfile2}" "autoconf"
       fi

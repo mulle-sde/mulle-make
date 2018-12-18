@@ -274,6 +274,12 @@ build_cmake()
 
    cmake_flags="${OPTION_CMAKEFLAGS}"
 
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" != 'YES' ]
+   then
+      r_concat "${cmake_flags}" "--no-warn-unused-cli"
+      cmake_flags="${RVAL}"
+   fi
+
    if [ ! -z "${OPTION_PHASE}" ]
    then
       local phase
@@ -304,6 +310,15 @@ build_cmake()
             cmake_flags="${RVAL}"
          else
             r_concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${dstdir}'"
+            cmake_flags="${RVAL}"
+         fi
+      ;;
+
+      *)
+         maketarget="${cmd}"
+         if [ ! -z "${OPTION_PREFIX}" ]
+         then
+            r_concat "${cmake_flags}" "-DCMAKE_INSTALL_PREFIX:PATH='${OPTION_PREFIX}'"
             cmake_flags="${RVAL}"
          fi
       ;;
@@ -484,7 +499,8 @@ build_cmake()
       if ! cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
       then
          run_cmake='NO'
-         log_fluff "Cmake run skipped as no changes to cmake files have been found in \"${absprojectdir}\""
+         log_fluff "Cmake run skipped as no changes to cmake files have been \
+found in \"${absprojectdir}\""
       fi
    fi
 
@@ -493,33 +509,40 @@ build_cmake()
    r_mulle_make_env_flags
    env_common="${RVAL}"
 
-   local logfile1
-   local logfile2
    local logname2
 
    r_extensionless_basename "${MAKE}"
    logname2="${RVAL}"
 
+   local logfile1
+   local logfile2
+
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "cmake" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "cmake"
    logfile1="${RVAL}"
 
-   r_build_log_name "${logsdir}" "${logname2}" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "${logname2}"
    logfile2="${RVAL}"
+
+   local teefile1
+   local teefile2
+
+   teefile1="/dev/null"
+   teefile2="/dev/null"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
-      then
-         logfile1="`safe_tty`"
-         logfile2="${logfile1}"
-      else
-         log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
-      fi
+      log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+   fi
+
+   if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
+   then
+      teefile1="`safe_tty`"
+      teefile2="${teefile1}"
    fi
 
    (
@@ -535,7 +558,7 @@ build_cmake()
 
       if [ "${run_cmake}" = 'YES' ]
       then
-         if ! logging_redirect_eval_exekutor "${logfile1}" \
+         if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                   "${env_common}" \
                   "'${CMAKE}'" -G "'${CMAKE_GENERATOR}'" \
                                "${cmake_flags}" \
@@ -545,7 +568,7 @@ build_cmake()
          fi
       fi
 
-      if ! logging_redirect_eval_exekutor "${logfile2}" \
+      if ! logging_redirect_tee_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
                "'${MAKE}'" "${make_flags}" ${maketarget}
       then

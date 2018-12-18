@@ -495,7 +495,7 @@ There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERE
       ;;
 
       255)
-         fail "Don't know how to build \"${srcdir}\""
+         fail "Don't know how to build \"${srcdir}\" with \"${AVAILABLE_PLUGINS}\""
       ;;
 
       *)
@@ -530,18 +530,14 @@ _make_build_main()
    log_entry "_make_build_main" "$@"
 
    local cmd="${1:-project}"
-   shift
+   local subcmd="${2:-project}"
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
-   local OPTION_TOOL_PREFERENCES="cmake
-meson
-autoconf
-configure"
+   local OPTION_TOOL_PREFERENCES="cmake:meson:autoconf:configure"
    case "${MULLE_UNAME}" in
       darwin)
-         OPTION_TOOL_PREFERENCES="${OPTION_TOOL_PREFERENCES}
-xcodebuild"
+         OPTION_TOOL_PREFERENCES="${OPTION_TOOL_PREFERENCES}:xcodebuild"
       ;;
    esac
 
@@ -623,7 +619,7 @@ xcodebuild"
             # convenient to allow empty parameter here (for mulle-bootstrap)
             if [ ! -z "${argument}" ]
             then
-               OPTION_TOOL_PREFERENCES="`printf "%s" "${argument}" | tr ',' '\012'`"
+               OPTION_TOOL_PREFERENCES="${argument}"
             fi
          ;;
 
@@ -656,11 +652,11 @@ xcodebuild"
             esac
          ;;
 
-         --clean)
+         --clean|-k)
             OPTION_CLEAN_BEFORE_BUILD='YES'
          ;;
 
-         --no-clean)
+         --no-clean|-K)
             OPTION_CLEAN_BEFORE_BUILD='NO'
          ;;
 
@@ -846,7 +842,7 @@ Maybe repair with:
             project_usage
          fi
 
-         build "${cmd}" \
+         build "${subcmd}" \
                "${srcdir}" \
                "" \
                "${OPTION_INFO_DIR}"
@@ -892,7 +888,7 @@ make_build_main()
    log_entry "make_build_main" "$@"
 
    usage="project_usage"
-   _make_build_main "project" "$@"
+   _make_build_main "project" "$1"
 }
 
 
@@ -901,7 +897,7 @@ make_install_main()
    log_entry "make_install_main" "$@"
 
    usage="install_usage"
-   _make_build_main "install" "$@"
+   _make_build_main "install"
 }
 
 
@@ -910,5 +906,5 @@ make_list_main()
    log_entry "make_list_main" "$@"
 
    usage="list_usage"
-   _make_build_main "list" "$@"
+   _make_build_main "list"
 }

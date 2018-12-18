@@ -193,6 +193,15 @@ build_meson()
          r_concat "${meson_flags}" "--prefix '${dstdir}'"
          meson_flags="${RVAL}"
       ;;
+
+      *)
+         maketarget="${cmd}"
+         if [ ! -z "${OPTION_PREFIX}" ]
+         then
+            r_concat "${meson_flags}" "--prefix '${OPTION_PREFIX}'"
+            meson_flags="${RVAL}"
+         fi
+      ;;
    esac
 
    if [ ! -z "${configuration}" ]
@@ -297,23 +306,29 @@ build_meson()
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "meson" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "meson"
    logfile1="${RVAL}"
-   r_build_log_name "${logsdir}" "ninja" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "ninja"
    logfile2="${RVAL}"
+
+   local teefile1
+   local teefile2
+
+   teefile1="/dev/null"
+   teefile2="/dev/null"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
-      then
-         logfile1="`safe_tty`"
-         logfile2="$logfile1"
-      else
-         log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
-      fi
+      log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+   fi
+
+   if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
+   then
+      teefile1="`safe_tty`"
+      teefile2="${teefile1}"
    fi
 
    (
@@ -336,7 +351,7 @@ build_meson()
          rmdir_safer "${builddir}"
       fi
 
-      if ! logging_redirect_eval_exekutor "${logfile1}" \
+      if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                "${env_common}" \
                "${meson_env}" \
                "'${MESON}'" --backend "'${MESON_BACKEND}'" \
@@ -348,7 +363,7 @@ build_meson()
 
       exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
 
-      if ! logging_redirect_eval_exekutor "${logfile2}" \
+      if ! logging_redirect_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
                "'${NINJA}'" "${ninja_flags}" ${maketarget}
       then

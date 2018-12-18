@@ -258,7 +258,7 @@ is_plus_key()
 {
    log_entry "is_plus_key" "$@"
 
-   fgrep -q -F -x "$1" <<< "${DEFINED_PLUS_OPTIONS}"
+   fgrep -q -F -x -e "$1" <<< "${DEFINED_PLUS_OPTIONS}"
 }
 
 
@@ -389,7 +389,7 @@ check_option_key_without_prefix()
    local match
    local escaped
 
-   if ! fgrep -q -s -x "OPTION_${key}" <<< "${KNOWN_OPTIONS}"
+   if ! fgrep -q -s -x -e "OPTION_${key}" <<< "${KNOWN_OPTIONS}"
    then
       local message
       local hint
@@ -420,8 +420,8 @@ check_key_without_prefix_exists()
 
    if [ -z "${option}" ]
    then
-      if LC_ALL="C" fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
-         LC_ALL="C" fgrep -q -s -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
+      if LC_ALL="C" fgrep -q -s -x -e "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
+         LC_ALL="C" fgrep -q -s -x -e "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
       then
          log_warning "\"${key}\" has already been defined"
       fi
@@ -504,8 +504,8 @@ make_undefine_option()
 
    unset "OPTION_${key}"
 
-   DEFINED_OPTIONS="`fgrep -v -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" `"
-   DEFINED_PLUS_OPTIONS="`fgrep -v -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}" `"
+   DEFINED_OPTIONS="`fgrep -v -x -e "OPTION_${key}" <<< "${DEFINED_OPTIONS}" `"
+   DEFINED_PLUS_OPTIONS="`fgrep -v -x -e "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}" `"
 }
 
 

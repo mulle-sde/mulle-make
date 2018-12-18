@@ -1,3 +1,20 @@
+## 0.7.0
+
+* improved logfile output
+* suppress cmake undefined CLI values by default (reenable with -v)
+* support three phase cmake builds
+* rename "plugins" command to "show"
+* rename --info-dir to --definition-dir
+* added --phase support for cmake
+* new and more powerful definition commands
+* list is now listing the definitions
+* add -l option for ninja
+* purge some of the old shortcut options, because they were never used and obscure ninja/make flags
+* BUILDPATH is no longer silently constructed from `DEPENDENCY_DIR,` let mulle-craft do that
+* fix and simplify option overriding in cmake plugin
+* add script plugin, to accomodate build systems mulle-make does not accomodate
+
+
 ### 0.6.1
 
 * export `CMAKE_INCLUDE_PATH` again for mulle-c11

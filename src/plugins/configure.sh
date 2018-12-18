@@ -117,12 +117,19 @@ build_configure()
          then
             arguments="--prefix '${OPTION_PREFIX}'"
          fi
-
       ;;
 
       install)
          maketarget="install"
          arguments="--prefix '${dstdir}'"
+      ;;
+
+      *)
+         maketarget="${cmd}"
+         if [ ! -z "${OPTION_PREFIX}" ]
+         then
+            arguments="--prefix '${OPTION_PREFIX}'"
+         fi
       ;;
    esac
 
@@ -199,24 +206,31 @@ build_configure()
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "configure" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "configure"
    logfile1="${RVAL}"
-   r_build_log_name "${logsdir}" "make" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "make"
    logfile2="${RVAL}"
+
+   local teefile1
+   local teefile2
+
+   teefile1="/dev/null"
+   teefile2="/dev/null"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
-      then
-         logfile1="`safe_tty`"
-         logfile2="${logfile1}"
-      else
-         log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
-      fi
+      log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
    fi
+
+   if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
+   then
+      teefile1="`safe_tty`"
+      teefile2="${logfile1}"
+   fi
+
 
    (
       exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
@@ -230,7 +244,7 @@ build_configure()
 
 
        # use absolute paths for configure, safer (and easier to read IMO)
-      if ! logging_redirect_eval_exekutor "${logfile1}" \
+      if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                                           "${env_flags}" \
                                              "'${absprojectdir}/configure'" \
                                                 "${configure_flags}" \
@@ -239,7 +253,7 @@ build_configure()
          build_fail "${logfile1}" "configure"
       fi
 
-      if ! logging_redirect_eval_exekutor "${logfile2}" \
+      if ! logging_redirect_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
                "'${MAKE}'" "${MAKE_FLAGS}" ${maketarget}
       then
          build_fail "${logfile2}" "make"

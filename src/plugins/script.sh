@@ -55,7 +55,7 @@ r_build_script_absolutepath()
    # Look in craftinfo bin first
    #
    searchpath="${dir}/bin:$PATH"
-   log_fluff "Looking for \"${OPTION_BUILD_SCRIPT}\" in \"${searchpath}\""
+   log_fluff "Looking for script \"${OPTION_BUILD_SCRIPT}\" in \"${searchpath}\""
 
    RVAL="`PATH="${searchpath}" command -v "${OPTION_BUILD_SCRIPT}"`"
 
@@ -108,19 +108,24 @@ build_script()
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "${scriptname}" "${srcdir}" "${configuration}" "${sdk}"
+   r_build_log_name "${logsdir}" "${scriptname}"
    logfile1="${RVAL}"
+
+   local teefile1
+   local teefile2
+
+   teefile1="/dev/null"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
    else
-      if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
-      then
-         logfile1="`safe_tty`"
-      else
-         log_verbose "Build log will be in \"${logfile1}\""
-      fi
+      log_verbose "Build logs will be in \"${logfile1}\""
+   fi
+
+   if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
+   then
+      teefile1="`safe_tty`"
    fi
 
    (
@@ -134,14 +139,15 @@ build_script()
       fi
 
        # use absolute paths for configure, safer (and easier to read IMO)
-      if ! logging_redirect_eval_exekutor "${logfile1}" \
-                                          "${env_common}" \
-                                          "${buildscript}" \
-                                          --build-dir "'${builddir}'" \
-                                          --install-dir "'${dstdir}'" \
-                                          --configuration "'${configuration}'" \
-                                          --sdk "'${sdk}'" \
-                                          "'${command}'"
+      if ! logging_redirect_tee_eval_exekutor \
+                     "${logfile1}" "${teefile1}" \
+                     "${env_common}" \
+                     "${buildscript}" \
+                     --build-dir "'${builddir}'" \
+                     --install-dir "'${dstdir}'" \
+                     --configuration "'${configuration}'" \
+                     --sdk "'${sdk}'" \
+                     "'${command}'"
       then
          build_fail "${logfile1}" "${scriptname}"
       fi

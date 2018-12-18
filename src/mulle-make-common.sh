@@ -266,79 +266,42 @@ build_fail()
 }
 
 
-#
-# Build log will be in this form, if OPTION_LOG_FILENAME_FORMAT="%t" is specified
-#     <name>--<configuration>-<sdk>.<tool>.log
-# Otherwise it is just
-#     <tool>.log
-#
 r_build_log_name()
 {
    log_entry "r_build_log_name" "$@"
 
-   local logsdir=$1; shift
-   local tool="$1"; shift
-   local srcdir="$1"; shift
+   local logsdir=$1
+   local tool="$2"
 
    [ -z "${logsdir}" ] && internal_fail "logsdir missing"
    [ -z "${tool}" ]    && internal_fail "tool missing"
-   [ -z "${srcdir}" ]  && internal_fail "srcdir missing"
 
-   if [ -z "${OPTION_LOG_FILENAME_FORMAT}" ]
-   then
-      r_absolutepath "${logsdir}/${tool}.log"
-      return
-   fi
+   r_absolutepath "${logsdir}"
+   r_filepath_concat "${RVAL}" "${tool}"
+   logsdir="${RVAL}"
 
-   internal_fail "Need to implement this"
-#      logfile="${logsdir}/${name}"
-#      if [ $# -ne 0 ]
-#      then
-#         # want to separate with --
-#         logfile="${logfile}-"
-#      fi
-#   then
-#      local logfile
-#      local s
-#      local name
-#
-#      name="`tr '[/:.]' '_' <<< "${OPTION_PROJECT_NAME}"`"
-#      if [ -z "${name}" ]
-#      then
-#         name="$(guess_project_name "${srcdir}")"
-#      fi
-#
-#      case "${name}" in
-#         *-)
-#            fail "Dependency \"${name}\" ends with -, that won't work here"
-#         ;;
-#
-#         *--*)
-#            fail "Dependency \"${name}\" contains --, that won't work here"
-#         ;;
-#      esac
-#
-#      logfile="${logsdir}/${name}"
-#      if [ $# -ne 0 ]
-#      then
-#         # want to separate with --
-#         logfile="${logfile}-"
-#      fi
-#
-#      while [ $# -gt 0 ]
-#      do
-#         s="$1"
-#         shift
-#
-#         if [ ! -z "$s" ]
-#         then
-#            s="${s//-/_}"
-#            logfile="${logfile}-${s}"
-#         fi
-#      done
-#
-#   tool="${tool//-/_}"
-#   absolutepath "${logfile}.${tool}.log"
+   local count
+   local logfile
+
+   count="`cat "${logsdir}/.count" 2> /dev/null`"
+   count=${count:-1}
+
+   logfile="${logsdir}.log"
+
+   while :
+   do
+      if [ ! -f "${logfile}" ]
+      then
+         RVAL="${logfile}"
+         return
+      fi
+
+      logfile="${logsdir}.${count}.log"
+      count=$(( $count + 1 ))
+
+      mkdir_if_missing "${logsdir}"
+      redirect_exekutor "${logsdir}/.count" echo "$count"
+   done
 }
 
 
