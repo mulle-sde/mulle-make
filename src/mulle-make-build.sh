@@ -45,7 +45,7 @@ EOF
       cat <<EOF
    --append <key>[+]=<value>  : like -D, but appends value to a previous value
    -D<key>=<value>            : set the definition named key to value
-   -D<key>+=<value>           : set a += definition for the buildtool
+   -D<key>+=<value>           : append a += definition for the buildtool
    --build-dir <dir>          : specify build directory
    --debug                    : build with configuration Debug
    --ifempty <key>[+]=<value> : like -D, but only if no previous value exists
@@ -704,7 +704,11 @@ _make_build_main()
                . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
             fi
 
-            make_define_plusoption_keyvalue "${argument:2}"
+            #
+            # allow multiple -D+= values to appen values
+            # useful for -DCFLAGS+= the most often used flag
+            #
+            make_define_plusoption_keyvalue "${argument:2}" "append"
          ;;
 
          '-D'*)

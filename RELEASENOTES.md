@@ -1,3 +1,7 @@
+### 0.7.1
+
+* multiple -D+= definitions dont overwrite each other, they append now
+
 ## 0.7.0
 
 * improved logfile output

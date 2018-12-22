@@ -152,6 +152,9 @@ main()
       installer_fail "\"${prefix}\" does not exist"
    fi
 
+   cd "`dirname -- "$0"`"
+   cd .. # compensate for installer being in bin
+
    local bin
    local libexec
 
