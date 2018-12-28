@@ -52,10 +52,10 @@ Usage:
 
 Commands:
    get    :  get a specific value
-   keys   :  list all known builtin keys
    list   :  list defined values
    remove :  remove a key from the definitions
    set    :  set a specific value
+   show   :  list all known builtin keys (excludes plugin specifics)
 
 Options:
    --definition-dir <path>  : specify info directory to edit (.mulle-make)
@@ -196,6 +196,7 @@ OPTION_OTHER_CFLAGS
 OPTION_OTHER_CPPFLAGS
 OPTION_OTHER_CXXFLAGS
 OPTION_OTHER_LDFLAGS
+OPTION_PLUGIN_PREFERENCES
 OPTION_PREFIX
 OPTION_PROJECT_FILE
 OPTION_PROJECT_LANGUAGE
@@ -203,7 +204,6 @@ OPTION_PROJECT_NAME
 OPTION_SCHEMES
 OPTION_SDK
 OPTION_TARGETS
-OPTION_TOOL_PREFERENCES
 OPTION_WARNING_CFLAGS"
 
 KNOWN_OPTIONS="${KNOWN_GENERAL_OPTIONS}
@@ -1044,7 +1044,7 @@ make_definition_main()
          ${cmd}_definition_dir "${OPTION_DEFINITION_DIR}"
       ;;
 
-      keys)
+      show|keys)
          sed -e 's/^OPTION_//' <<< "${KNOWN_OPTIONS}" | LC_ALL=C sort -u
       ;;
 

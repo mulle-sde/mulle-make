@@ -286,7 +286,9 @@ test_configure()
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      fail "configure does not support build phases"
+      fail "configure does not support build phases
+${C_INFO}This is probably a misconfiguration in your sourcetree. Suggest:
+${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
    fi
 
    if ! [ -x "${projectdir}/configure" ]

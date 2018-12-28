@@ -1,3 +1,7 @@
+### 0.7.2
+
+* improve README.md
+
 ### 0.7.1
 
 * multiple -D+= definitions dont overwrite each other, they append now

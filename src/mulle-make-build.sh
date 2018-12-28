@@ -431,7 +431,7 @@ build()
       then
          fail "No permission to run scripts. Use ---allow-script."
       fi
-      OPTION_TOOL_PREFERENCES="script"
+      OPTION_PLUGIN_PREFERENCES="script"
       log_verbose "A script is defined, only considering a script build now"
    else
       log_debug "No script defined"
@@ -441,11 +441,11 @@ build()
    # used to receive values from build_load_plugins
    local AVAILABLE_PLUGINS
 
-   build_load_plugins "${OPTION_TOOL_PREFERENCES}" # can't be subshell !
+   build_load_plugins "${OPTION_PLUGIN_PREFERENCES}" # can't be subshell !
    if [ -z "${AVAILABLE_PLUGINS}" ]
    then
       fail "Don't know how to build \"${srcdir}\".
-There are no plugins available for requested tools \"`echo ${OPTION_TOOL_PREFERENCES}`\""
+There are no plugins available for requested tools \"`echo ${OPTION_PLUGIN_PREFERENCES}`\""
    fi
 
    log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: `echo ${AVAILABLE_PLUGINS}`"
@@ -534,10 +534,10 @@ _make_build_main()
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
-   local OPTION_TOOL_PREFERENCES="cmake:meson:autoconf:configure"
+   local OPTION_PLUGIN_PREFERENCES="cmake:meson:autoconf:configure"
    case "${MULLE_UNAME}" in
       darwin)
-         OPTION_TOOL_PREFERENCES="${OPTION_TOOL_PREFERENCES}:xcodebuild"
+         OPTION_PLUGIN_PREFERENCES="${OPTION_PLUGIN_PREFERENCES}:xcodebuild"
       ;;
    esac
 
@@ -619,7 +619,7 @@ _make_build_main()
             # convenient to allow empty parameter here (for mulle-bootstrap)
             if [ ! -z "${argument}" ]
             then
-               OPTION_TOOL_PREFERENCES="${argument}"
+               OPTION_PLUGIN_PREFERENCES="${argument}"
             fi
          ;;
 
@@ -811,8 +811,7 @@ _make_build_main()
             */stash/*)
                fail "Source directory \"${srcdir}\" is missing.
 Maybe repair with:
-   ${C_RESET_BOLD}mulle-sde fetch
-   mulle-sde clean all"
+   ${C_RESET_BOLD}mulle-sde clean fetch"
             ;;
          esac
       fi

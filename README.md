@@ -1,4 +1,6 @@
-# mulle-make, 🤖 Build projects uniformly with a variety of build systems
+# mulle-make
+
+🤖 Build projects uniformly with a variety of build systems
 
 ![Last version](https://img.shields.io/github/tag/mulle-sde/mulle-make.svg)
 
