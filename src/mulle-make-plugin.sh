@@ -39,8 +39,6 @@ build_list_plugins()
 
    local pluginpath
    local pluginname
-   local RVAL
-
    IFS="
 "
    for pluginpath in `exekutor ls -1 "${MULLE_MAKE_LIBEXEC_DIR}/plugins/"*.sh`
@@ -130,8 +128,6 @@ build_load_plugins()
    local preferences="$1"
 
    local preference
-   local RVAL
-
    AVAILABLE_PLUGINS=
    IFS=":"; set -o noglob
    for preference in ${preferences}

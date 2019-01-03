@@ -1,3 +1,9 @@
+## 0.9.0
+
+* use .mulle definition now instead of mulle-make
+* will consider .mulle/etc/craft/definition my default now if not invoked by mulle-craft
+
+
 ### 0.7.2
 
 * improve README.md

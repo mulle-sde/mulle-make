@@ -182,7 +182,7 @@ build_configure()
    fi
    if [ ! -z "${ldflags}" ]
    then
-      r_concat "${env_flags}" "LDFLAGS='${LDFLAGS}'"
+      r_concat "${env_flags}" "LDFLAGS='${ldflags}'"
       env_flags="${RVAL}"
       r_colon_concat "${passed_keys}" "LDFLAGS"
       passed_keys="${RVAL}"
@@ -273,8 +273,6 @@ test_configure()
 
    local projectfile
    local projectdir
-   local RVAL
-
    if ! r_find_nearest_matching_pattern "${srcdir}" "configure"
    then
       log_fluff "There is no configure project in \"${srcdir}\""

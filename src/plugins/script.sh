@@ -82,7 +82,7 @@ build_script()
 
    local buildscript
    local projectdir
-   local RVAL
+
    local scriptname
 
    r_build_script_absolutepath

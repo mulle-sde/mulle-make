@@ -44,8 +44,6 @@ tools_environment_xcodebuild()
 {
    tools_environment_common
 
-   local RVAL
-
    r_find_xcodebuild "$@"
    XCODEBUILD="${RVAL}"
 }
@@ -143,7 +141,7 @@ _build_xcodebuild()
          cat <<EOF >&2
 Please specify a scheme to compile in ${MAKE_DIR}/${name}/SCHEME for
 xctool and be sure that this scheme exists and is shared. Or delete
-${HOME}/.mulle-make/xcodebuild and use xcodebuild (preferred).
+${HOME}/.mulle/etc/craft/definition/xcodebuild and use xcodebuild (preferred).
 EOF
          exit 1
       fi

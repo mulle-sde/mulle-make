@@ -58,7 +58,7 @@ Commands:
    show   :  list all known builtin keys (excludes plugin specifics)
 
 Options:
-   --definition-dir <path>  : specify info directory to edit (.mulle-make)
+   --definition-dir <path>  : definitions to edit (.mulle/etc/craft/definition)
 EOF
    exit 1
 }
@@ -446,8 +446,6 @@ _make_define_option()
 
    local oldvalue
    local escaped
-   local RVAL
-
    if [ ! -z "${option}" ]
    then
       oldvalue="`eval echo "\\\$OPTION_$key"`"
@@ -515,8 +513,6 @@ make_define_option()
    log_entry "make_define_option" "$@"
 
    local key="$1"
-
-   local RVAL
 
    if ! _make_define_option "$@"
    then
@@ -619,8 +615,6 @@ read_defines_dir()
    local value
    local filename
 
-   log_fluff "Searching in \"${directory}\" for definitions (${option})"
-
    shopt -s nullglob
    for filename in "${directory}"/[A-Z_][A-Z0-9_]*
    do
@@ -701,8 +695,6 @@ remove_other_keyfiles_than()
    local keyfile="$1" ; shift
 
    local otherfile
-   local RVAL
-
    while [ $# -ne 0 ]
    do
       otherfile="$1" ; shift
@@ -989,7 +981,7 @@ make_definition_main()
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
    local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
-   local OPTION_DEFINITION_DIR=".mulle-make"
+   local OPTION_DEFINITION_DIR=".mulle/etc/craft/definition"
 
    local argument
 

@@ -142,9 +142,7 @@ tools_environment_common()
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
-      local RVAL
-
-      r_verify_binary "tr" "tr" "tr"
+         r_verify_binary "tr" "tr" "tr"
       TR="${RVAL}"
       r_verify_binary "sed" "sed" "sed"
       SED="${RVAL}"
@@ -173,9 +171,7 @@ tools_environment_make()
    if [ -z "${MAKE}" ]
    then
       local ourmake
-      local RVAL
-
-      r_platform_make "${OPTION_CC}" "${plugin}"
+         r_platform_make "${OPTION_CC}" "${plugin}"
       ourmake="${RVAL}"
 
       r_find_make "${ourmake}" "${noninja}"
@@ -353,27 +349,6 @@ r_find_nearest_matching_pattern()
       RVAL=""
       return 1
    fi
-
-   # local found
-   #
-   #
-   # Unused feature removed. For now. Would need [ -f ] around it to make it
-   # faster.
-   #
-   # allow user to specify directory to use for building
-   #
-   #   found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir.${MULLE_UNAME}" `"
-   #   if [  -z "${found}" ]
-   #   then
-   #      found="`egrep -s -v '^#"' "${directory}/.mulle-make-dir" `"
-   #   fi
-   #
-   #   if [ ! -z "${found}" ]
-   #   then
-   #      log_fluff "Use .mulle-make-dir specified directory \"${found}\""
-   #      echo "${found}"
-   #      return
-   #   fi
 
    local depth
 

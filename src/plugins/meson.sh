@@ -61,8 +61,6 @@ tools_environment_meson()
    tools_environment_make "" "meson"
 
    local defaultbackend
-   local RVAL
-
    r_platform_meson_backend "${NINJA}"
    defaultbackend="${RVAL}"
    r_find_meson
@@ -178,7 +176,7 @@ build_meson()
    local maketarget
 
    case "${cmd}" in
-      build|project)
+      build|project|make)
          maketarget=
          if [ ! -z "${OPTION_PREFIX}" ]
          then
@@ -363,7 +361,7 @@ build_meson()
 
       exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
 
-      if ! logging_redirect_eval_exekutor "${logfile2}" "${teefile2}" \
+      if ! logging_redirect_tee_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
                "'${NINJA}'" "${ninja_flags}" ${maketarget}
       then
@@ -384,8 +382,6 @@ test_meson()
 
    local projectfile
    local projectdir
-   local RVAL
-
    if ! r_find_nearest_matching_pattern "${srcdir}" "meson.build"
    then
       log_fluff "There is no meson.build file in \"${srcdir}\""

@@ -81,8 +81,6 @@ tools_environment_cmake()
    tools_environment_make "" "cmake"
 
    local defaultgenerator
-   local RVAL
-
    r_platform_cmake_generator "${MAKE}"
    defaultgenerator="${RVAL}"
 
@@ -589,8 +587,6 @@ test_cmake()
 
    local projectfile
    local projectdir
-   local RVAL
-
    if ! r_find_nearest_matching_pattern "${srcdir}" "CMakeLists.txt"
    then
       log_fluff "There is no CMakeLists.txt file in \"${srcdir}\""

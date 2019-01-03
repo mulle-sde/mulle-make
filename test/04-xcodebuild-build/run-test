@@ -88,9 +88,11 @@ run_test()
    #
    MOCK_TEST_DIR="${directory}" \
    XCODEBUILD_REDIRECT_FILE="${directory}/xcodebuild-args.txt" \
-      run_mulle_make ${MULLE_MAKE_FLAGS} make --build-dir "${directory}/build" \
-                          -DXCODEBUILD="${PWD}/../mock-xcodebuild" \
-                          "$@"
+      run_mulle_make ${MULLE_MAKE_FLAGS} \
+               make \
+                  --build-dir "${directory}/build" \
+                  -DXCODEBUILD="${PWD}/../mock-xcodebuild" \
+                  "$@"
 
    if [ "$?" -ne 0 ]
    then
@@ -130,7 +132,7 @@ main()
    run_test "${directory}" "debug_xcodebuild.txt" -c "Debug"
    log_verbose "----- #2 PASSED -----"
 
-   run_test "${directory}" "prefix_xcodebuild.txt" -c "Release" -p "/tmp"
+   run_test "${directory}" "prefix_xcodebuild.txt" -c "Release" --prefix "/tmp"
    log_verbose "----- #3 PASSED -----"
 
    run_test "${directory}" "sdk_xcodebuild.txt" -c "Release" -s "mulle-sdk"

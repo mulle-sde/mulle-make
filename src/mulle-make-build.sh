@@ -304,8 +304,6 @@ build_with_configuration_sdk_preferences()
    fi
 
    local name
-   local RVAL
-
    name="${OPTION_PROJECT_NAME}"
    if [ -z "${name}" ]
    then
@@ -634,11 +632,11 @@ _make_build_main()
             read -r OPTION_BUILD_DIR || fail "missing argument to \"${argument}\""
          ;;
 
-         --configuration)
+         -c|--configuration)
             read -r OPTION_CONFIGURATION || fail "missing argument to \"${argument}\""
          ;;
 
-         --definition-dir|--info-dir|--makeinfo-dir)
+         -d|--definition-dir|--info-dir|--makeinfo-dir)
             read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
          ;;
 
@@ -694,7 +692,7 @@ _make_build_main()
             esac
          ;;
 
-         --sdk)
+         -s|--sdk)
             read -r OPTION_SDK || fail "missing argument to \"${argument}\""
          ;;
 
@@ -820,7 +818,7 @@ Maybe repair with:
 
    case "${OPTION_INFO_DIR}" in
       'DEFAULT')
-         OPTION_INFO_DIR="${srcdir}/.mulle-make"
+         OPTION_INFO_DIR="${srcdir}/.mulle/etc/craft/definition"
       ;;
 
       'NONE')

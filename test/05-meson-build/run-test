@@ -91,10 +91,10 @@ run_test()
 
    MESON_REDIRECT_FILE="${meson_output}" \
    NINJA_REDIRECT_FILE="${make_output}" \
-      run_mulle_make make --build-dir "${directory}/build" \
-                          -DMESON="${PWD}/../mock-meson" \
-                          -DNINJA="${PWD}/../mock-ninja" \
-                          "$@"
+      run_mulle_make build --build-dir "${directory}/build" \
+                           -DMESON="${PWD}/../mock-meson" \
+                           -DNINJA="${PWD}/../mock-ninja" \
+                           "$@"
 
    if [ "$?" -ne 0 ]
    then

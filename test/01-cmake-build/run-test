@@ -56,6 +56,14 @@ expect_content()
          fi
       fi
 
+      if [ "${MULLE_UNAME}" = darwin ]
+      then
+         if [ -z "`egrep -v -e '-isysroot' <<< "${diffs}"`" ]
+         then
+            return 0
+         fi
+      fi
+
       log_error "Unexpected output generated"
       cat <<EOF >&2
 ----------------
@@ -84,7 +92,7 @@ run_test()
 
    CMAKE_REDIRECT_FILE="${directory}/cmake-args.txt" \
    MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
-      run_mulle_make ${MULLE_MAKE_FLAGS} make --build-dir "${directory}/build" \
+      run_mulle_make ${MULLE_MAKE_FLAGS} project --build-dir "${directory}/build" \
                           -DCMAKE="${PWD}/../mock-cmake" \
                           -DMAKE="${PWD}/../mock-make" \
                           "$@"

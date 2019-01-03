@@ -76,8 +76,6 @@ build_autoconf()
    local sdk="$1"; shift
 
    local projectdir
-   local RVAL
-
    r_fast_dirname "${projectfile}"
    projectdir="${RVAL}"
 
@@ -201,8 +199,6 @@ test_autoconf()
 
    local projectfile
    local projectdir
-   local RVAL
-
    if ! r_find_nearest_matching_pattern "${srcdir}" "configure.ac"
    then
       if ! r_find_nearest_matching_pattern "${srcdir}" "configure.in"
