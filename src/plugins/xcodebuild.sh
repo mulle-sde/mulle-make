@@ -346,7 +346,7 @@ EOF
    then
       logfile1="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1}\""
+      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]

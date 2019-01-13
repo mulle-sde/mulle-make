@@ -389,7 +389,7 @@ check_option_key_without_prefix()
    local match
    local escaped
 
-   if ! fgrep -q -s -x -e "OPTION_${key}" <<< "${KNOWN_OPTIONS}"
+   if find_line "${KNOWN_OPTIONS}" "OPTION_${key}"
    then
       local message
       local hint
@@ -420,8 +420,8 @@ check_key_without_prefix_exists()
 
    if [ -z "${option}" ]
    then
-      if LC_ALL="C" fgrep -q -s -x -e "OPTION_${key}" <<< "${DEFINED_OPTIONS}" ||
-         LC_ALL="C" fgrep -q -s -x -e "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}"
+      if find_line "${DEFINED_OPTIONS}" "OPTION_${key}"  ||
+         find_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"
       then
          log_warning "\"${key}\" has already been defined"
       fi

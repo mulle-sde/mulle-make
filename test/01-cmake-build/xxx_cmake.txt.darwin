@@ -1,0 +1,6 @@
+CMAKE_BUILD_TYPE=Release
+CMAKE_CXX_FLAGS=-isysroot /Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk
+CMAKE_C_FLAGS=-isysroot /Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk
+CMAKE_EXE_LINKER_FLAGS=-isysroot /Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk
+CMAKE_SHARED_LINKER_FLAGS=-isysroot /Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk
+XXX=yyy

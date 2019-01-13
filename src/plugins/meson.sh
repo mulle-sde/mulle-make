@@ -320,7 +320,7 @@ build_meson()
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1}\" and \"${logfile2}\""
+      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" and \"${logfile2#${MULLE_USER_PWD}/}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]

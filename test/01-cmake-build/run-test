@@ -36,6 +36,7 @@ expect_content()
    then
       expect="${expect}.${MULLE_UNAME}"
    fi
+   log_fluff "Using \"${expect}\""
 
    if [ ! -f "${expect}" ]
    then
