@@ -325,7 +325,8 @@ build_meson()
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
    then
-      teefile1="`safe_tty`"
+      r_safe_tty
+      teefile1="${RVAL}"
       teefile2="${teefile1}"
    fi
 

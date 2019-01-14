@@ -315,18 +315,22 @@ add_path_if_exists()
 }
 
 
-safe_tty()
+r_safe_tty()
 {
-   local ttyname
+   local tty
 
-   ttyname="`tty`"
-   case "${ttyname}" in
+   TTY="`command -v tty`"
+   if [ ! -z "${TTY}" ]
+   then
+      RVAL="`${TTY}`"
+   else
+      RVAL="/dev/stderr"
+      return
+   fi
+
+   case "${RVAL}" in
       *\ *) # not a tty or so
-         echo "/dev/stderr"
-      ;;
-
-      *)
-         echo "${ttyname}"
+         RVAL="/dev/stderr"
       ;;
    esac
 }
