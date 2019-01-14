@@ -80,9 +80,12 @@ EOF
 
 run_test()
 {
+   local directory="$1"; shift
    local configure_expect="$1"; shift
    local make_expect="$1"; shift
 
+   MULLE_TMP_DIR="${directory}" \
+   MULLE_TEST_DIR="${PWD}" \
    CONFIGURE_REDIRECT_FILE="${directory}/configure-args.txt" \
    MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
       run_mulle_make make --build-dir "${directory}/build" \
@@ -117,16 +120,16 @@ main()
    #
    # Default is release
    #
-   run_test "release_configure.txt" "make.txt" --no-determine-sdk
+   run_test	"${directory}" "release_configure.txt" "make.txt" --no-determine-sdk
    log_verbose "----- #1 PASSED -----"
 
-   run_test "release_prefix_configure.txt" "make.txt" --no-determine-sdk "--prefix" "/tmp/foo"
+   run_test	"${directory}" "release_prefix_configure.txt" "make.txt" --no-determine-sdk "--prefix" "/tmp/foo"
    log_verbose "----- #2 PASSED -----"
 
    #
    # check -I -L -F
    #
-   run_test "paths_configure.txt" "make.txt" -DDETERMINE_SDK='NO' \
+   run_test	"${directory}" "paths_configure.txt" "make.txt" -DDETERMINE_SDK='NO' \
                                              -I /usr/local/include:/usr/include \
                                              -L /usr/local/lib:/usr/lib \
                                              -F /Network/Library/Frameworks:/Library/Frameworks

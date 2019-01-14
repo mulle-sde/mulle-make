@@ -447,6 +447,7 @@ build_cmake()
    fi
 
    local make_flags
+   local make_verbose_flags
 
    make_flags="${OPTION_MAKEFLAGS}"
 
@@ -458,12 +459,7 @@ build_cmake()
    case "${MAKE}" in
       *ninja)
          makefile="${builddir}/build.ninja"
-         if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
-         then
-            r_concat "${make_flags}" "-v"
-            make_flags="${RVAL}"
-         fi
-
+         make_verbose_flags="-v"
          if [ ! -z "${OPTION_LOAD}" ]
          then
             r_concat "${make_flags}" "-l '${OPTION_LOAD}'"
@@ -473,13 +469,15 @@ build_cmake()
 
       *make)
          makefile="${builddir}/Makefile"
-         if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
-         then
-            r_concat "${make_flags}" "VERBOSE=1"
-            make_flags="${RVAL}"
-         fi
+         make_verbose_flags="VERBOSE=1"
       ;;
    esac
+
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+   then
+      r_concat "${make_flags}" "${make_verbose_flags}"
+      make_flags="${RVAL}"
+   fi
 
    if [ ! -z "${OPTION_CORES}" ]
    then

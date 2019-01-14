@@ -228,7 +228,7 @@ EOF
       ;;
    esac
 
-   buildsettings="ARCHS='${OPTION_XCODE_ARCHS:-\${ARCHS_STANDARD_32_64_BIT}}'"
+   buildsettings="ARCHS='${OPTION_XCODE_ARCHS:-\${ARCHS_STANDARD}}'"
    r_concat "${buildsettings}" "DSTROOT='${dstdir:-${absbuilddir}}'"
    buildsettings="${RVAL}"
    r_concat "${buildsettings}" "OBJROOT='${absbuilddir}/obj'"

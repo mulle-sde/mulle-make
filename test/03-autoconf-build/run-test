@@ -79,11 +79,14 @@ EOF
 
 run_test()
 {
+   local directory="$1"; shift
    local autoreconf_expect="$1"; shift
    local autoconf_expect="$1"; shift
    local configure_expect="$1"; shift
    local make_expect="$1"; shift
 
+   MULLE_TMP_DIR="${directory}" \
+   MULLE_TEST_DIR="${PWD}" \
    AUTORECONF_REDIRECT_FILE="${directory}/autoreconf-args.txt" \
    AUTOCONF_REDIRECT_FILE="${directory}/autoconf-args.txt" \
    CONFIGURE_REDIRECT_FILE="${directory}/configure-args.txt" \
@@ -125,7 +128,7 @@ main()
    #
    # Default is release
    #
-   run_test "autoreconf.txt" "autoconf.txt" "configure.txt" "make.txt" \
+   run_test	"${directory}" "autoreconf.txt" "autoconf.txt" "configure.txt" "make.txt" \
                                           --no-determine-sdk
    log_verbose "----- #1 PASSED -----"
    log_info "----- ALL PASSED -----"

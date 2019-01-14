@@ -13,70 +13,6 @@ run_mulle_make()
 }
 
 
-expect_content()
-{
-   local output="$1"
-   local expect="$2"
-
-   if [ ! -f "${output}" ]
-   then
-      if [ -z "${expect}" ]
-      then
-         return
-      fi
-      fail "Did not produce \"${output}\" as expected"
-   else
-      if [ -z "${expect}" ]
-      then
-         fail "Did produce \"${output}\" unexpectedly. Nothing was expected"
-      fi
-   fi
-
-   if [ -f "${expect}.${MULLE_UNAME}" ]
-   then
-      expect="${expect}.${MULLE_UNAME}"
-   fi
-
-   if [ ! -f "${expect}" ]
-   then
-      internal_fail "\"${expect}\" is missing from test"
-   fi
-
-   local diffs
-
-   diffs="`diff -b "${output}" "${expect}"`"
-   if [ $? -ne 0 ]
-   then
-      # fix for mingw
-      if [ `wc -l <<< "${diffs}"` -eq 2 ]
-      then
-         if egrep -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
-         then
-            return 0
-         fi
-      fi
-
-      log_error "Unexpected output generated"
-      cat <<EOF >&2
-----------------
-Output: ($output)
-----------------
-`cat "${output}"`
-----------------
-Expected: ($expect)
-----------------
-`cat "${expect}"`
-----------------
-Diff:
-----------------
-${diffs}
-----------------
-EOF
-      exit 1
-   fi
-}
-
-
 main()
 {
    MULLE_MAKE_FLAGS="$@"
@@ -108,9 +44,9 @@ main()
       exit 1
    fi
 
-   [ -x "${dstdir}/usr/local/bin/myexe" ]           || fail "myexe failed"
-   [ -f "${dstdir}/usr/local/lib/libmylib.dylib" ]  || fail "libmylib.dylib failed"
-   [ -f "${dstdir}/usr/local/include/mylib.h" ]     || fail "mylib.h failed"
+   [ -x "${dstdir}/usr/local/bin/myexe" ]           || fail "myexe not produced"
+   [ -f "${dstdir}/usr/local/lib/libmylib.dylib" ]  || fail "libmylib.dylib not produced"
+   [ -f "${dstdir}/usr/local/include/mylib.h" ]     || fail "mylib.h not produced"
 
    log_verbose "----- #1 PASSED -----"
 

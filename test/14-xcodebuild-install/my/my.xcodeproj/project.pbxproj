@@ -27,7 +27,7 @@
 /* Begin PBXFileReference section */
 		416669471FAF5F1100DD454C /* myexe */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = myexe; sourceTree = BUILT_PRODUCTS_DIR; };
 		4166694A1FAF5F1100DD454C /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
-		416669551FAF5F2400DD454C /* libmylib.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libmylib.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		416669551FAF5F2400DD454C /* libmylib.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; name = libmylib.dylib; path = lib.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		416669591FAF5FB800DD454C /* mylib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mylib.c; sourceTree = "<group>"; };
 		4166695A1FAF5FB800DD454C /* mylib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mylib.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -131,7 +131,7 @@
 		4166693F1FAF5F1100DD454C /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0830;
+				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Mulle kybernetiK";
 				TargetAttributes = {
 					416669461FAF5F1100DD454C = {
@@ -148,6 +148,9 @@
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
 			mainGroup = 4166693E1FAF5F1000DD454C;
 			productRefGroup = 416669481FAF5F1100DD454C /* Products */;
 			projectDirPath = "";
@@ -182,7 +185,7 @@
 		4166694D1FAF5F1100DD454C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				PRODUCT_NAME = "$(TARGETNAME)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
 		};

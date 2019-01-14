@@ -1,7 +1,7 @@
 -alltargets
 -configuration Release
 -sdk macosx
-ARCHS=${ARCHS_STANDARD_32_64_BIT}
+ARCHS=${ARCHS_STANDARD}
 DSTROOT=${MOCK_TEST_DIR}/build
 DYLIB_INSTALL_NAME_BASE=/tmp
 OBJROOT=${MOCK_TEST_DIR}/build/obj

@@ -1,7 +1,7 @@
 -alltargets
 -configuration Release
 -sdk mulle-sdk
-ARCHS=${ARCHS_STANDARD_32_64_BIT}
+ARCHS=${ARCHS_STANDARD}
 DSTROOT=${MOCK_TEST_DIR}/build
 OBJROOT=${MOCK_TEST_DIR}/build/obj
 ONLY_ACTIVE_ARCH=NO

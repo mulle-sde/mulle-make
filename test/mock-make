@@ -1,8 +1,14 @@
 #! /usr/bin/env bash
 
-[ "${TRACE}" = YES ] && set -x
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
-emit_defines()
+filter_darwin()
+{
+   sed -e 's|/Applications/Xcode.*\.app/.*/MacOSX.*\.sdk|\${SDKPATH}|g'
+}
+
+
+_emit_defines()
 {
    while [ "$#" -ne 0 ]
    do
@@ -33,20 +39,37 @@ emit_defines()
 }
 
 
+emit_defines()
+{
+   local escaped_test_path
+   local escaped_tmp_path
+
+   [ -z "${MULLE_TEST_DIR}" ] && internal_fail "MULLE_TEST_DIR is undefined"
+   [ -z "${MULLE_TMP_DIR}" ] && internal_fail "MULLE_TMP_DIR is undefined"
+
+   escaped_test_path="`escaped_sed_pattern "${MULLE_TEST_DIR}"`"
+   escaped_tmp_path="`escaped_sed_pattern "${MULLE_TMP_DIR}"`"
+   _emit_defines "$@"| sed -e "s/${escaped_test_path:-^}/\${MULLE_TEST_DIR}/g" -e "s/${escaped_tmp_path:-^}/\${MULLE_TMP_DIR}/g"
+}
+
+
 main()
 {
    local envvar
    local filename
 
-   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z|'`_REDIRECT_FILE"
+   local exename
+
+   # remove mock- prefix , convert to uppercase, append _REDIRECT_FILE
+   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr 'a-z' 'A-Z'`_REDIRECT_FILE"
    filename="`eval echo "\\\$$envvar"`"
 
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
-      emit_defines "$@" | LC_ALL=C sort > "${filename}"
+      emit_defines "$@" | filter_darwin | LC_ALL=C sort > "${filename}"
    else
-      emit_defines "$@" | LC_ALL=C sort
+      emit_defines "$@" | filter_darwin | LC_ALL=C sort
    fi
 }
 
