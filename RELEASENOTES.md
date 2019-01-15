@@ -1,3 +1,7 @@
+### 0.9.2
+
+* try to fix tty problems when compiling with sued user
+
 ### 0.9.1
 
 * use .mulle definition now instead of mulle-make

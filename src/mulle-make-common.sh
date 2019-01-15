@@ -323,16 +323,21 @@ r_safe_tty()
    if [ ! -z "${TTY}" ]
    then
       RVAL="`${TTY}`"
+	   case "${RVAL}" in
+	      *\ *) # not a tty or so
+	         RVAL="/dev/stderr"
+	      ;;
+	   esac
    else
       RVAL="/dev/stderr"
-      return
    fi
 
-   case "${RVAL}" in
-      *\ *) # not a tty or so
-         RVAL="/dev/stderr"
-      ;;
-   esac
+   # can happen if sued to another user id
+   if [ ! -w "${RVAL}" ] 
+   then
+      log_warning "Can't write to console. Direct output unvailable, see logs."
+   	RVAL="/dev/null"
+   fi
 }
 
 #
