@@ -2,6 +2,13 @@
 
 [ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
+filter_darwin()
+{
+   sed -e 's|/Applications/Xcode.*\.app/.*/MacOSX.*\.sdk|\${SDKPATH}|g' |
+   sed -e 's|/Library/Developer/CommandLineTools/SDKs/MacOSX.*\.sdk|\${SDKPATH}|g'
+}
+
+
 main()
 {
    local envvar
@@ -13,9 +20,9 @@ main()
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
-      echo "$*" > "${filename}"
+      echo "$*" | filter_darwin > "${filename}"
    else
-      echo "$*"
+      echo "$*" | filter_darwin
    fi
 }
 

@@ -5,7 +5,8 @@
 
 filter_darwin()
 {
-   sed -e 's|/Applications/Xcode.*\.app/.*/MacOSX.*\.sdk|\${SDKPATH}|g'
+   sed -e 's|/Applications/Xcode.*\.app/.*/MacOSX.*\.sdk|\${SDKPATH}|g' |
+   sed -e 's|/Library/Developer/CommandLineTools/SDKs/MacOSX.*\.sdk|\${SDKPATH}|g'
 }
 
 

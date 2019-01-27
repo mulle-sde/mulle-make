@@ -1,6 +1,5 @@
 -alltargets
 -configuration Release
--sdk macosx
 -xcconfig whatever.xcconfig
 ARCHS=${ARCHS_STANDARD}
 DSTROOT=${MOCK_TEST_DIR}/build

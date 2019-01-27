@@ -26,6 +26,13 @@ main()
       return
    fi
 
+   case "`xcodebuild 2>&1`" in
+      'xcode-select:'*)
+         log_info "xcodebuild not runnable in commandlines version"
+         return
+      ;;
+   esac
+
    local directory
    local dstdir
    local builddir

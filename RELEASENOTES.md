@@ -1,3 +1,7 @@
+### 0.9.3
+
+* do not emit --sdk macosx if no or Default sdk is defined on darwin
+
 ### 0.9.2
 
 * try to fix tty problems when compiling with sued user

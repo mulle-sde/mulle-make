@@ -173,8 +173,10 @@ EOF
    then
       if [ "${sdk}" = "Default" ]
       then
-         r_concat "${arguments}" "-sdk 'macosx'"
-         arguments="${RVAL}"
+# stay flexible by not providing SDK
+#         r_concat "${arguments}" "-sdk 'macosx'"
+#         arguments="${RVAL}"
+      :
       else
          r_concat "${arguments}" "-sdk '${sdk}'"
          arguments="${RVAL}"

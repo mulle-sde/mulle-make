@@ -1,6 +1,5 @@
 -alltargets
 -configuration Release
--sdk macosx
 ARCHS=${ARCHS_STANDARD}
 DSTROOT=${MOCK_TEST_DIR}/build
 FRAMEWORK_SEARCH_PATHS=/Network/Library/Frameworks /Library/Frameworks

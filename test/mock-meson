@@ -3,6 +3,13 @@
 [ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
+filter_darwin()
+{
+   sed -e 's|/Applications/Xcode.*\.app/.*/MacOSX.*\.sdk|\${SDKPATH}|g' |
+   sed -e 's|/Library/Developer/CommandLineTools/SDKs/MacOSX.*\.sdk|\${SDKPATH}|g'
+}
+
+
 emit_args()
 {
    local key
@@ -88,9 +95,9 @@ main()
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
-      emit_env_and_args "$@" | LC_ALL=C sort > "${filename}"
+      emit_env_and_args "$@" | filter_darwin | LC_ALL=C sort > "${filename}"
    else
-      emit_env_and_args "$@" | LC_ALL=C sort
+      emit_env_and_args "$@" | filter_darwin | LC_ALL=C sort
    fi
 }
 
