@@ -99,19 +99,25 @@ r_convert_path_to_value()
 }
 
 
+#
+# called from build_xcodebuild for each required scheme and target
+#
 _build_xcodebuild()
 {
    log_entry "_build_xcodebuild" "$@"
 
+   [ $# -eq 11 ] || internal_fail "api error"
+
    local cmd="$1"; shift
 
    local projectfile="$1"; shift
+   local sdk="$1"; shift
+   local platform="$1"; shift
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
    local builddir="$1"; shift
    local logsdir="$1"; shift
-   local sdk="$1"; shift
 
    local schemename="$1"
    local targetname="$2"
@@ -124,7 +130,8 @@ _build_xcodebuild()
 
    local projectdir
 
-   projectdir="`dirname -- "${projectfile}" `"
+   r_fast_dirname "${projectfile}"
+   projectdir="${RVAL}"
 
    #
    # xctool needs schemes, these are often autocreated, which xctool cant do
@@ -393,8 +400,7 @@ build_xcodebuild()
    local schemes
 
    schemes="${OPTION_SCHEMES}"
-   IFS="
-"
+   IFS=$'\n'
    set -o noglob
    for scheme in $schemes
    do
@@ -412,8 +418,7 @@ build_xcodebuild()
 
    targets="${OPTION_TARGETS}"
 
-   IFS="
-"
+   IFS=$'\n'
    set -o noglob
    for target in $targets
    do
@@ -434,17 +439,18 @@ build_xcodebuild()
 }
 
 
-test_xcodebuild()
+r_test_xcodebuild()
 {
-   log_entry "test_xcodebuild" "$@"
+   log_entry "r_test_xcodebuild" "$@"
 
-   local configuration="$1"
-   local srcdir="$2"
+   local srcdir="$1"
 
    local projectfile
    local projectdir
 
    local projectname
+
+   RVAL=""
 
     # always pass project directly
    projectfile="${OPTION_PROJECT_FILE}"
@@ -479,24 +485,13 @@ test_xcodebuild()
       return 1
    fi
 
-   if [ ! -z "${targetname}" ]
-   then
-      AUXINFO=" Target ${C_MAGENTA}${C_BOLD}${targetname}${C_INFO}"
-   fi
-
-   if [ ! -z "${schemename}" ]
-   then
-      AUXINFO=" Scheme ${C_MAGENTA}${C_BOLD}${schemename}${C_INFO}"
-   fi
-
    r_fast_basename "${XCODEBUILD}"
    TOOLNAME="${RVAL}"
-   PROJECTFILE="${projectfile}"
-   WASXCODE='YES'
+
+   RVAL="${projectfile}"
 
    return 0
 }
-
 
 
 xcodebuild_plugin_initialize()

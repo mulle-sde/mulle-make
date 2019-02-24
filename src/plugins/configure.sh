@@ -71,16 +71,17 @@ build_configure()
 {
    log_entry "build_configure" "$@"
 
-   [ $# -eq 8 ] || internal_fail "api error"
+   [ $# -ge 9 ] || internal_fail "api error"
 
    local cmd="$1"; shift
    local projectfile="$1"; shift
+   local sdk="$1"; shift
+   local platform="$1"; shift
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
    local builddir="$1"; shift
    local logsdir="$1"; shift
-   local sdk="$1"; shift
 
    local configure_flags
 
@@ -142,6 +143,13 @@ build_configure()
    env_common="${RVAL}"
 
    env_flags="${env_common}"
+
+   #
+   # add SDK args to cpp flags
+   #
+   r_sdk_arguments 'configure' "${sdk}" "${platform}"
+   r_concat "${cppflags}" "${RVAL}"
+   cppflags="${RVAL}"
 
    passed_keys=
 
@@ -263,17 +271,19 @@ build_configure()
 }
 
 
-test_configure()
+r_test_configure()
 {
-   log_entry "test_configure" "$@"
+   log_entry "r_test_configure" "$@"
 
-   [ $# -eq 2 ] || internal_fail "api error"
+   [ $# -eq 1 ] || internal_fail "api error"
 
-   local configuration="$1"
-   local srcdir="$2"
+   local srcdir="$1"
 
    local projectfile
    local projectdir
+
+   RVAL=""
+
    if ! r_find_nearest_matching_pattern "${srcdir}" "configure"
    then
       log_fluff "There is no configure project in \"${srcdir}\""
@@ -314,7 +324,7 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
       return 1
    fi
 
-   PROJECTFILE="${projectfile}"
+   RVAL="${projectfile}"
    return 0
 }
 

@@ -283,8 +283,7 @@ r_print_definitions()
    local key
    local value
 
-   IFS="
-"
+   IFS=$'\n'
    for key in ${keys}
    do
       IFS="${DEFAULT_IFS}"
@@ -298,8 +297,7 @@ r_print_definitions()
    #
    # emit plus definitions if they are distinguishable
    #
-   IFS="
-"
+   IFS=$'\n'
    for key in ${pluskeys}
    do
       IFS="${DEFAULT_IFS}"
@@ -389,7 +387,7 @@ check_option_key_without_prefix()
    local match
    local escaped
 
-   if find_line "${KNOWN_OPTIONS}" "OPTION_${key}"
+   if ! find_line "${KNOWN_OPTIONS}" "OPTION_${key}"
    then
       local message
       local hint
@@ -445,7 +443,7 @@ _make_define_option()
    check_key_without_prefix_exists "${key}" "${option}"
 
    local oldvalue
-   local escaped
+
    if [ ! -z "${option}" ]
    then
       oldvalue="`eval echo "\\\$OPTION_$key"`"
@@ -485,9 +483,12 @@ _make_define_option()
       esac
    fi
 
-   r_escaped_doublequotes "${value}"
+   local escaped
+
+   r_escaped_shellstring "${value}"
    escaped="${RVAL}"
-   eval "OPTION_${key}=\"${escaped}\""
+
+   eval "OPTION_${key}=${escaped}"
 
    log_fluff "OPTION_${key} defined as \"${value}\""
 }
@@ -505,7 +506,6 @@ make_undefine_option()
    DEFINED_OPTIONS="`fgrep -v -x -e "OPTION_${key}" <<< "${DEFINED_OPTIONS}" `"
    DEFINED_PLUS_OPTIONS="`fgrep -v -x -e "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}" `"
 }
-
 
 
 make_define_option()

@@ -64,16 +64,17 @@ build_autoconf()
 {
    log_entry "build_autoconf" "$@"
 
-   [ $# -eq 8 ] || internal_fail "api error"
+   [ $# -ge 9 ] || internal_fail "api error"
 
    local command="$1"; shift
    local projectfile="$1"; shift
+   local sdk="$1"; shift
+   local platform="$1"; shift
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
    local builddir="$1"; shift
    local logsdir="$1"; shift
-   local sdk="$1"; shift
 
    local projectdir
    r_fast_dirname "${projectfile}"
@@ -159,10 +160,8 @@ build_autoconf()
    #
    # daisy chain configure step
    #
-   local WASXCODE='NO'
    local PROJECTFILE
    local TOOLNAME=configure
-   local AUX_INFO
 
    if ! test_configure "${configuration}" "${srcdir}"
    then
@@ -178,28 +177,30 @@ ${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${builddir}\" ..."
    if ! build_configure "${command}" \
                         "${PROJECTFILE}"  \
                         "${configuration}" \
+                        "${platform}" \
+                        "${sdk}" \
                         "${srcdir}" \
                         "${dstdir}" \
                         "${builddir}" \
-                        "${logsdir}" \
-                        "${sdk}"
+                        "${logsdir}"
    then
       internal_fail "build_configure should exit on failure and not return"
    fi
 }
 
 
-test_autoconf()
+r_test_autoconf()
 {
-   log_entry "test_autoconf" "$@"
+   log_entry "r_test_autoconf" "$@"
 
-   [ $# -eq 2 ] || internal_fail "api error"
+   [ $# -eq 1 ] || internal_fail "api error"
 
-   local configuration="$1"
-   local srcdir="$2"
+   local srcdir="$1"
 
    local projectfile
    local projectdir
+
+   RVAL=""
    if ! r_find_nearest_matching_pattern "${srcdir}" "configure.ac"
    then
       if ! r_find_nearest_matching_pattern "${srcdir}" "configure.in"
@@ -250,7 +251,7 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
       return 1
    fi
 
-   PROJECTFILE="${projectfile}"
+   RVAL="${projectfile}"
    return 0
 }
 

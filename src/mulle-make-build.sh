@@ -191,34 +191,9 @@ mkdir_build_directories()
 }
 
 
-r_determine_build_subdir()
-{
-   log_entry "r_determine_build_subdir" "$@"
-
-   local configuration="$1"
-   local sdk="$2"
-
-   [ -z "$configuration" ] && internal_fail "configuration must not be empty"
-   [ -z "$sdk" ]           && internal_fail "sdk must not be empty"
-
-   sdk=`echo "${sdk}" | "${SED:-sed}" 's/^\([a-zA-Z]*\).*$/\1/g'`
-
-   RVAL=""
-   if [ "${sdk}" = "Default" ]
-   then
-      if [ "${configuration}" != "Release" ]
-      then
-         RVAL="${configuration}"
-      fi
-   else
-      RVAL="${configuration}-${sdk}"
-   fi
-}
-
-
 #
 # 0 OK
-# 255 preference does not support it
+# 127 preference does not support it
 # 1 or other preference build failed
 #
 # need to run in subshell so that plugin changes
@@ -229,6 +204,7 @@ build_with_preference_if_possible()
    [ ! -z "${configuration}" ] || internal_fail "configuration not defined"
    [ ! -z "${name}" ]          || internal_fail "name not defined"
    [ ! -z "${sdk}" ]           || internal_fail "sdk not defined"
+   [ ! -z "${platform}" ]      || internal_fail "platform not defined"
    [ ! -z "${preference}" ]    || internal_fail "preference not defined"
    [ ! -z "${cmd}" ]           || internal_fail "cmd not defined"
    [ ! -z "${srcdir}" ]        || internal_fail "srcdir not defined"
@@ -238,18 +214,19 @@ build_with_preference_if_possible()
    [ ! -z "${logsdir}" ]       || internal_fail "logsdir not defined"
 
    (
-      local WASXCODE='NO'
-      local PROJECTFILE
       local TOOLNAME="${preference}"
       local AUX_INFO
 
-      if ! "test_${preference}" "${configuration}" "${srcdir}"
-      then
-         return 255
-      fi
+      local projectinfo
 
-      [ -z "${PROJECTFILE}" ] && \
-         internal_fail "test_${preference} did not set PROJECTFILE"
+      if ! "r_test_${preference}" "${srcdir}"
+      then
+         return 127
+      fi
+      projectinfo="${RVAL}"
+
+      [ -z "${projectinfo}" ] && \
+         internal_fail "r_test_${preference} did not return projectinfo"
       #statements
 
       local blurb
@@ -266,13 +243,14 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir#${PWD}/}\" ..."
       log_info "${blurb}"
 
       if ! "build_${preference}" "${cmd}" \
-                                 "${PROJECTFILE}" \
+                                 "${projectinfo}" \
+                                 "${sdk}" \
+                                 "${platform}" \
                                  "${configuration}" \
                                  "${srcdir}" \
                                  "${dstdir}" \
                                  "${builddir}" \
-                                 "${logsdir}" \
-                                 "${sdk}"
+                                 "${logsdir}"
       then
          log_error "build_${preference} should exit on failure and not return"
          return 1
@@ -281,21 +259,23 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir#${PWD}/}\" ..."
 }
 
 
-build_with_configuration_sdk_preferences()
+build_with_sdk_platform_configuration_preferences()
 {
-   log_entry "build_with_configuration_sdk_preferences" "$@"
+   log_entry "build_with_sdk_platform_configuration_preferences" "$@"
 
    local cmd="$1"; shift
 
    local srcdir="$1"
    local dstdir="$2"
-   local configuration="$3"
-   local sdk="$4"
-   local preferences="$5"
+   local sdk="$3"
+   local platform="$4"
+   local configuration="$5"
+   local preferences="$6"
 
    [ -z "${srcdir}" ]        && internal_fail "srcdir is empty"
    [ -z "${configuration}" ] && internal_fail "configuration is empty"
    [ -z "${sdk}" ]           && internal_fail "sdk is empty"
+   [ -z "${platform}" ]      && internal_fail "platform is empty"
    [ -z "${preferences}" ]   && internal_fail "preferences is empty"
 
    if [ "${configuration}" = "lib" -o "${configuration}" = "include" -o "${configuration}" = "Frameworks" ]
@@ -304,6 +284,7 @@ build_with_configuration_sdk_preferences()
    fi
 
    local name
+
    name="${OPTION_PROJECT_NAME}"
    if [ -z "${name}" ]
    then
@@ -317,21 +298,11 @@ build_with_configuration_sdk_preferences()
    srcdir="`canonicalize_path "${srcdir}"`"
 
    local builddir
-   local buildroot
 
-   buildroot="${OPTION_BUILD_DIR}"
-   builddir="${buildroot}"
-
-   local build_subdir
-
-   r_determine_build_subdir "${configuration}" "${sdk}"
-   build_subdir="${RVAL}"
-
+   builddir="${OPTION_BUILD_DIR}"
    if [ -z "${builddir}" ]
    then
-      buildroot="${srcdir}/build"
-      r_filepath_concat "${buildroot}" "${build_subdir}"
-      builddir="${RVAL}"
+      builddir="${srcdir}/build"
    fi
 
    local logsdir
@@ -339,9 +310,7 @@ build_with_configuration_sdk_preferences()
    logsdir="${OPTION_LOG_DIR}"
    if [ -z "${logsdir}" ]
    then
-      logsdir="${buildroot}/.log"
-      r_filepath_concat "${logsdir}" "${build_subdir}"
-      logsdir="${RVAL}"
+      logsdir="${builddir}/.log"
    fi
 
    mkdir_build_directories "${builddir}" "${logsdir}"
@@ -361,14 +330,14 @@ build_with_configuration_sdk_preferences()
       build_with_preference_if_possible
 
       rval="$?"
-      if [ "${rval}" != 255 ]
+      if [ "${rval}" != 127 ]
       then
          return "${rval}"
       fi
    done
    set +o noglob
 
-   return 255
+   return 127
 }
 
 
@@ -427,7 +396,9 @@ build()
    then
       if [ "${OPTION_ALLOW_SCRIPT}" != 'YES' ]
       then
-         fail "No permission to run scripts. Use ---allow-script."
+         fail "No permission to run script \"${OPTION_BUILD_SCRIPT}\".
+${C_INFO}Use --allow-script option or enable scripts permanently with:
+${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
       fi
       OPTION_PLUGIN_PREFERENCES="script"
       log_verbose "A script is defined, only considering a script build now"
@@ -465,7 +436,20 @@ There are no plugins available for requested tools \"`echo ${OPTION_PLUGIN_PREFE
       ;;
 
       "")
-         fail "empty sdk is not possible"
+         fail "An Empty sdk is not possible (use \"Default\")"
+      ;;
+   esac
+
+   local platform
+
+   platform="${OPTION_PLATFORM}"
+   case "${platform}" in
+      DEFAULT)
+         platform="Default"
+      ;;
+
+      "")
+         fail "An empty platform is not possible (use \"Default\")"
       ;;
    esac
 
@@ -478,22 +462,23 @@ There are no plugins available for requested tools \"`echo ${OPTION_PLUGIN_PREFE
       ;;
 
       "")
-         fail "empty configuration is not possible"
+         fail "An empty configuration is not possible (use \"Release\")"
       ;;
    esac
 
-   build_with_configuration_sdk_preferences "${cmd}" \
-                                            "${srcdir}" \
-                                            "${dstdir}" \
-                                            "${configuration}" \
-                                            "${sdk}" \
-                                            "${AVAILABLE_PLUGINS}"
+   build_with_sdk_platform_configuration_preferences "${cmd}" \
+                                                     "${srcdir}" \
+                                                     "${dstdir}" \
+                                                     "${sdk}" \
+                                                     "${platform}" \
+                                                     "${configuration}" \
+                                                     "${AVAILABLE_PLUGINS}"
    case "$?" in
       0)
       ;;
 
-      255)
-         fail "Don't know how to build \"${srcdir}\" with \"${AVAILABLE_PLUGINS}\""
+      127)
+         fail "Don't know how to build \"${srcdir}\" with plugins \"${AVAILABLE_PLUGINS}\""
       ;;
 
       *)
@@ -545,6 +530,7 @@ _make_build_main()
    local OPTION_DETERMINE_SDK="DEFAULT"
    local OPTION_SDK="DEFAULT"
    local OPTION_NINJA="DEFAULT"
+   local OPTION_PLATFORM="DEFAULT"
 
    local OPTION_BUILD_DIR
    local OPTION_LOG_DIR
@@ -676,6 +662,10 @@ _make_build_main()
             read -r OPTION_PATH || fail "missing argument to \"${argument}\""
          ;;
 
+         --platform)
+            read -r OPTION_PLATFORM || fail "missing argument to \"${argument}\""
+         ;;
+
          --phase)
             read -r OPTION_PHASE || fail "missing argument to \"${argument}\""
          ;;
@@ -794,6 +784,11 @@ _make_build_main()
    if [ -z "${MULLE_MAKE_PLUGIN_SH}" ]
    then
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-plugin.sh" || return 1
+   fi
+
+   if [ -z "${MULLE_MAKE_SDK_SH}" ]
+   then
+      . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-sdk.sh" || return 1
    fi
 
    local srcdir

@@ -45,21 +45,18 @@ r_build_script_absolutepath()
       return 0
    fi
 
-   local dir
-   local scriptpath
    local searchpath
-
-   dir="${MULLE_MAKE_DEFINITION_DIR}"
 
    #
    # Look in craftinfo bin first
    #
-   searchpath="${dir}/bin:$PATH"
+   searchpath="${MULLE_MAKE_DEFINITION_DIR}/bin:${OPTION_PATH:-${PATH}}"
    log_fluff "Looking for script \"${OPTION_BUILD_SCRIPT}\" in \"${searchpath}\""
 
-   RVAL="`PATH="${searchpath}" command -v "${OPTION_BUILD_SCRIPT}"`"
-
-   log_debug "Found \"${RVAL}\""
+   if RVAL="`PATH="${searchpath}" command -v "${OPTION_BUILD_SCRIPT}"`"
+   then
+      log_debug "Found \"${RVAL}\""
+   fi
 
    [ ! -z "${RVAL}" ]
 }
@@ -69,30 +66,28 @@ build_script()
 {
    log_entry "build_script" "$@"
 
-   [ $# -eq 8 ] || internal_fail "api error"
+   [ $# -ge 9 ] || internal_fail "api error"
 
    local command="$1"; shift
-   local projectfile="$1"; shift
+   local projectinfo="$1"; shift
+   local sdk="$1"; shift
+   local platform="$1"; shift
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
    local builddir="$1"; shift
    local logsdir="$1"; shift
-   local sdk="$1"; shift
 
    local buildscript
    local projectdir
 
    local scriptname
 
-   r_build_script_absolutepath
-   buildscript="${RVAL}"
+   buildscript="${projectinfo%;*}"
+   projectdir="${projectinfo#*;}"
 
    r_fast_basename "${buildscript}"
    scriptname="${RVAL}"
-
-   r_fast_dirname "${projectfile}"
-   projectdir="${RVAL}"
 
    local env_common
 
@@ -144,9 +139,11 @@ build_script()
                      "${logfile1}" "${teefile1}" \
                      "${env_common}" \
                      "${buildscript}" \
+                     ${MULLE_TECHNICAL_FLAGS} \
                      --build-dir "'${builddir}'" \
-                     --install-dir "'${dstdir}'" \
                      --configuration "'${configuration}'" \
+                     --install-dir "'${dstdir}'" \
+                     --platform "'${platform}'" \
                      --sdk "'${sdk}'" \
                      "'${command}'"
       then
@@ -156,14 +153,15 @@ build_script()
 }
 
 
-test_script()
+r_test_script()
 {
-   log_entry "test_script" "$@"
+   log_entry "r_test_script" "$@"
 
-   [ $# -eq 2 ] || internal_fail "api error"
+   [ $# -eq 1 ] || internal_fail "api error"
 
-   local configuration="$1"
-   local srcdir="$2"
+   local srcdir="$1"
+
+   RVAL=""
 
    if ! r_build_script_absolutepath
    then
@@ -182,7 +180,8 @@ test_script()
       return 1
    fi
 
-   PROJECTFILE="${srcdir}/unknown"
+   RVAL="${scriptfile};${srcdir}"
+
    return 0
 }
 

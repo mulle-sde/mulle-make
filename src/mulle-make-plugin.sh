@@ -39,8 +39,7 @@ build_list_plugins()
 
    local pluginpath
    local pluginname
-   IFS="
-"
+   IFS=$'\n'
    for pluginpath in `exekutor ls -1 "${MULLE_MAKE_LIBEXEC_DIR}/plugins/"*.sh`
    do
       r_extensionless_basename "${pluginpath}"
@@ -75,7 +74,7 @@ build_load_plugin()
    local plugindefine
    local pluginpath
 
-   if [ "`type -t "test_${preference}"`" = "function" ]
+   if [ "`type -t "r_test_${preference}"`" = "function" ]
    then
       log_debug "Plugin \"${preference}\" already loaded"
       return 0
@@ -103,9 +102,9 @@ build_load_plugin()
       #
       if [ "${MULLE_FLAG_LOG_VERBOSE}"  = 'YES' ]
       then
-         if [ "`type -t "test_${preference}"`" != "function" ]
+         if [ "`type -t "r_test_${preference}"`" != "function" ]
          then
-            internal_fail "Build plugin \"${pluginpath}\" has no \"test_${preference}\" function"
+            internal_fail "Build plugin \"${pluginpath}\" has no \"r_test_${preference}\" function"
          fi
 
          if [ "`type -t "build_${preference}"`" != "function" ]

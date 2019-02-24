@@ -247,18 +247,21 @@ build_fail()
 {
    log_entry "build_fail" "$@"
 
-   if [ -f "$1" ]
+   local logfile="$1"
+   local command="$2"
+
+   if [ -f "${logfile}" ]
    then
       printf "${C_RED}"
-      egrep -B1 -A5 -w "[Ee]rror|FAILED:" "$1" >&2
+      egrep -B1 -A5 -w "[Ee]rror|FAILED:" "${logfile}" >&2
       printf "${C_RESET}"
 
       if [ "$MULLE_TRACE" != "1848" ]
       then
-         log_info "Check the build log: ${C_RESET_BOLD}${1#${MULLE_USER_PWD}/}${C_INFO}"
+         log_info "Check the build log: ${C_RESET_BOLD}${logfile#${MULLE_USER_PWD}/}${C_INFO}"
       fi
    fi
-   fail "$2 failed"
+   fail "${command} failed"
 }
 
 
@@ -333,7 +336,7 @@ r_safe_tty()
    fi
 
    # can happen if sued to another user id
-   if [ ! -w "${RVAL}" ] 
+   if [ ! -w "${RVAL}" ]
    then
       log_warning "Can't write to console. Direct output unvailable, see logs."
    	RVAL="/dev/null"
@@ -376,9 +379,8 @@ r_find_nearest_matching_pattern()
    #
    # don't go too deep in search
    #
-   IFS="
-"
-   for i in `find -L "${directory}" -maxdepth 2 -name "${pattern}" -print`
+   IFS=$'\n'
+   for i in `rexekutor find -L "${directory}" -maxdepth 2 -name "${pattern}" -print`
    do
       IFS="${DEFAULT_IFS}"
 

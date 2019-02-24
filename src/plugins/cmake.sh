@@ -167,6 +167,7 @@ MULLE_MATCH_PATH must not contain empty paths"
 }
 
 
+
 #
 # remove old builddir, create a new one
 # depending on configuration cmake with flags
@@ -177,20 +178,22 @@ build_cmake()
 {
    log_entry "build_cmake" "$@"
 
-   [ $# -eq 8 ] || internal_fail "api error"
+   [ $# -ge 9 ] || internal_fail "api error"
 
    local cmd="$1"; shift
    local projectfile="$1"; shift
+   local sdk="$1"; shift
+   local platform="$1"; shift
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
    local builddir="$1"; shift
    local logsdir="$1"; shift
-   local sdk="$1"; shift
 
    [ -z "${cmd}" ] && internal_fail "cmd is empty"
    [ -z "${projectfile}" ] && internal_fail "projectfile is empty"
    [ -z "${configuration}" ] && internal_fail "configuration is empty"
+   [ -z "${platform}" ] && internal_fail "platform is empty"
    [ -z "${srcdir}" ] && internal_fail "srcdir is empty"
    [ -z "${builddir}" ] && internal_fail "builddir is empty"
    [ -z "${logsdir}" ] && internal_fail "logsdir is empty"
@@ -344,6 +347,10 @@ build_cmake()
       r_concat "${cmake_flags}" "${sdkparameter}"
       cmake_flags="${RVAL}"
    fi
+
+   r_sdk_arguments 'cmake' "${sdk}" "${platform}"
+   r_concat "${cmake_flags}" "${RVAL}"
+   cmake_flags="${RVAL}"
 
    if [ ! -z "${OPTION_CMAKE_C_COMPILER:-${OPTION_CC}}" ]
    then
@@ -575,17 +582,19 @@ found in \"${absprojectdir}\""
 }
 
 
-test_cmake()
+r_test_cmake()
 {
-   log_entry "test_cmake" "$@"
+   log_entry "r_test_cmake" "$@"
 
-   [ $# -eq 2 ] || internal_fail "api error"
+   [ $# -eq 1 ] || internal_fail "api error"
 
-   local configuration="$1"
-   local srcdir="$2"
+   local srcdir="$1"
 
    local projectfile
    local projectdir
+
+   RVAL=""
+
    if ! r_find_nearest_matching_pattern "${srcdir}" "CMakeLists.txt"
    then
       log_fluff "There is no CMakeLists.txt file in \"${srcdir}\""
@@ -618,7 +627,7 @@ test_cmake()
 
    log_fluff "Found cmake project file \"${projectfile}\""
 
-   PROJECTFILE="${projectfile}"
+   RVAL="${projectfile}"
 
    return 0
 }

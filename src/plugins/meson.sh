@@ -98,16 +98,17 @@ build_meson()
 {
    log_entry "build_meson" "$@"
 
-   [ $# -eq 8 ] || internal_fail "api error"
+   [ $# -ge 9 ] || internal_fail "api error"
 
    local cmd="$1"; shift
    local projectfile="$1"; shift
+   local sdk="$1"; shift
+   local platform="$1"; shift
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
    local builddir="$1"; shift
    local logsdir="$1"; shift
-   local sdk="$1"; shift
 
    [ -z "${cmd}" ] && internal_fail "cmd is empty"
    [ -z "${projectfile}" ] && internal_fail "projectfile is empty"
@@ -116,6 +117,7 @@ build_meson()
    [ -z "${builddir}" ] && internal_fail "builddir is empty"
    [ -z "${logsdir}" ] && internal_fail "logsdir is empty"
    [ -z "${sdk}" ] && internal_fail "sdk is empty"
+   [ -z "${platform}" ] && internal_fail "sdk is empty"
 
    # need this now
    mkdir_if_missing "${builddir}"
@@ -372,17 +374,18 @@ build_meson()
 }
 
 
-test_meson()
+r_test_meson()
 {
    log_entry "test_meson" "$@"
 
-   [ $# -eq 2 ] || internal_fail "api error"
+   [ $# -eq 1 ] || internal_fail "api error"
 
-   local configuration="$1"
-   local srcdir="$2"
+   local srcdir="$1"
 
    local projectfile
    local projectdir
+
+   RVAL=""
    if ! r_find_nearest_matching_pattern "${srcdir}" "meson.build"
    then
       log_fluff "There is no meson.build file in \"${srcdir}\""
@@ -416,7 +419,7 @@ ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
 
    log_verbose "Found meson project file \"${projectfile}\""
 
-   PROJECTFILE="${projectfile}"
+   RVAL="${projectfile}"
 
    return 0
 }
