@@ -163,12 +163,13 @@ build_autoconf()
    local PROJECTFILE
    local TOOLNAME=configure
 
-   if ! test_configure "${configuration}" "${srcdir}"
+   if ! r_test_configure "${srcdir}"
    then
       fail "Could not run configure for \"${srcdir}"\"
    fi
+   PROJECTFILE="${RVAL}"
 
-   [ -z "${PROJECTFILE}" ] && internal_fail "test_configure did not set PROJECTFILE"
+   [ -z "${PROJECTFILE}" ] && internal_fail "r_test_configure did not set PROJECTFILE"
          #statements
 
    log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a reconf of \

@@ -394,6 +394,8 @@ build_xcodebuild()
 {
    log_entry "build_xcodebuild" "$@"
 
+   [ $# -eq 9 ] || internal_fail "api error"
+
    local project="$2"
 
    local scheme
@@ -434,7 +436,7 @@ build_xcodebuild()
    if [ -z "${targets}" -a -z "${schemes}" ]
    then
       log_fluff "Building project \"${project}\" ..."
-      _build_xcodebuild "$@"
+      _build_xcodebuild "$@" "" ""
    fi
 }
 

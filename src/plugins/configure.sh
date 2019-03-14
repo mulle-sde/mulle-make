@@ -287,8 +287,9 @@ r_test_configure()
    if ! r_find_nearest_matching_pattern "${srcdir}" "configure"
    then
       log_fluff "There is no configure project in \"${srcdir}\""
-      return 1
+      return 2
    fi
+
    projectfile="${RVAL}"
    r_fast_dirname "${projectfile}"
    projectdir="${RVAL}"
@@ -321,7 +322,7 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
    if [ -z "${MAKE}" ]
    then
       log_warning "Found a ./configure, but ${C_RESET}${C_BOLD}make${C_WARNING} is not installed"
-      return 1
+      return 2
    fi
 
    RVAL="${projectfile}"
