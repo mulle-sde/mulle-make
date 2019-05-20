@@ -31,38 +31,8 @@
 MULLE_MAKE_PLUGIN_CONFIGURE_SH="included"
 
 
-r_convert_path_to_flag()
-{
-   local path="$1"
-   local flag="$2"
-   local quote="$3"
-
-   local output
-   local munged
-
-   RVAL=""
-
-   IFS=":"
-   set -o noglob
-   for component in ${path}
-   do
-      set +o noglob
-
-      if [ -z "${quote}" ]
-      then
-         component="$(sed -e 's/ /\\ /g' <<< "${component}")"
-      fi
-      r_concat "${output}" "${flag}${quote}${component}${quote}"
-      output="${RVAL}"
-   done
-
-   IFS="${DEFAULT_IFS}"
-   set +o noglob
-}
-
-
 #
-# remove old builddir, create a new one
+# remove old kitchendir, create a new one
 # depending on configuration cmake with flags
 # build stuff into dependencies
 #
@@ -80,7 +50,7 @@ build_configure()
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
-   local builddir="$1"; shift
+   local kitchendir="$1"; shift
    local logsdir="$1"; shift
 
    local configure_flags
@@ -89,7 +59,7 @@ build_configure()
 
 #   create_dummy_dirs_against_warnings "${mapped}" "${suffix}"
 
-   mkdir_if_missing "${builddir}"
+   mkdir_if_missing "${kitchendir}"
 
    local cflags
    local cxxflags
@@ -98,11 +68,12 @@ build_configure()
 
    r_compiler_cflags_value "${OPTION_CC}" "${configuration}"
    cflags="${RVAL}"
+
    r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}"
    cxxflags="${RVAL}"
-   r_compiler_cppflags_value
+   r_compiler_cppflags_value "${OPTION_CC}" "${configuration}"
    cppflags="${RVAL}"
-   r_compiler_ldflags_value
+   r_compiler_ldflags_value "${OPTION_CC}" "${configuration}"
    ldflags="${RVAL}"
 
    # hackish! changes cflags and friends
@@ -113,7 +84,7 @@ build_configure()
 
    case "${cmd}" in
       build|project)
-         maketarget=
+         maketarget=all
          if [ ! -z "${OPTION_PREFIX}" ]
          then
             arguments="--prefix '${OPTION_PREFIX}'"
@@ -134,22 +105,27 @@ build_configure()
       ;;
    esac
 
+   case "${OPTION_LIBRARY_STYLE}" in
+      standalone)
+         fail "configure does not support standalone builds"
+      ;;
+
+      static)
+         r_concat "${arguments}" --enable-static
+         arguments="${RVAL}"
+      ;;
+
+      dynamic)
+         r_concat "${arguments}" --enable-shared
+         arguments="${RVAL}"
+      ;;
+   esac
+
    local env_flags
    local passed_keys
 
-   local env_common
-
    r_mulle_make_env_flags
-   env_common="${RVAL}"
-
-   env_flags="${env_common}"
-
-   #
-   # add SDK args to cpp flags
-   #
-   r_sdk_arguments 'configure' "${sdk}" "${platform}"
-   r_concat "${cppflags}" "${RVAL}"
-   cppflags="${RVAL}"
+   env_flags="${RVAL}"
 
    passed_keys=
 
@@ -201,6 +177,11 @@ build_configure()
    r_concat "${env_flags}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"
    env_flags="${RVAL}"
 
+   local make_flags
+
+   r_build_make_flags "${MAKE}" "${OPTION_MAKEFLAGS}" "${kitchendir}"
+   make_flags="${RVAL}"
+
    local absprojectdir
    local projectdir
 
@@ -208,6 +189,20 @@ build_configure()
    projectdir="${RVAL}"
    r_absolutepath "${projectdir}"
    absprojectdir="${RVAL}"
+
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
+   then
+      log_trace2 "cflags:        ${cflags}"
+      log_trace2 "cppflags:      ${cppflags}"
+      log_trace2 "cxxflags:      ${cxxflags}"
+      log_trace2 "ldflags:       ${ldflags}"
+      log_trace2 "make_flags:    ${make_flags}"
+      log_trace2 "projectfile:   ${projectfile}"
+      log_trace2 "projectdir:    ${projectdir}"
+      log_trace2 "absprojectdir: ${absprojectdir}"
+      log_trace2 "absbuilddir:   ${absbuilddir}"
+      log_trace2 "projectdir:    ${projectdir}"
+   fi
 
    local logfile1
    local logfile2
@@ -221,9 +216,11 @@ build_configure()
 
    local teefile1
    local teefile2
+   local grepper
 
    teefile1="/dev/null"
    teefile2="/dev/null"
+   grepper="log_grep_warning_error"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -238,11 +235,12 @@ build_configure()
       r_safe_tty
       teefile1="${RVAL}"
       teefile2="${logfile1}"
+      grepper="log_delete_all"
    fi
 
 
    (
-      exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
+      exekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
 
       PATH="${OPTION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
@@ -251,22 +249,37 @@ build_configure()
          env | sort >&2
       fi
 
-
-       # use absolute paths for configure, safer (and easier to read IMO)
-      if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+      set -o pipefail      # should be set already
+      # use absolute paths for configure, safer (and easier to read IMO)
+      if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                                           "${env_flags}" \
                                              "'${absprojectdir}/configure'" \
+                                                "${CONFIGUREFLAGS}" \
                                                 "${configure_flags}" \
-                                                "${arguments}"
+                                                "${arguments}" | ${grepper}
       then
-         build_fail "${logfile1}" "configure"
+         build_fail "${logfile1}" "configure" "${PIPESTATUS[ 0]}"
       fi
 
-      if ! logging_redirect_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
-               "'${MAKE}'" "${MAKE_FLAGS}" ${maketarget}
+      #
+      # mainly for glibc, where it needs to do make all before make install.
+      # could parameterize this as "OPTION_MAKE_STEPS=all,install" or so
+      #
+      if [ "${maketarget}" = "install" ]
       then
-         build_fail "${logfile2}" "make"
+         if ! logging_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
+                  "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "all"  | ${grepper}
+         then
+            build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}"
+         fi
       fi
+
+      if ! logging_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
+               "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "${maketarget}"  | ${grepper}
+      then
+         build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}"
+      fi
+
    ) || exit 1
 }
 

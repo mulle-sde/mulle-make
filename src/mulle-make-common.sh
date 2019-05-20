@@ -171,7 +171,8 @@ tools_environment_make()
    if [ -z "${MAKE}" ]
    then
       local ourmake
-         r_platform_make "${OPTION_CC}" "${plugin}"
+
+      r_platform_make "${OPTION_CC}" "${plugin}"
       ourmake="${RVAL}"
 
       r_find_make "${ourmake}" "${noninja}"
@@ -183,39 +184,192 @@ tools_environment_make()
 
 
 #
+# the shell escape will protect '$' as '\$'
+# but that's not how make needs it. So we unprotect
+# and then protect $$ as needed. So make can't mangle
+# it.
+#
+r_escaped_make_string()
+{
+   local dollar='$'
+
+   RVAL="$*"
+
+   case "${RVAL}" in
+      *\$*)
+         RVAL="${RVAL//\\${dollar}/${dollar}}"            # unescape \$ -> $
+         case "${RVAL}" in
+            *\$[a-z0-9A-Z_%\'\#\?\*@{}-]*)
+               RVAL="$( sed 's/$\([a-z0-9A-Z_%'"'"'#?*@{}-]\)/\$\\\1/g' <<< "${RVAL}" )"
+            ;;
+         esac
+         RVAL="${RVAL//${dollar}${dollar}/${dollar}\\${dollar}}"  # escape $$ -> $\$
+         RVAL="${RVAL//${dollar}/${dollar}${dollar}}"  # escape $ -> $$
+      ;;
+   esac
+}
+
+r_makeflags_add()
+{
+   local makeflags="$1"
+   local value="$2"
+
+   if [ -z "${value}" ]
+   then
+      RVAL="${makeflags}"
+      return
+   fi
+
+   r_escaped_shell_string "${value}"
+   r_concat "${makeflags}" "${RVAL}"
+}
+
+
+r_build_make_flags()
+{
+   log_entry "r_build_make_flags" "$@"
+
+   local make="$1"
+   local make_flags="$2"
+   local kitchendir="$3"
+
+   local make_verbose_flags
+   local cores
+
+   cores="${OPTION_CORES}"
+
+   #
+   # hackish
+   # figure out if we need to run cmake, by looking for cmakefiles and
+   # checking if they are newer than the MAKEFILE
+   #
+   case "${make}" in
+      *ninja*)
+         makefile="${kitchendir}/build.ninja"
+         make_verbose_flags="-v"
+         if [ ! -z "${OPTION_LOAD}" ]
+         then
+            r_makeflags_add "${make_flags}" "-l"
+            r_makeflags_add "${RVAL}" "${OPTION_LOAD}"
+            make_flags="${RVAL}"
+         fi
+      ;;
+
+      *make*)
+         makefile="${kitchendir}/Makefile"
+         make_verbose_flags="VERBOSE=1"
+
+         if [ -z "${cores}" ]
+         then
+            r_available_core_count
+            cores="${RVAL}"
+            log_fluff "Estimated available cores for make: ${cores}"
+         fi
+      ;;
+   esac
+
+   #
+   # because the logging is done into files (usually), we don't really want
+   # non-verbose output usually
+   #
+   if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+   then
+      r_makeflags_add "${make_flags}" "${make_verbose_flags}"
+      make_flags="${RVAL}"
+   fi
+
+   if [ ! -z "${cores}" ]
+   then
+      r_makeflags_add "${make_flags}" "-j"
+      r_makeflags_add "${RVAL}" "${cores}"
+      make_flags="${RVAL}"
+   fi
+
+   RVAL="${make_flags}"
+}
+
+
+
+r_convert_file_to_cflag()
+{
+   local path="$1"
+   local flag="$2"
+
+   r_escaped_shell_string "${path}"
+   r_escaped_make_string "${RVAL}"
+   RVAL="${flag}${RVAL}"
+}
+
+
+r_convert_path_to_cflags()
+{
+   local path="$1"
+   local flag="$2"
+
+   local output
+
+   RVAL=""
+
+   IFS=":"
+   set -o noglob
+   for component in ${path}
+   do
+      set +o noglob
+
+      r_convert_file_to_cflag "${component}" "${flag}"
+      r_concat "${output}" "${RVAL}"
+      output="${RVAL}"
+   done
+   IFS="${DEFAULT_IFS}"
+   set +o noglob
+}
+
+
+#
 # modifies quasi-global
 #
-# cflags
 # cppflags
-# cxxflags
 # ldflags
 #
-__add_path_tool_flags()
+# The flags are escaped for processing by make
+# i.e. can be placed into CFLAGS="${CFLAGS}"
+#
+__add_sdk_path_tool_flags()
 {
-   local sdkpath
+   log_entry "__add_sdk_path_tool_flags" "$@"
 
-   r_compiler_sdk_parameter "${sdk}"
+   r_compiler_get_sdkpath "${sdk}"
+
+   local sdkpath
 
    sdkpath="${RVAL}"
    if [ ! -z "${sdkpath}" ]
    then
-      sdkpath="`"${SED}" -e 's/ /\\ /g' <<< "${sdkpath}" `"
-      r_concat "-isysroot ${sdkpath}" "${cppflags}"
+      r_convert_file_to_cflag "${sdkpath}" "-isysroot "
+      result="${RVAL}"
+      r_concat "${result}" "${cppflags}"
       cppflags="${RVAL}"
-      r_concat "-isysroot ${sdkpath}" "${ldflags}"
+
+      r_concat "${result}" "${ldflags}"
       ldflags="${RVAL}"
    fi
+}
+
+
+__add_header_and_library_path_tool_flags()
+{
+   log_entry "__add_header_and_library_path_tool_flags" "$@"
 
    local headersearchpaths
 
    case "${OPTION_CC}" in
       *clang*|*gcc)
-         r_convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-isystem " "'"
+         r_convert_path_to_cflags "${OPTION_INCLUDE_PATH}" "-isystem "
          headersearchpaths="${RVAL}"
       ;;
 
       *)
-         r_convert_path_to_flag "${OPTION_INCLUDE_PATH}" "-I" "'"
+         r_convert_path_to_cflags "${OPTION_INCLUDE_PATH}" "-I"
          headersearchpaths="${RVAL}"
       ;;
    esac
@@ -225,7 +379,7 @@ __add_path_tool_flags()
 
    local librarysearchpaths
 
-   r_convert_path_to_flag "${OPTION_LIB_PATH}" "-L" "'"
+   r_convert_path_to_cflags "${OPTION_LIB_PATH}" "-L"
    librarysearchpaths="${RVAL}"
    r_concat "${ldflags}" "${librarysearchpaths}"
    ldflags="${RVAL}"
@@ -234,12 +388,30 @@ __add_path_tool_flags()
       darwin)
          local frameworksearchpaths
 
-         r_convert_path_to_flag "${OPTION_FRAMEWORKS_PATH}" "-F" "'"
+         r_convert_path_to_cflags "${OPTION_FRAMEWORKS_PATH}" "-F"
          frameworksearchpaths="${RVAL}"
+
          r_concat "${ldflags}" "${frameworksearchpaths}"
          ldflags="${RVAL}"
       ;;
    esac
+
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
+   then
+      log_trace2 "cflags:        ${cflags}"
+      log_trace2 "cxxflags:      ${cxxflags}"
+      log_trace2 "cppflags:      ${cppflags}"
+      log_trace2 "ldflags:       ${ldflags}"
+   fi
+}
+
+
+__add_path_tool_flags()
+{
+   log_entry "__add_path_tool_flags" "$@"
+
+   __add_sdk_path_tool_flags
+   __add_header_and_library_path_tool_flags
 }
 
 
@@ -249,6 +421,7 @@ build_fail()
 
    local logfile="$1"
    local command="$2"
+   local rval="$3"
 
    if [ -f "${logfile}" ]
    then
@@ -261,7 +434,7 @@ build_fail()
          log_info "Check the build log: ${C_RESET_BOLD}${logfile#${MULLE_USER_PWD}/}${C_INFO}"
       fi
    fi
-   fail "${command} failed"
+   fail "${command} failed with $rval"
 }
 
 
@@ -424,10 +597,10 @@ r_projectdir_relative_to_builddir()
 {
    log_entry "r_projectdir_relative_to_builddir" "$@"
 
-   local builddir="$1"
+   local kitchendir="$1"
    local projectdir="$2"
 
-   r_relative_path_between "${projectdir}" "${builddir}"
+   r_relative_path_between "${projectdir}" "${kitchendir}"
 }
 
 

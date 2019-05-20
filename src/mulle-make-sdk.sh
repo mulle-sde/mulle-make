@@ -34,38 +34,25 @@ MULLE_MAKE_SDK_SH="included"
 # this should be a plugin based solution
 # for now hardcode it
 #
-r_sdk_arguments()
+r_sdk_cflags()
 {
-   local plugin="$1"
-   local sdk="$2"
-   local platform="$3"
+   local sdk="$1"
+   local platform="$2"
 
-   # gets passed in by MULL
-   RVAL=
-   if [ ! -z "${OPTION_MULLE_SDK_PATH}" ]
+   if [ "${OPTION_DETERMINE_SDK}" = 'NO' ]
    then
-      case "${plugin}" in
-         cmake)
-            RVAL="-DMULLE_SDK_PATH='${OPTION_MULLE_SDK_PATH}'"
-         ;;
-      esac
+      return
    fi
 
+   RVAL=0
    case "${sdk}" in
-      macos*|iphoneos*)
-         log_fluff "No special arguments needed for SDK ${sdk}"
-         return 0
-      ;;
-
       android*)
-         case "${plugin}" in
-            cmake)
-               RVAL="${RVAL} \
--DANDROID_ABI='${platform}' \
--DANDROID_PLATFORM='${sdk}' \
--DCMAKE_TOOLCHAIN_FILE='\${ANDROID_NDK}/build/cmake/android.toolchain.cmake'"
-            ;;
-         esac
+         r_escaped_shell_string "${platform}"
+         platform="${RVAL}"
+         r_escaped_shell_string "${sdk}"
+         sdk="${RVAL}"
+
+         RVAL="-DANDROID_ABI=${platform} -DANDROID_PLATFORM=${sdk}"
       ;;
    esac
 }

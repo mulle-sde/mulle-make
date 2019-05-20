@@ -54,12 +54,16 @@ tools_environment_xcodebuild()
 #
 _xcode_get_setting()
 {
+   log_entry "_xcode_get_setting" "$@"
+
    eval_exekutor "xcodebuild -showBuildSettings $*" || fail "failed to read xcode settings"
 }
 
 
 xcode_get_setting()
 {
+   log_entry "xcode_get_setting" "$@"
+
    local key=$1; shift
 
    _xcode_get_setting "$@" | egrep "^[ ]*${key}" | sed 's/^[^=]*=[ ]*\(.*\)/\1/'
@@ -73,6 +77,8 @@ xcode_get_setting()
 #
 r_convert_path_to_value()
 {
+   log_entry "r_convert_path_to_value" "$@"
+
    local path="$1"
    local inherit="${2:-NO}"
 
@@ -116,7 +122,7 @@ _build_xcodebuild()
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
-   local builddir="$1"; shift
+   local kitchendir="$1"; shift
    local logsdir="$1"; shift
 
    local schemename="$1"
@@ -124,7 +130,7 @@ _build_xcodebuild()
 
    [ ! -z "${configuration}" ] || internal_fail "configuration is empty"
    [ ! -z "${srcdir}" ]        || internal_fail "srcdir is empty"
-   [ ! -z "${builddir}" ]      || internal_fail "builddir is empty"
+   [ ! -z "${kitchendir}" ]      || internal_fail "kitchendir is empty"
    [ ! -z "${sdk}" ]           || internal_fail "sdk is empty"
    [ ! -z "${projectfile}" ]   || internal_fail "project is empty"
 
@@ -176,6 +182,7 @@ EOF
       r_concat "${arguments}" "-project '${projectname}'"
       arguments="${RVAL}"
    fi
+
    if [ ! -z "${sdk}" ]
    then
       if [ "${sdk}" = "Default" ]
@@ -226,13 +233,13 @@ EOF
    local absbuilddir
 
    # don't expand stuff with variables
-   case "${builddir}" in
+   case "${kitchendir}" in
       ""|*$*)
-         absbuilddir="${builddir}"
+         absbuilddir="${kitchendir}"
       ;;
 
       *)
-         r_absolutepath "${builddir}"
+         r_absolutepath "${kitchendir}"
          absbuilddir="${RVAL}"
       ;;
    esac
@@ -330,7 +337,7 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   user_buildsettings="`emit_userdefined_definitions`"
+   user_buildsettings="`emit_userdefined_definitions '' '=' '=' '$(inherited) ' "'" `"
    if [ ! -z "${user_buildsettings}" ]
    then
       r_concat "${buildsettings}" "${user_buildsettings}"
@@ -345,11 +352,11 @@ EOF
                             "${sdk}"
    logfile1="${RVAL}"
 
-
    local teefile1
-   local teefile2
+   local grepper
 
    teefile1="/dev/null"
+   grepper="log_grep_warning_error"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -362,6 +369,7 @@ EOF
    then
       r_safe_tty
       teefile1="${RVAL}"
+      grepper="log_delete_all"
    fi
 
    (
@@ -378,13 +386,15 @@ EOF
          env | sort >&2
       fi
 
-
+      set -o pipefail # should be set already
       # if it doesn't install, probably SKIP_INSTALL is set
-      if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
-                                          "${env_common}" \
-            "'${XCODEBUILD}'" ${action} "${arguments}" "${buildsettings}"
+      if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+                                     "${env_common}" \
+                                "'${XCODEBUILD}'" "'${action}'" \
+                                       "${arguments}" \
+                                       "${buildsettings}" | ${grepper}
       then
-         build_fail "${logfile}" "${TOOLNAME}"
+         build_fail "${logfile}" "${TOOLNAME}" "${PIPESTATUS[ 0]}"
       fi
    ) || exit 1
 }

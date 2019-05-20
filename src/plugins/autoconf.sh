@@ -60,6 +60,24 @@ tools_environment_autoconf()
 }
 
 
+autoconf_set_needs_rerun()
+{
+   log_entry "autoconf_set_needs_rerun" "$@"
+
+   local projectfile="$1"
+
+   local configurefile
+
+   r_fast_dirname "${projectfile}"
+   configurefile="${RVAL}/configure"
+
+   if [ -f "${configurefile}" ]
+   then
+      touch "${projectfile}"
+   fi
+}
+
+
 build_autoconf()
 {
    log_entry "build_autoconf" "$@"
@@ -73,10 +91,11 @@ build_autoconf()
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
-   local builddir="$1"; shift
+   local kitchendir="$1"; shift
    local logsdir="$1"; shift
 
    local projectdir
+
    r_fast_dirname "${projectfile}"
    projectdir="${RVAL}"
 
@@ -91,7 +110,7 @@ build_autoconf()
    autoconf_flags="${OPTION_AUTOCONFFLAGS}"
    autoreconf_flags="${OPTION_AUTORECONFFLAGS:--vif}"
 
-   mkdir_if_missing "${builddir}"
+   mkdir_if_missing "${kitchendir}"
 
    # CMAKE_CPP_FLAGS does not exist in cmake
    # so merge into CFLAGS and CXXFLAGS
@@ -107,9 +126,11 @@ build_autoconf()
 
    local teefile1
    local teefile2
+   local grepper
 
    teefile1="/dev/null"
    teefile2="/dev/null"
+   grepper="log_grep_warning_error"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -124,6 +145,7 @@ build_autoconf()
       r_safe_tty
       teefile1="${RVAL}"
       teefile2="${teefile1}"
+      grepper="log_delete_all"
    fi
 
    (
@@ -136,24 +158,27 @@ build_autoconf()
          env | sort >&2
       fi
 
+      set -o pipefail # should be set already
       if ! [ -f "aclocal4.am" ]
       then
           # use absolute paths for configure, safer (and easier to read IMO)
-         if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
-                                                 "${env_common}" \
-                                                 "${AUTORECONF}" \
-                                                 "${autoreconf_flags}"
+         if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+                                        "${env_common}" \
+                                        "${AUTORECONF}" \
+                                        "${autoreconf_flags}" | ${grepper}
          then
-            build_fail "${logfile1}" "autoreconf"
+            autoconf_set_needs_rerun "${projectfile}"
+            build_fail "${logfile1}" "autoreconf" "${PIPESTATUS[ 0]}"
          fi
       fi
 
        # use absolute paths for configure, safer (and easier to read IMO)
-      if ! logging_redirect_tee_eval_exekutor "${logfile2}" "${teefile2}" \
-                                              "${AUTOCONF}" \
-                                              "${autoconf_flags}"
+      if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
+                                     "${AUTOCONF}" \
+                                     "${autoconf_flags}" | ${grepper}
       then
-         build_fail "${logfile2}" "autoconf"
+         autoconf_set_needs_rerun "${projectfile}"
+         build_fail "${logfile2}" "autoconf" "${PIPESTATUS[ 0]}"
       fi
    ) || exit 1
 
@@ -173,7 +198,7 @@ build_autoconf()
          #statements
 
    log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a reconf of \
-${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${builddir}\" ..."
+${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${kitchendir}\" ..."
 
    if ! build_configure "${command}" \
                         "${PROJECTFILE}"  \
@@ -182,7 +207,7 @@ ${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${builddir}\" ..."
                         "${sdk}" \
                         "${srcdir}" \
                         "${dstdir}" \
-                        "${builddir}" \
+                        "${kitchendir}" \
                         "${logsdir}"
    then
       internal_fail "build_configure should exit on failure and not return"
@@ -219,13 +244,19 @@ ${C_INFO}This is probably a misconfiguration in your sourcetree. Suggest:
 ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
    fi
 
+   local configurefile
+
+   r_fast_dirname "${projectfile}"
+   configurefile="${RVAL}/configure"
+
+   if [ "${OPTION_SKIP_AUTOCONF}" = 'YES' -a -f "${configurefile}" ]
+   then
+      log_fluff "Skip to configure due to option SKIP_AUTOCONF being set..."
+      return 1
+   fi
+
    if [ "${OPTION_AUTOCONF_CLEAN}" != 'NO' ]
    then
-      local configurefile
-
-      r_fast_dirname "${projectfile}"
-      configurefile="${RVAL}/configure"
-
       if [ "${configurefile}" -nt "${projectfile}" ]
       then
          log_fluff "Autoconf has already run once, skip to configure..."

@@ -141,12 +141,15 @@ main()
    run_test	"${directory}" "debug_cmake.txt" "make.txt" --debug
    log_verbose "----- #5 PASSED -----"
 
-   run_test	"${directory}" "xxx_cmake.txt" "make.txt" -DXXX=yyy
+   run_test	"${directory}" "xxx_cmake.txt" "make.txt" -DXXX=yyy -DASTRING='"a string"' -DOTHER_CFLAGS='-DSTRING=\"string\" -Ipath/with\ space'
    log_verbose "----- #6 PASSED -----"
 
    # check that known flags are filtered
    run_test	"${directory}" "release_cmake.txt" "make.txt" -DMAKETARGET=filtered_away
    log_verbose "----- #7 PASSED -----"
+
+   run_test "${directory}" "release_cmake.txt" "make.txt"
+   log_verbose "----- #8 PASSED -----"
 
    #
    # check -I -L -F

@@ -75,7 +75,7 @@ build_script()
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
-   local builddir="$1"; shift
+   local kitchendir="$1"; shift
    local logsdir="$1"; shift
 
    local buildscript
@@ -94,7 +94,7 @@ build_script()
    r_mulle_make_env_flags
    env_common="${RVAL}"
 
-   mkdir_if_missing "${builddir}"
+   mkdir_if_missing "${kitchendir}"
 
    # CMAKE_CPP_FLAGS does not exist in cmake
    # so merge into CFLAGS and CXXFLAGS
@@ -107,9 +107,10 @@ build_script()
    logfile1="${RVAL}"
 
    local teefile1
-   local teefile2
+   local grepper
 
    teefile1="/dev/null"
+   grepper="log_grep_warning_error"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -122,6 +123,7 @@ build_script()
    then
       r_safe_tty
       teefile1="${RVAL}"
+      grepper="log_delete_all"
    fi
 
    (
@@ -134,20 +136,21 @@ build_script()
          env | sort >&2
       fi
 
+      set -o pipefail # should be set already
        # use absolute paths for configure, safer (and easier to read IMO)
-      if ! logging_redirect_tee_eval_exekutor \
+      if ! logging_tee_eval_exekutor \
                      "${logfile1}" "${teefile1}" \
                      "${env_common}" \
                      "${buildscript}" \
                      ${MULLE_TECHNICAL_FLAGS} \
-                     --build-dir "'${builddir}'" \
+                     --build-dir "'${kitchendir}'" \
                      --configuration "'${configuration}'" \
                      --install-dir "'${dstdir}'" \
                      --platform "'${platform}'" \
                      --sdk "'${sdk}'" \
-                     "'${command}'"
+                     "'${command}'"  | ${grepper}
       then
-         build_fail "${logfile1}" "${scriptname}"
+         build_fail "${logfile1}" "${scriptname}" "${PIPESTATUS[ 0]}"
       fi
    ) || exit 1
 }

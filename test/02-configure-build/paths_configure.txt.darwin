@@ -1,2 +1,3 @@
-[CPPFLAGS=-I/usr/local/include -I/usr/include]
+[CFLAGS=-DSTRING=\"a string\" -isystem /usr/my\ disk/include]
+[CPPFLAGS=-I/usr/my\ disk/include -I/usr/include]
 [LDFLAGS=-L/usr/local/lib -L/usr/lib -F/Network/Library/Frameworks -F/Library/Frameworks]

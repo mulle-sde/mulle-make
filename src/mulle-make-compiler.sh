@@ -33,6 +33,8 @@ MULLE_MAKE_COMPILER_SH="included"
 
 r_platform_c_compiler()
 {
+   log_entry "r_platform_c_compiler" "$@"
+
    local name
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
@@ -56,6 +58,8 @@ r_platform_c_compiler()
 
 r_platform_cxx_compiler()
 {
+   log_entry "r_platform_cxx_compiler" "$@"
+
    local name
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
@@ -81,25 +85,39 @@ r_platform_cxx_compiler()
 # assume default is release and the flags
 # are set for that
 #
-_r_compiler_debug_options()
+_r_compiler_configuration_options()
 {
-   local name="$1"
+   log_entry "_r_compiler_configuration_options" "$@"
 
+   local name="$1"
+   local configuration="$2"
+
+   RVAL=
    case "${name%.*}" in
       cl|*-cl)
-         RVAL="/Od /Zi"
+         case "${configuration}" in
+            Debug|Test)
+               RVAL="${OPTION_CL_DEBUG:-/Od /Zi}"
+            ;;
+         esac
       ;;
 
       *)
-         RVAL="-g -O0"
+         case "${configuration}" in
+            Debug|Test)
+               RVAL="${OPTION_CC_DEBUG:--g -O0}"
+            ;;
+         esac
       ;;
    esac
 }
 
 
 # compiler is re
-r_compiler_sdk_parameter()
+r_compiler_get_sdkpath()
 {
+   log_entry "r_compiler_get_sdkpath" "$@"
+
    local sdk="$1"
 
    local sdkpath
@@ -108,16 +126,16 @@ r_compiler_sdk_parameter()
 
    if [ "${OPTION_DETERMINE_SDK}" = 'NO' ]
    then
-      return
+      return 1
    fi
 
    case "${MULLE_UNAME}" in
       darwin)
          if [ "${sdk}" = "Default" ]
          then
-            sdkpath="`xcrun --show-sdk-path`"
+            sdkpath="`rexekutor xcrun --show-sdk-path`"
          else
-            sdkpath="`xcrun --sdk "${sdk}" --show-sdk-path`"
+            sdkpath="`rexekutor xcrun --sdk "${sdk}" --show-sdk-path`"
          fi
          if [ "${sdkpath}" = "" ]
          then
@@ -126,6 +144,14 @@ r_compiler_sdk_parameter()
          RVAL="${sdkpath}"
       ;;
    esac
+
+   return 0
+}
+
+
+r_default_flag_definer()
+{
+   RVAL="-D$*"
 }
 
 
@@ -141,13 +167,19 @@ r_compiler_cppflags_value()
 {
    log_entry "r_compiler_cppflags_value" "$@"
 
+   local flag_definer="${1:-r_default_flag_definer}"
+
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "CPPFLAGS:       ${OPTION_CPPFLAGS}"
       log_trace2 "OTHER_CPPFLAG:  ${OPTION_OTHER_CPPFLAGS}"
    fi
 
+   local cppflags
+   local definition
+
    r_concat "${OPTION_CPPFLAGS}" "${OPTION_OTHER_CPPFLAGS}"
+   cppflags="${RVAL}"
 
    case "${compiler%.*}" in
       c++|cc|gcc*|*clang*|"")
@@ -158,19 +190,26 @@ r_compiler_cppflags_value()
 
          IFS=","
          set -o noglob
-         for i in ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}
+         for definition in ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}
          do
-            r_concat "${RVAL}" "-D${i}"
+            "${flag_definer}" "${i}"
+            r_concat "${cppflags}" "${RVAL}"
+            cppflags="${RVAL}"
          done
          IFS="${DEFAULT_IFS}"
          set +o noglob
       ;;
    esac
+
+   RVAL="${cppflags}"
 }
+
 
 
 _r_compiler_cflags_value()
 {
+   log_entry "_r_compiler_cflags_value" "$@"
+
    local compiler="$1"
    local configuration="$2"
    local addoptflags="${3:-YES}"
@@ -188,13 +227,9 @@ _r_compiler_cflags_value()
 
    if [ "${addoptflags}" = 'YES' ]
    then
-      case "${configuration}" in
-         Debug)
-            _r_compiler_debug_options "${compiler}"
-            r_concat "$result" "${RVAL}"
-            result="${RVAL}"
-         ;;
-      esac
+      _r_compiler_configuration_options "${compiler}" "${configuration}"
+      r_concat "${result}" "${RVAL}"
+      result="${RVAL}"
    fi
 
    RVAL="${result}"
@@ -222,8 +257,6 @@ r_compiler_cflags_value()
 
    _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
    r_concat "${result}" "${RVAL}"
-
-   RVAL="${result}"
 }
 
 
@@ -255,6 +288,9 @@ r_compiler_ldflags_value()
 {
    log_entry "r_compiler_ldflags_value" "$@"
 
+   local compiler="$1"
+   local configuration="$2"
+
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "LDFLAGS:         ${OPTION_LDFLAGS}"
@@ -262,6 +298,21 @@ r_compiler_ldflags_value()
    fi
 
    r_concat "${OPTION_LDFLAGS}" "${OPTION_OTHER_LDFLAGS}"
+
+   # doesn't work for me though...
+   # https://stackoverflow.com/questions/11731229/dladdr-doesnt-return-the-function-name/11732893?r=SearchResults&s=3|31.5239#11732893
+   if [ "${configuration}" = "Debug" ]
+   then
+      case "${MULLE_UNAME}" in
+         linux)
+            case "${compiler%.*}" in
+               *gcc|*clang)
+                  r_concat "${RVAL}" "-Wl,--export-dynamic"
+               ;;
+            esac
+         ;;
+      esac
+   fi
 }
 
 :

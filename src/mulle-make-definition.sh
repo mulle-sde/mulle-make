@@ -324,7 +324,8 @@ emit_userdefined_definitions()
    local prefix="$1"
    local sep="${2:-=}"
    local plussep="${3:-=}"
-   local pluspref="${4:-\$(inherited) }"
+   local pluspref="${4}"
+   local quote="${5}"
 
    local key
    local buildsettings
@@ -354,7 +355,7 @@ emit_userdefined_definitions()
                        "${sep}" \
                        "${plussep}" \
                        "${pluspref}" \
-                       "'" \
+                       "${quote}" \
                        " "
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
@@ -421,7 +422,10 @@ check_key_without_prefix_exists()
       if find_line "${DEFINED_OPTIONS}" "OPTION_${key}"  ||
          find_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"
       then
-         log_warning "\"${key}\" has already been defined"
+         local value 
+
+         value="`eval echo "\\\$OPTION_$key"`"
+         log_warning "\"${key}\" has already been defined as \"${value}\""
       fi
    fi
 }
@@ -485,7 +489,7 @@ _make_define_option()
 
    local escaped
 
-   r_escaped_shellstring "${value}"
+   r_escaped_shell_string "${value}"
    escaped="${RVAL}"
 
    eval "OPTION_${key}=${escaped}"

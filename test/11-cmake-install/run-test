@@ -87,18 +87,18 @@ main()
 
    local directory
    local dstdir
-   local builddir
+   local kitchendir
 
    directory="`make_tmp_directory`" || exit 1
    directory="${directory:-/tmp/build}"
 
-   builddir="${directory}/build"
+   kitchendir="${directory}/build"
    dstdir="${directory}/root"
 
    #
    # Default is release
    #
-   if ! run_mulle_make install --no-ninja --build-dir "${builddir}" "." "${dstdir}"
+   if ! run_mulle_make install --no-ninja --build-dir "${kitchendir}" "." "${dstdir}"
    then
       exit 1
    fi

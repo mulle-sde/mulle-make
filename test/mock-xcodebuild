@@ -19,7 +19,7 @@ emit_args()
    local prefix
    local subst
 
-   prefix="`eval echo \$MOCK_TEST_DIR`"
+   prefix="`eval "echo \$MOCK_TEST_DIR"`"
    prefix="`escaped_sed_pattern "${prefix}"`"
 
    while [ "$#" -ne 0 ]

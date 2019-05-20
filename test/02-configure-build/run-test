@@ -129,8 +129,10 @@ main()
    #
    # check -I -L -F
    #
-   run_test	"${directory}" "paths_configure.txt" "make.txt" -DDETERMINE_SDK='NO' \
-                                             -I /usr/local/include:/usr/include \
+   run_test	"${directory}" "paths_configure.txt" "make.txt" \
+                                             -DDETERMINE_SDK='NO' \
+                                             -DCFLAGS='-DSTRING=\"a string\" -isystem /usr/my\ disk/include' \
+                                             -I /usr/my\ disk/include:/usr/include \
                                              -L /usr/local/lib:/usr/lib \
                                              -F /Network/Library/Frameworks:/Library/Frameworks
    log_verbose "----- #3 PASSED -----"

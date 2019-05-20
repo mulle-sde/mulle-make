@@ -47,14 +47,16 @@ EOF
    -D<key>=<value>            : set the definition named key to value
    -D<key>+=<value>           : append a += definition for the buildtool
    --build-dir <dir>          : specify build directory
-   --debug                    : build with configuration Debug
+   --debug                    : build with configuration "Debug"
    --ifempty <key>[+]=<value> : like -D, but only if no previous value exists
    --include-path <path>      : specify header search PATH, separated by :
    --definition-dir <path>    : specify definition directory
-   --lib-path <path>          : specify library search PATH, separated by :
-   --release                  : build with configuration Release (Default)
+   --library-style <type>     : produced type : static,dynamic,standalone
+   --library-path <path>      : specify library search PATH, separated by :
+   --release                  : build with configuration "Release" (Default)
    --remove<key>[+]=<value>   : like -D,but removes value from a previous value
    -U<key>                    : undefine a definition or += definition
+   --test                     : build with configuration "Test"
    --verbose-make             : verbose make output
 EOF
    case "${MULLE_UNAME}" in
@@ -64,13 +66,13 @@ EOF
       darwin)
          cat <<EOF
    --frameworks-path <path>   : specify Frameworks search PATH, separated by :
-   -j <cores>                 : number of cores parameter for make (${CORES})
+   -j <cores>                 : number of cores parameter for make (${MULLE_CORES})
 EOF
       ;;
 
       *)
          cat <<EOF
-   -j <cores>                 : number of cores parameter for make (${CORES})
+   -j <cores>                 : number of cores parameter for make (${MULLE_CORES})
 EOF
       ;;
    esac
@@ -174,17 +176,17 @@ EOF
 
 mkdir_build_directories()
 {
-   local builddir="$1"
+   local kitchendir="$1"
    local logsdir="$2"
 
-   [ -z "${builddir}" ] && internal_fail "builddir is empty"
+   [ -z "${kitchendir}" ] && internal_fail "kitchendir is empty"
 
-   if [ -d "${builddir}" -a "${OPTION_CLEAN_BEFORE_BUILD}" = 'YES' ]
+   if [ -d "${kitchendir}" -a "${OPTION_CLEAN_BEFORE_BUILD}" = 'YES' ]
    then
-      log_fluff "Cleaning build directory \"${builddir}\""
-      rmdir_safer "${builddir}"
+      log_fluff "Cleaning build directory \"${kitchendir}\""
+      rmdir_safer "${kitchendir}"
    else
-      mkdir_if_missing "${builddir}"
+      mkdir_if_missing "${kitchendir}"
    fi
 
    mkdir_if_missing "${logsdir}"
@@ -210,7 +212,7 @@ build_with_preference_if_possible()
    [ ! -z "${srcdir}" ]        || internal_fail "srcdir not defined"
 # dstdir can be empty (check what OPTION_PREFIX does differently)
 #   [ ! -z "${dstdir}" ]        || internal_fail "dstdir not defined"
-   [ ! -z "${builddir}" ]      || internal_fail "builddir not defined"
+   [ ! -z "${kitchendir}" ]      || internal_fail "kitchendir not defined"
    [ ! -z "${logsdir}" ]       || internal_fail "logsdir not defined"
 
    (
@@ -230,16 +232,23 @@ build_with_preference_if_possible()
       #statements
 
       local blurb
+      local conftext
+
+      conftext="${configuration}"
+      if [ ! -z "${OPTION_LIBRARY_STYLE}" ]
+      then
+         conftext="${conftext}/${OPTION_LIBRARY_STYLE}"
+      fi
 
       blurb="Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
-${C_MAGENTA}${C_BOLD}${configuration}${C_INFO} build"
+${C_MAGENTA}${C_BOLD}${conftext}${C_INFO} build"
       if [ ! -z "${OPTION_PHASE}" ]
       then
          blurb="${blurb} ${C_MAGENTA}${C_BOLD}${OPTION_PHASE}${C_INFO} phase"
       fi
       blurb="${blurb} of \
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
-${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir#${PWD}/}\" ..."
+${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${kitchendir#${PWD}/}\" ..."
       log_info "${blurb}"
 
       if ! "build_${preference}" "${cmd}" \
@@ -249,7 +258,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${builddir#${PWD}/}\" ..."
                                  "${configuration}" \
                                  "${srcdir}" \
                                  "${dstdir}" \
-                                 "${builddir}" \
+                                 "${kitchendir}" \
                                  "${logsdir}"
       then
          log_error "build_${preference} should exit on failure and not return"
@@ -297,12 +306,12 @@ build_with_sdk_platform_configuration_preferences()
    #
    srcdir="`canonicalize_path "${srcdir}"`"
 
-   local builddir
+   local kitchendir
 
-   builddir="${OPTION_BUILD_DIR}"
-   if [ -z "${builddir}" ]
+   kitchendir="${OPTION_BUILD_DIR}"
+   if [ -z "${kitchendir}" ]
    then
-      builddir="${srcdir}/build"
+      kitchendir="${srcdir}/build"
    fi
 
    local logsdir
@@ -310,13 +319,13 @@ build_with_sdk_platform_configuration_preferences()
    logsdir="${OPTION_LOG_DIR}"
    if [ -z "${logsdir}" ]
    then
-      logsdir="${builddir}/.log"
+      logsdir="${kitchendir}/.log"
    fi
 
-   mkdir_build_directories "${builddir}" "${logsdir}"
+   mkdir_build_directories "${kitchendir}" "${logsdir}"
 
    # now known to exist, so we can canonialize
-   builddir="`canonicalize_path "${builddir}"`"
+   kitchendir="`canonicalize_path "${kitchendir}"`"
    logsdir="`canonicalize_path "${logsdir}"`"
 
    local rval
@@ -517,10 +526,23 @@ _make_build_main()
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
+   if [ -z "${MULLE_PARALLEL_SH}" ]
+   then
+      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-parallel.sh" || return 1
+   fi
+
+   # will set MULLE_CORES
+   r_get_core_count
+
    local OPTION_PLUGIN_PREFERENCES="cmake:meson:autoconf:configure"
    case "${MULLE_UNAME}" in
       darwin)
-         OPTION_PLUGIN_PREFERENCES="${OPTION_PLUGIN_PREFERENCES}:xcodebuild"
+         if [ "${PREFER_XCODEBUILD}" = 'YES' ]
+         then
+            OPTION_PLUGIN_PREFERENCES="${OPTION_PLUGIN_PREFERENCES}:xcodebuild"
+         else
+            OPTION_PLUGIN_PREFERENCES="xcodebuild:${OPTION_PLUGIN_PREFERENCES}"
+         fi
       ;;
    esac
 
@@ -539,6 +561,7 @@ _make_build_main()
    local OPTION_ALLOW_SCRIPT="DEFAULT"
    local OPTION_CORES
    local OPTION_LOAD
+   local OPTION_LIBRARY_STYLE
 
    local argument
 
@@ -571,6 +594,10 @@ _make_build_main()
 
          --release)
             OPTION_CONFIGURATION="Release"
+         ;;
+
+         --test)
+            OPTION_CONFIGURATION="Test"
          ;;
 
          --ninja)
@@ -643,6 +670,11 @@ _make_build_main()
          --no-clean|-K)
             OPTION_CLEAN_BEFORE_BUILD='NO'
          ;;
+
+         --library-style)
+            read -r OPTION_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
+         ;;
+
 
          --log-dir)
             read -r OPTION_LOG_DIR || fail "missing argument to \"${argument}\""
@@ -746,7 +778,7 @@ _make_build_main()
          ;;
 
          # as in /usr/lib:/usr/local/lib
-         -L|--lib-path)
+         -L|--lib-path|--library-path)
             read -r OPTION_LIB_PATH || fail "missing argument to \"${argument}\""
          ;;
 

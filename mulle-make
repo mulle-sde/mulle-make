@@ -50,7 +50,7 @@ print_commands()
    local  show_all="${1:-NO}"
 
    SHOWN_COMMANDS="\
-   project       : build project (default)
+   make          : build project (default)
    definition    : manage definitions like build flags for build tools
    install       : build project and install"
 
@@ -185,7 +185,7 @@ _main()
 
    local cmd
 
-   cmd="${argument:-project}"
+   cmd="${argument:-make}"
 
    case "${cmd}" in
       project|build|make)

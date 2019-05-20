@@ -77,7 +77,7 @@ r_meson_sdk_parameter()
    RVAL=""
    case "${MULLE_UNAME}" in
       "darwin")
-         r_compiler_sdk_parameter "${sdk}"
+         r_compiler_get_sdkpath "${sdk}"
          if [ ! -z "${RVAL}" ]
          then
             log_fluff "Set meson sdk to \"${RVAL}\""
@@ -89,7 +89,7 @@ r_meson_sdk_parameter()
 
 
 #
-# remove old builddir, create a new one
+# remove old kitchendir, create a new one
 # depending on configuration meson with flags
 # build stuff into dependencies
 # TODO: cache commandline in a file $ and emit instead of rebuilding it every time
@@ -107,20 +107,20 @@ build_meson()
    local configuration="$1"; shift
    local srcdir="$1"; shift
    local dstdir="$1"; shift
-   local builddir="$1"; shift
+   local kitchendir="$1"; shift
    local logsdir="$1"; shift
 
    [ -z "${cmd}" ] && internal_fail "cmd is empty"
    [ -z "${projectfile}" ] && internal_fail "projectfile is empty"
    [ -z "${configuration}" ] && internal_fail "configuration is empty"
    [ -z "${srcdir}" ] && internal_fail "srcdir is empty"
-   [ -z "${builddir}" ] && internal_fail "builddir is empty"
+   [ -z "${kitchendir}" ] && internal_fail "kitchendir is empty"
    [ -z "${logsdir}" ] && internal_fail "logsdir is empty"
    [ -z "${sdk}" ] && internal_fail "sdk is empty"
    [ -z "${platform}" ] && internal_fail "sdk is empty"
 
    # need this now
-   mkdir_if_missing "${builddir}"
+   mkdir_if_missing "${kitchendir}"
 
    local cflags
    local cxxflags
@@ -133,7 +133,7 @@ build_meson()
    cxxflags="${RVAL}"
    r_compiler_cppflags_value "${OPTION_INCLUDE_PATH}"
    cppflags="${RVAL}"
-   r_compiler_ldflags_value
+   r_compiler_ldflags_value "${OPTION_CC}" "${configuration}"
    ldflags="${RVAL}"
 
    __add_path_tool_flags
@@ -147,7 +147,7 @@ build_meson()
    projectdir="${RVAL}"
    r_simplified_absolutepath "${projectdir}"
    absprojectdir="${RVAL}"
-   r_simplified_absolutepath "${builddir}"
+   r_simplified_absolutepath "${kitchendir}"
    absbuilddir="${RVAL}"
 
    r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
@@ -289,7 +289,7 @@ build_meson()
 
    local other_buildsettings
 
-   other_buildsettings="`emit_userdefined_definitions "-D " "=" "=" ""`"
+   other_buildsettings="`emit_userdefined_definitions "-D " "=" "=" "" "'"`"
    if [ ! -z "${other_buildsettings}" ]
    then
       r_concat "${meson_flags}" "${other_buildsettings}"
@@ -313,9 +313,11 @@ build_meson()
 
    local teefile1
    local teefile2
+   local grepper
 
    teefile1="/dev/null"
    teefile2="/dev/null"
+   grepper="log_grep_warning_error"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -330,6 +332,7 @@ build_meson()
       r_safe_tty
       teefile1="${RVAL}"
       teefile2="${teefile1}"
+      grepper="log_delete_all"
    fi
 
    (
@@ -347,28 +350,30 @@ build_meson()
       # something changed ourselves instead of meson doing it. Stupid IMO.
       # Let's just force clean...
       #
-      if [ -e "${builddir}/meson-private" ]
+      if [ -e "${kitchendir}/meson-private" ]
       then
-         rmdir_safer "${builddir}"
+         rmdir_safer "${kitchendir}"
       fi
 
-      if ! logging_redirect_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+      set -o pipefail # should be set already
+
+      if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                "${env_common}" \
                "${meson_env}" \
                "'${MESON}'" --backend "'${MESON_BACKEND}'" \
                             "${meson_flags}" \
-                            "'${builddir}'"
+                            "'${kitchendir}'" | ${grepper}
       then
-         build_fail "${logfile1}" "meson"
+         build_fail "${logfile1}" "meson" "${PIPESTATUS[ 0]}"
       fi
 
-      exekutor cd "${builddir}" || fail "failed to enter ${builddir}"
+      exekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
 
-      if ! logging_redirect_tee_eval_exekutor "${logfile2}" "${teefile2}" \
+      if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
-               "'${NINJA}'" "${ninja_flags}" ${maketarget}
+               "'${NINJA}'" "${ninja_flags}" ${maketarget} | ${grepper}
       then
-         build_fail "${logfile2}" "ninja"
+         build_fail "${logfile2}" "ninja" "${PIPESTATUS[ 0]}"
       fi
    ) || exit 1
 }

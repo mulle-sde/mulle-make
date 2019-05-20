@@ -1,2 +1,5 @@
+ASTRING="a string"
 CMAKE_BUILD_TYPE=Release
+CMAKE_C_FLAGS=-DSTRING=\"string\" -Ipath/with\ space
+CMAKE_EXPORT_COMPILE_COMMANDS=ON
 XXX=yyy
