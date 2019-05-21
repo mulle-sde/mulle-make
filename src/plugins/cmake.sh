@@ -382,7 +382,6 @@ build_cmake()
    #  ldflags
    #
 
-   local cmakeflags
 
    # __add_sdk_path_tool_flags # will be done below
    __add_header_and_library_path_tool_flags
@@ -435,6 +434,16 @@ build_cmake()
       log_trace2 "absprojectdir: ${absprojectdir}"
       log_trace2 "absbuilddir:   ${absbuilddir}"
       log_trace2 "projectdir:    ${projectdir}"
+   fi
+
+   local cmakeflags
+
+   cmakeflags="${OPTION_CMAKEFLAGS}"
+
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
+   then
+      log_trace2 "PREFIX:        ${OPTION_PREFIX}"
+      log_trace2 "CMAKEFLAGS:    ${OPTION_CMAKEFLAGS}"
    fi
 
    #
@@ -530,12 +539,6 @@ build_cmake()
          cmakeflags="${RVAL}"
       ;;
    esac
-
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "PREFIX:        ${OPTION_PREFIX}"
-      log_trace2 "CMAKEFLAGS:    ${OPTION_CMAKEFLAGS}"
-   fi
 
    r_cmakeflags_add_sdk_parameter "${cmakeflags}" "${sdk}"
    cmakeflags="${RVAL}"
