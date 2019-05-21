@@ -68,7 +68,6 @@ build_configure()
 
    r_compiler_cflags_value "${OPTION_CC}" "${configuration}"
    cflags="${RVAL}"
-
    r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}"
    cxxflags="${RVAL}"
    r_compiler_cppflags_value "${OPTION_CC}" "${configuration}"
