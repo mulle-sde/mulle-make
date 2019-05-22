@@ -393,28 +393,28 @@ r_test_meson()
    RVAL=""
    if ! r_find_nearest_matching_pattern "${srcdir}" "meson.build"
    then
-      log_fluff "There is no meson.build file in \"${srcdir}\""
+      log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no meson.build file found"
       return 1
    fi
    projectfile="${RVAL}"
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      fail "meson does not support build phases"
+      fail "${srcdir#${MULLE_USER_PWD}/}: meson does not support build phases"
    fi
 
    tools_environment_meson
 
    if [ -z "${MESON}" ]
    then
-      log_warning "Found a meson.build, but \
+      log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a meson.build, but \
 ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
       return 1
    fi
 
    if [ -z "${MESON_BACKEND}" ]
    then
-      fail "No meson backend available"
+      fail "${srcdir#${MULLE_USER_PWD}/}: No meson backend available"
    fi
 
    #
@@ -422,7 +422,7 @@ ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
    #
    NINJA="${MESON_BACKEND}"
 
-   log_verbose "Found meson project file \"${projectfile}\""
+   log_verbose "${srcdir#${MULLE_USER_PWD}/}: Found meson project file \"${projectfile}\""
 
    RVAL="${projectfile}"
 

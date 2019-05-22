@@ -534,18 +534,7 @@ _make_build_main()
    # will set MULLE_CORES
    r_get_core_count
 
-   local OPTION_PLUGIN_PREFERENCES="cmake:meson:autoconf:configure"
-   case "${MULLE_UNAME}" in
-      darwin)
-         if [ "${PREFER_XCODEBUILD}" = 'YES' ]
-         then
-            OPTION_PLUGIN_PREFERENCES="${OPTION_PLUGIN_PREFERENCES}:xcodebuild"
-         else
-            OPTION_PLUGIN_PREFERENCES="xcodebuild:${OPTION_PLUGIN_PREFERENCES}"
-         fi
-      ;;
-   esac
-
+   local OPTION_PLUGIN_PREFERENCES='DEFAULT'
    local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
    local OPTION_CLEAN_BEFORE_BUILD="DEFAULT"
    local OPTION_CONFIGURATION="DEFAULT"
@@ -821,6 +810,21 @@ _make_build_main()
    if [ -z "${MULLE_MAKE_SDK_SH}" ]
    then
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-sdk.sh" || return 1
+   fi
+
+   if [ "${OPTION_PLUGIN_PREFERENCES}" = 'DEFAULT' ]
+   then
+      OPTION_PLUGIN_PREFERENCES='cmake:meson:autoconf:configure'
+      case "${MULLE_UNAME}" in
+         darwin)
+            if [ "${OPTION_PREFER_XCODEBUILD}" = 'YES' ]
+            then
+               OPTION_PLUGIN_PREFERENCES="xcodebuild:${OPTION_PLUGIN_PREFERENCES}"
+            else
+               OPTION_PLUGIN_PREFERENCES="${OPTION_PLUGIN_PREFERENCES}:xcodebuild"
+            fi
+         ;;
+      esac
    fi
 
    local srcdir

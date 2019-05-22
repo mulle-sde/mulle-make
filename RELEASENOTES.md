@@ -1,3 +1,10 @@
+## 0.10.0
+
+* fixed a lot of quoting problems
+* general improvements with respect to building iphoneos libraries
+* you can now specify a platform in addition to configuration and sdk
+
+
 ### 0.9.3
 
 * do not emit --sdk macosx if no or Default sdk is defined on darwin

@@ -477,14 +477,14 @@ r_test_xcodebuild()
       projectfile="${RVAL}"
       if [ -z "${projectfile}" ]
       then
-         log_fluff "There is no Xcode project in \"${srcdir}\""
+         log_fluff "${srcdir#${MULLE_USER_PWD}/}: There is no Xcode project in \"${srcdir}\""
          return 1
       fi
    fi
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      fail "Xcode does not support build phases"
+      fail "${srcdir#${MULLE_USER_PWD}/}: Xcode does not support build phases"
    fi
 
    r_fast_dirname "${projectfile}"
@@ -493,7 +493,7 @@ r_test_xcodebuild()
 
    if [ -z "${XCODEBUILD}" ]
    then
-      log_verbose "No xcodebuild found."
+      log_verbose "${srcdir#${MULLE_USER_PWD}/}: No xcodebuild found."
       return 1
    fi
 

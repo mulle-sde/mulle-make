@@ -231,7 +231,7 @@ r_test_autoconf()
    then
       if ! r_find_nearest_matching_pattern "${srcdir}" "configure.in"
       then
-         log_fluff "There is no autoconf project in \"${srcdir}\""
+         log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no autoconf project found."
          return 1
       fi
    fi
@@ -239,7 +239,9 @@ r_test_autoconf()
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      fail "autoconf does not support build phases
+      local name
+
+      fail "${srcdir#${MULLE_USER_PWD}/}: autoconf does not support build phases
 ${C_INFO}This is probably a misconfiguration in your sourcetree. Suggest:
 ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
    fi
@@ -251,7 +253,7 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
 
    if [ "${OPTION_SKIP_AUTOCONF}" = 'YES' -a -f "${configurefile}" ]
    then
-      log_fluff "Skip to configure due to option SKIP_AUTOCONF being set..."
+      log_fluff "${srcdir#${MULLE_USER_PWD}/}: Skip to configure due to option SKIP_AUTOCONF being set..."
       return 1
    fi
 
@@ -259,7 +261,7 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
    then
       if [ "${configurefile}" -nt "${projectfile}" ]
       then
-         log_fluff "Autoconf has already run once, skip to configure..."
+         log_fluff "${srcdir#${MULLE_USER_PWD}/}: Autoconf has already run once, skip to configure..."
          return 1
       fi
    fi
@@ -268,18 +270,18 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
 
    if [ -z "${AUTOCONF}" ]
    then
-      log_warning "Found a `fast_basename "${projectfile}"`, but ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
+      log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a `fast_basename "${projectfile}"`, but ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
       return 1
    fi
 
    if [ -z "${AUTORECONF}" ]
    then
-      log_warning "No autoreconf found, will continue though"
+      log_warning "${srcdir#${MULLE_USER_PWD}/}: No autoreconf executable found, will continue though"
    fi
 
    if [ -z "${MAKE}" ]
    then
-      log_warning "No make found"
+      log_warning "${srcdir#${MULLE_USER_PWD}/}: No make executable found"
       return 1
    fi
 
