@@ -472,7 +472,7 @@ r_build_log_name()
       count=$(( $count + 1 ))
 
       mkdir_if_missing "${logsdir}"
-      redirect_exekutor "${logsdir}/.count" echo "$count"
+      redirect_exekutor "${logsdir}/.count" printf "%s\n" "$count"
    done
 }
 
@@ -486,7 +486,7 @@ add_path_if_exists()
    then
       colon_concat "${line}" "${path}"
    else
-      echo "${line}"
+      printf "%s\n" "${line}"
    fi
 }
 

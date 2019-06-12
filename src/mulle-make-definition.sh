@@ -40,15 +40,11 @@ Usage:
    ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} [option] <command>
 
    Examine and change build definitions. A "definition" is a flag passed to the
-   buildtool. Specify a set of definitions with a "definition directory".
-   These dictionaries are conveniently maintained with this command.
+   buildtool. This command maintains a permanent ans shareable set of
+   definitions.
 
-   Definitions maintained this way are persistent and shareable with other users.
-
-   There is also the possiblity of adding definitions on the commandline
-   during the build step. These definitions are useful for per-project tweaks,
-   that should not affect downstream users.
-   (see \`${MULLE_USAGE_NAME} project -h\` for more information).
+   There is also the possibility of adding definitions on a per-command basis
+   on the commandline for the "make" command.
 
 Commands:
    get    :  get a specific value
@@ -110,7 +106,7 @@ Usage:
    additive for settings like compiler flags.
 
 Options:
-   -+|--additive : create an additive setting (+=)
+   -+     : create an additive setting (+=)
 
 EOF
    exit 1
@@ -357,7 +353,7 @@ emit_userdefined_definitions()
                        "${pluspref}" \
                        "${quote}" \
                        " "
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -422,7 +418,7 @@ check_key_without_prefix_exists()
       if find_line "${DEFINED_OPTIONS}" "OPTION_${key}"  ||
          find_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"
       then
-         local value 
+         local value
 
          value="`eval echo "\\\$OPTION_$key"`"
          log_warning "\"${key}\" has already been defined as \"${value}\""
@@ -846,7 +842,7 @@ set_definition_dir()
       finaldirectory="${directory}/set"
    fi
 
-   r_filepath_concat "${directory}" "${OPTION_MODIFIER}"
+   r_filepath_concat "${finaldirectory}" "${OPTION_MODIFIER}"
    finaldirectory="${RVAL}"
 
    # remove all possible old settings
@@ -864,7 +860,7 @@ set_definition_dir()
 
 
    mkdir_if_missing "${finaldirectory}"
-   redirect_exekutor "${finaldirectory}/${key}" echo "${value}"
+   redirect_exekutor "${finaldirectory}/${key}" printf "%s\n" "${value}"
 }
 
 
@@ -919,7 +915,7 @@ get_definition_dir()
    if [ "${OPTION_OUTPUT_KEY}" = 'YES' ]
    then
       value="`eval echo "\\\$$varkey"`"
-      echo "${key}='${value}'"
+      printf "%s\n" "${key}='${value}'"
    else
       eval echo "\$$varkey"
    fi
@@ -974,7 +970,7 @@ list_definition_dir()
                        "'" \
                        "${lf}"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 

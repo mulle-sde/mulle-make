@@ -60,7 +60,7 @@ find_msvc_executable()
             if [ -x "${executable}" ]
             then
                echo "MSVC ${name} found as ${C_RESET}${executable}" >&2
-               echo "${executable}"
+               printf "%s\n" "${executable}"
                break
             fi
          ;;
@@ -75,14 +75,14 @@ find_msvc_executable()
 # used by tests
 mingw_demangle_path()
 {
-   echo "$1" | sed 's|^/\(.\)|\1:|' | sed s'|/|\\|g'
+   printf "%s\n" "$1" | sed 's|^/\(.\)|\1:|' | sed s'|/|\\|g'
 }
 
 
 
 mingw_eval_demangle_path()
 {
-   echo "$1" | sed 's|^/\(.\)|\1:|' | sed s'|/|\\\\|g'
+   printf "%s\n" "$1" | sed 's|^/\(.\)|\1:|' | sed s'|/|\\\\|g'
 }
 
 
@@ -98,7 +98,7 @@ mingw_eval_demangle_paths()
 #      return
 #   fi
 #
-#   echo "$1"
+#   printf "%s\n" "$1"
 #   shift
 
    while [ $# -ne 0 ]
@@ -125,7 +125,7 @@ mingw_mangle_compiler()
          log_fluff "Using default compiler cl"
       ;;
    esac
-   echo "${compiler}"
+   printf "%s\n" "${compiler}"
 }
 
 
@@ -150,7 +150,7 @@ mingw_mangle_compiler_exe()
          echo "Using default compiler cl for $2" >&2
       ;;
    esac
-   echo "${compiler}"
+   printf "%s\n" "${compiler}"
 }
 
 
@@ -243,7 +243,7 @@ mingw_buildpath()
 
    echo "link.exe: `PATH="${buildpath}" /usr/bin/which link.exe`" >&2
    echo "Modified PATH: ${buildpath}" >&2
-   echo "${buildpath}"
+   printf "%s\n" "${buildpath}"
 }
 
 
@@ -294,7 +294,7 @@ mingw_visualstudio_buildpath()
       fi
    fi
 
-   echo "${buildpath}"
+   printf "%s\n" "${buildpath}"
 }
 
 

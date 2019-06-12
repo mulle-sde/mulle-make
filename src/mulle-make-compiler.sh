@@ -113,6 +113,41 @@ _r_compiler_configuration_options()
 }
 
 
+#
+# this should be part of mulle-platform
+#
+r_darwin_sdkpath_for_sdk()
+{
+   local sdk="$1"
+
+   local sdkpath
+
+   if [ "${sdk}" = "Default" ]
+   then
+      # on 10.6 this will fail as --show-sdk-path ain't there
+      sdkpath="`rexekutor xcrun --show-sdk-path 2> /dev/null`"
+      if [ -z "${sdkpath}" ]
+      then
+         # hardcode for now
+         sdkpath="`xcode-select  -print-path/SDKs/MacOSX10.6.sdk`"
+         if [ ! -d "${sdkpath}" ]
+         then
+            fail "Couldn't figure out default SDK"
+         fi
+      fi
+   else
+      # on 10.6 this is basically impossible to do
+      sdkpath="`rexekutor xcrun --sdk "${sdk}" --show-sdk-path`"
+   fi
+
+   if [ "${sdkpath}" = "" ]
+   then
+      fail "SDK \"${sdk}\" is not installed"
+   fi
+   RVAL="${sdkpath}"
+}
+
+
 # compiler is re
 r_compiler_get_sdkpath()
 {
@@ -131,17 +166,7 @@ r_compiler_get_sdkpath()
 
    case "${MULLE_UNAME}" in
       darwin)
-         if [ "${sdk}" = "Default" ]
-         then
-            sdkpath="`rexekutor xcrun --show-sdk-path`"
-         else
-            sdkpath="`rexekutor xcrun --sdk "${sdk}" --show-sdk-path`"
-         fi
-         if [ "${sdkpath}" = "" ]
-         then
-            fail "SDK \"${sdk}\" is not installed"
-         fi
-         RVAL="${sdkpath}"
+         r_darwin_sdkpath_for_sdk "${sdk}"
       ;;
    esac
 

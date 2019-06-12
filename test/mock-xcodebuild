@@ -28,12 +28,12 @@ emit_args()
       case "${argument}" in
          -project|-target|-configuration|-scheme|-workspace|-sdk|-destination*)
             shift
-            echo "${argument}" "$1"
+            printf "%s %s\n" "${argument}" "$1"
          ;;
 
          -xc*|-export-*|-arch|-enable*|-*Path|-*Language|-toolchain)
             shift
-            echo "${argument}" "$1"
+            printf "%s %s\n" "${argument}" "$1"
          ;;
 
          -*=*)
@@ -41,7 +41,7 @@ emit_args()
             value="$(cut -d= -f2- <<< "${argument:1}")"
             subst="$(sed "s/^\\(.*\\)${prefix}\\(.*\\)/\\1\${MOCK_TEST_DIR}\\2/g" <<< "${value}")"
             subst="$(sed "s|^/private\${MOCK_TEST_DIR}|\${MOCK_TEST_DIR}|" <<< "${subst}")"
-            echo "<$key=${subst}>"
+            printf "%s\n" "<$key=${subst}>"
          ;;
 
          *=*)
@@ -49,7 +49,7 @@ emit_args()
             value="$(cut -d= -f2- <<< "${argument}")"
             subst="$(sed "s/^\\(.*\\)${prefix}\\(.*\\)/\\1\${MOCK_TEST_DIR}\\2/g" <<< "${value}")"
             subst="$(sed "s|^/private\${MOCK_TEST_DIR}|\${MOCK_TEST_DIR}|" <<< "${subst}")"
-            echo "$key=${subst}"
+            printf "%s\n" "$key=${subst}"
          ;;
 
          # commands ignore
@@ -60,8 +60,11 @@ emit_args()
          build|build-for-testing|analyze|archive|test|test-without-building|install-src|install|clean)
          ;;
 
+         "")
+         ;;
+
          *)
-            echo "${argument}"
+            printf "%s\n" "${argument}"
          ;;
       esac
 

@@ -21,9 +21,9 @@ main()
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
-      echo "$*" | filter_darwin  > "${filename}"
+      printf "%s\n" "$*" | filter_darwin  > "${filename}"
    else
-      echo "$*" | filter_darwin  
+      printf "%s\n" "$*" | filter_darwin
    fi
 }
 

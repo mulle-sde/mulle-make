@@ -130,7 +130,7 @@ _build_xcodebuild()
 
    [ ! -z "${configuration}" ] || internal_fail "configuration is empty"
    [ ! -z "${srcdir}" ]        || internal_fail "srcdir is empty"
-   [ ! -z "${kitchendir}" ]      || internal_fail "kitchendir is empty"
+   [ ! -z "${kitchendir}" ]    || internal_fail "kitchendir is empty"
    [ ! -z "${sdk}" ]           || internal_fail "sdk is empty"
    [ ! -z "${projectfile}" ]   || internal_fail "project is empty"
 

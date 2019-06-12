@@ -221,7 +221,7 @@ debug_cmake()
    echo ">>>" >&2
    for i in "$@"
    do
-     echo "$i"  >&2
+     printf "%s\n" "$i"  >&2
    done
    echo "<<<"  >&2
 }
@@ -513,7 +513,7 @@ build_cmake()
    then
       case "${buildtype}" in
          Test)
-            buildtype="Debug"
+            buildtype="${OPTION_TEST_CMAKE_BUILD_TYPE:-Debug}"
             r_cmakeflags_add_flag "${cmakeflags}" "MULLE_TEST:BOOL" "ON"
             cmakeflags="${RVAL}"
          ;;

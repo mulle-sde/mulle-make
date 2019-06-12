@@ -80,7 +80,7 @@ find_library_in_directories()
 
       if [ -f "${path}" ]
       then
-         echo "${path}"
+         printf "%s\n" "${path}"
          break
       fi
    done
@@ -98,7 +98,7 @@ find_library()
 
    if [ -f "${filename}" ]
    then
-      echo "${filename}"
+      printf "%s\n" "${filename}"
       return
    fi
 
@@ -190,7 +190,7 @@ dump_library()
       filename="`find_library "${libraryname}.lib"`"
       if [ -z "${filename}" ]
       then
-         echo "${libraryname} ($PWD) not found" >&2 && exit 1
+         printf "%s\n" "${libraryname} ($PWD) not found" >&2 && exit 1
       fi
    fi
 
@@ -309,7 +309,7 @@ ${SEARCH_PATH}"
          ;;
 
          --version)
-            echo "$VERSION"
+            printf "%s\n" "$VERSION"
             exit 0
          ;;
 
@@ -335,7 +335,7 @@ ${SEARCH_PATH}"
    if [ ! -z "${name}" ]
    then
       libname="`basename "${name:-$1}"`"
-      libname="`echo "${libname}" | sed 's/^\([^.]*\)*\\..*$/\1/'`"
+      libname="`printf "%s\n" "${libname}" | sed 's/^\([^.]*\)*\\..*$/\1/'`"
 
       [ -z "${libname}" ] && echo "could not figure out library name from \"${name:-$1}\"" >&2 && exit 1
    fi

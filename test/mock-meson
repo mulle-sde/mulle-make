@@ -19,21 +19,21 @@ emit_args()
       key="$1"
       case "${key}" in
          -*=*)
-            echo "${key}"
+            printf "%s\n" "${key}"
          ;;
 
          --backend|--prefix)
             shift
-            echo "${key} `basename -- "$1"`"
+            printf "%s\n" "${key} `basename -- "$1"`"
          ;;
 
          --buildtype|--*dir)
             shift
-            echo "${key} $1"
+            printf "%s\n" "${key} $1"
          ;;
 
          -*)
-            echo "${key}"
+            printf "%s\n" "${key}"
          ;;
 
          *)

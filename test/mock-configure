@@ -19,16 +19,16 @@ emit_args()
       key="$1"
       case "${key}" in
          -*=*)
-            echo "${key}"
+            printf "%s\n" "${key}"
          ;;
 
          --prefix|--*dir)
             shift
-            echo "${key} $1"
+            printf "%s %s\n" "${key}" "$1"
          ;;
 
          *)
-            echo "${key}"
+            printf "%s\n" "${key}"
          ;;
       esac
 

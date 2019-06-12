@@ -1,3 +1,7 @@
+### 0.10.1
+
+* mulle-make without command and options is now promoted to mulle-make build
+
 ## 0.10.0
 
 * fixed a lot of quoting problems

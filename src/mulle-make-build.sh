@@ -235,6 +235,7 @@ build_with_preference_if_possible()
       local conftext
 
       conftext="${configuration}"
+      OPTION_LIBRARY_STYLE="${OPTION_LIBRARY_STYLE:-${OPTION_PREFERRED_LIBRARY_STYLE}}"
       if [ ! -z "${OPTION_LIBRARY_STYLE}" ]
       then
          conftext="${conftext}/${OPTION_LIBRARY_STYLE}"
@@ -511,7 +512,7 @@ list_main()
                        "" \
                        "" \
                        "${lf}"
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 
    :
 }
@@ -522,7 +523,7 @@ _make_build_main()
    log_entry "_make_build_main" "$@"
 
    local cmd="${1:-project}"
-   local subcmd="${2:-project}"
+   local argument="$2"
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
@@ -551,11 +552,31 @@ _make_build_main()
    local OPTION_CORES
    local OPTION_LOAD
    local OPTION_LIBRARY_STYLE
+   local OPTION_PREFERRED_LIBRARY_STYLE
 
-   local argument
+   local state
 
-   while read -r argument
+   state='NEXT'
+   if [ ! -z "${argument}" ]
+   then
+      state='FIRST'
+   fi
+
+   while :
    do
+      case "${state}" in
+         FIRST)
+            state='NEXT'
+         ;;
+
+         NEXT)
+            if ! read -r argument
+            then
+               break
+            fi
+         ;;
+      esac
+
       case "${argument}" in
          -h*|--help|help)
             "${usage}"
@@ -658,6 +679,10 @@ _make_build_main()
 
          --no-clean|-K)
             OPTION_CLEAN_BEFORE_BUILD='NO'
+         ;;
+
+         --preferred-library-style)
+            read -r OPTION_PREFERRED_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
          ;;
 
          --library-style)
@@ -874,7 +899,7 @@ Maybe repair with:
             project_usage
          fi
 
-         build "${subcmd}" \
+         build "build" \
                "${srcdir}" \
                "" \
                "${OPTION_INFO_DIR}"

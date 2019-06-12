@@ -59,7 +59,7 @@ build_list_plugins()
          ;;
       esac
 
-      echo "${pluginname}"
+      printf "%s\n" "${pluginname}"
    done
 
    IFS="${DEFAULT_IFS}"

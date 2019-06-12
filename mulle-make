@@ -32,7 +32,7 @@
 [ "${TRACE}" = 'YES' -o "${MULLE_MAKE_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.10.0
+MULLE_EXECUTABLE_VERSION=0.10.1
 
 #
 # This is the main user interface to mulle-make
@@ -61,11 +61,11 @@ print_commands()
    version       : print mulle-make version"
 
 
-   echo "${SHOWN_COMMANDS}"
+   printf "%s\n" "${SHOWN_COMMANDS}"
 
    if [ "${show_all}" != 'NO' ]
    then
-      echo "${HIDDEN_COMMANDS}"
+      printf "%s\n" "${HIDDEN_COMMANDS}"
    fi
 }
 
@@ -92,9 +92,9 @@ Usage:
    Build a project using a buildtool like cmake or configure. At its simplest,
    this is a shortcut for: \`mkdir build; cd build; cmake .. ; make; cd ..\`.
 
-   mulle-make ignores environment variables. They may affect the buildtool
-   though. To pass flags to the buildtool use the provided definitions facility
-   (see \`${MULLE_USAGE_NAME} definition -h\` for more information).
+   Customize your build with \`make -D\` definitions like for example
+   "-DFOO=1 -DOTHER_CPPFLAGS=-fPIC". Keep a permanent set of these definitions
+   around  with the \'definition\' command.
 
 Flags:
 EOF
@@ -118,6 +118,11 @@ EOF
    cat <<EOF
 
 Options are command specific. Use ${MULLE_USAGE_NAME} <command> -h for help.
+
+Environment:
+   mulle-make ignores environment variables. They may affect the buildtool
+   though.
+
 EOF
 
    exit 1
@@ -147,6 +152,7 @@ _main()
    # simple option handling
    #
    local argument
+   local cmd
 
    while read -r argument
    do
@@ -165,13 +171,13 @@ _main()
          ;;
 
          --version)
-            echo "${MULLE_EXECUTABLE_VERSION}"
+            printf "%s\n" "${MULLE_EXECUTABLE_VERSION}"
             exit 0
          ;;
 
          -*)
-            log_error "Unknown flag \"${argument}\""
-            usage "${MULLE_TRACE}"
+            cmd="make"
+            break
          ;;
 
          *)
@@ -183,16 +189,19 @@ _main()
 
    options_setup_trace "${MULLE_TRACE}"
 
-   local cmd
-
-   cmd="${argument:-make}"
+   if [ -z "${cmd}" ]
+   then
+      cmd="${argument:-make}"
+      argument=
+   fi
 
    case "${cmd}" in
       project|build|make)
          # shellcheck source=src/mulle-make-definition.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
-         make_build_main
+         # possibly uncomsumed argument
+         make_build_main "${argument}"
       ;;
 
       definition)
@@ -224,15 +233,15 @@ _main()
       ;;
 
       libexec-dir|library-path)
-         echo "${MULLE_MAKE_LIBEXEC_DIR}"
+         printf "%s\n" "${MULLE_MAKE_LIBEXEC_DIR}"
       ;;
 
       uname)
-         echo "${MULLE_UNAME}"
+         printf "%s\n" "${MULLE_UNAME}"
       ;;
 
       version)
-         echo "${MULLE_EXECUTABLE_VERSION}"
+         printf "%s\n" "${MULLE_EXECUTABLE_VERSION}"
          return 0
       ;;
 
@@ -250,7 +259,7 @@ print_arguments()
 {
    while [ $# -ne 0 ]
    do
-      echo "$1"
+      printf "%s\n" "$1"  # echo snarfs up some options like -n
       shift
    done
 }
@@ -258,6 +267,8 @@ print_arguments()
 
 main()
 {
+   local args
+
    if [ $# -eq 2 -a "$1" == "--args" ]
    then
       local filename
@@ -273,10 +284,12 @@ main()
          ;;
       esac
 
-      cat "${filename}" | _main
+      args="`cat "${filename}" `"
    else
-      print_arguments "$@" | _main
+      args="`print_arguments "$@" `"
    fi
+
+   _main <<< "${args}"
 }
 
 
@@ -291,7 +304,7 @@ _init()
    #
    if [ "$1" = "version" ]
    then
-      echo "${MULLE_EXECUTABLE_VERSION}"
+      printf "%s\n" "${MULLE_EXECUTABLE_VERSION}"
       exit 0
    fi
 
@@ -327,7 +340,7 @@ _init()
    #
    case "$1" in
       "libexec-dir"|"library-path")
-         echo "${MULLE_MAKE_LIBEXEC_DIR}"
+         printf "%s\n" "${MULLE_MAKE_LIBEXEC_DIR}"
          exit 0
       ;;
    esac
