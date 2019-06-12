@@ -15,3 +15,5 @@ mulle-project/publisher-info.sh
 *.build
 test/05-meson-build/src/
 tests/05-meson-build/src/
+escape-hell/
+dox/eval-echo-memo.txt

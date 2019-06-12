@@ -1,3 +1,7 @@
+### 0.10.2
+
+* fix bug
+
 ### 0.10.1
 
 * mulle-make without command and options is now promoted to mulle-make build

@@ -128,8 +128,10 @@ r_darwin_sdkpath_for_sdk()
       sdkpath="`rexekutor xcrun --show-sdk-path 2> /dev/null`"
       if [ -z "${sdkpath}" ]
       then
-         # hardcode for now
-         sdkpath="`xcode-select  -print-path/SDKs/MacOSX10.6.sdk`"
+         # hardcode SDK for now
+         sdkpath="`xcode-select  -print-path`" || exit 1
+         r_filepath_concat "${sdkpath}" "SDKs/MacOSX10.6.sdk"
+         sdkpath="${RVAL}"
          if [ ! -d "${sdkpath}" ]
          then
             fail "Couldn't figure out default SDK"
