@@ -780,7 +780,6 @@ set_definition_dir()
    local directory="$1"
 
    local argument
-   local OPTION_ADDITIVE='NO'
    local OPTION_MODIFIER='set'
 
    while read -r argument
@@ -791,7 +790,7 @@ set_definition_dir()
          ;;
 
          -+|--additive)
-            OPTION_ADDITIVE='YES'
+            OPTION_MODIFIER='plus'
          ;;
 
          --append|--append0|--ifempty|--remove)
@@ -835,14 +834,7 @@ set_definition_dir()
 
    local finaldirectory
 
-   if [ "${OPTION_ADDITIVE}" = 'YES' ]
-   then
-      finaldirectory="${directory}/plus"
-   else
-      finaldirectory="${directory}/set"
-   fi
-
-   r_filepath_concat "${finaldirectory}" "${OPTION_MODIFIER}"
+   r_filepath_concat "${directory}" "${OPTION_MODIFIER}"
    finaldirectory="${RVAL}"
 
    # remove all possible old settings
