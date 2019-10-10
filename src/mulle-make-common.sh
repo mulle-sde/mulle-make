@@ -85,7 +85,7 @@ r_find_make()
 {
    log_entry "r_find_make" "$@"
 
-   local defaultname="${1:-make}"
+   local defaultname="${1:-make${MULLE_EXE_EXTENSION}}"
    local noninja="$2"
 
    local toolname
@@ -101,15 +101,15 @@ r_find_make()
          ;;
 
          'YES'|"DEFAULT")
-            if [ ! -z "`command -v ninja`" ]
+            if [ ! -z "`command -v ninja${MULLE_EXE_EXTENSION}`" ]
             then
-               RVAL="ninja"
+               RVAL="ninja${MULLE_EXE_EXTENSION}"
                return
             fi
 
             if [ "${OPTION_NINJA}" = 'YES' ]
             then
-               fail "ninja not found"
+               fail "ninja${MULLE_EXE_EXTENSION} not found"
             fi
          ;;
       esac

@@ -58,6 +58,10 @@ r_platform_cmake_generator()
                RVAL="MSYS Makefiles"
             ;;
 
+            windows)
+               RVAL="Ninja"
+            ;;
+      
             *)
                RVAL="Unix Makefiles"
             ;;
@@ -70,9 +74,11 @@ r_platform_cmake_generator()
 r_find_cmake()
 {
    local toolname
+   local tooldefaultname
 
-   toolname="${OPTION_CMAKE:-${CMAKE:-cmake}}"
-   r_verify_binary "${toolname}" "cmake" "cmake"
+   tooldefaultname="cmake${MULLE_EXE_EXTENSION}"
+   toolname="${OPTION_CMAKE:-${CMAKE:-${tooldefaultname}}}"
+   r_verify_binary "${toolname}" "cmake" "${tooldefaultname}"
 }
 
 

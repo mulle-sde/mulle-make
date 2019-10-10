@@ -93,9 +93,9 @@ EOF
    cat <<EOF
    --configuration <name>     : configuration to build like Debug or Release
    --clean                    : always clean before building
-   --no-ninja                 : prefer make over ninja
    --log-dir <dir>            : specify log directory
    --no-determine-sdk         : don't try to figure out the default SDK
+   --no-ninja                 : prefer make over ninja
    --phase <name>             : run make phase (for parallel builds)
    --project-name <name>      : explicitly set project name
    --project-language <c|cpp> : set project language

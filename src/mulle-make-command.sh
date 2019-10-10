@@ -111,6 +111,20 @@ which_binary()
             ;;
          esac
       ;;
+
+      windows)
+         case "${toolname}" in
+            *.exe)
+            ;;
+
+            *)
+               if command -v "${toolname}.exe" 2> /dev/null
+               then
+                  return 0
+               fi
+            ;;
+         esac
+      ;;
    esac
 
    command -v "${toolname}" 2> /dev/null
