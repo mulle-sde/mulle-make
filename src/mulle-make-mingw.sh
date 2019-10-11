@@ -43,7 +43,7 @@ find_msvc_executable()
    local path
    local compiler
 
-   IFS=":"
+   IFS=':'
    set -o noglob
    for path in ${searchpath}
    do
@@ -217,7 +217,7 @@ mingw_buildpath()
    local buildpath
    local vspath
 
-   IFS=":"
+   IFS=':'
    set -o noglob
    for i in $PATH
    do
@@ -257,7 +257,7 @@ mingw_visualstudio_buildpath()
    local buildpath
    local vspath
 
-   IFS=":"
+   IFS=':'
    for i in $PATH
    do
       IFS="${DEFAULT_IFS}"

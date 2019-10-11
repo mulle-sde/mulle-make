@@ -128,7 +128,7 @@ build_load_plugins()
 
    local preference
    AVAILABLE_PLUGINS=
-   IFS=":"; set -o noglob
+   IFS=':'; set -o noglob
    for preference in ${preferences}
    do
       IFS="${DEFAULT_IFS}"; set +o noglob
