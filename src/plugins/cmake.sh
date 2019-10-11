@@ -181,7 +181,7 @@ cmake_files_are_newer_than_makefile()
    local arguments
    local location
 
-   IFS=":"
+   IFS=':'
    for location in ${MULLE_MATCH_PATH}
    do
       [ -z "${location}" ] && fail "Environment variable \

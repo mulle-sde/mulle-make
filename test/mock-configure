@@ -42,7 +42,7 @@ emit_env()
    local key
    local value
 
-   set -f; IFS=":"
+   set -f; IFS=':'
    for key in ${__MULLE_MAKE_ENV_ARGS}
    do
       if [ ! -z "${key}" ]

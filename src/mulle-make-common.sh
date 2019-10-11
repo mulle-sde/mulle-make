@@ -310,7 +310,7 @@ r_convert_path_to_cflags()
 
    RVAL=""
 
-   IFS=":"
+   IFS=':'
    set -o noglob
    for component in ${path}
    do

@@ -58,7 +58,7 @@ emit_env()
    local key
    local value
 
-   IFS=":"
+   IFS=':'
    set -o noglob
    for key in ${__MULLE_MAKE_ENV_ARGS}
    do

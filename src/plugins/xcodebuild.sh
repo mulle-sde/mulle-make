@@ -85,7 +85,7 @@ r_convert_path_to_value()
    local output
    local component
 
-   IFS=":"
+   IFS=':'
    set -o noglob
    for component in ${path}
    do
