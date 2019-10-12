@@ -636,7 +636,8 @@ read_defines_dir()
       fi
 
       # case insensitive fs need this
-      key="$(tr '[a-z]' '[A-Z]' <<< "${key}")"
+      r_uppercase "${key}"
+      key="${RVAL}"
 
       value="`egrep -v '^#' "${filename}"`"
 #      if [ -z "${value}" ]

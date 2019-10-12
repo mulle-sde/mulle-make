@@ -33,12 +33,15 @@ MULLE_MAKE_PLUGIN_CMAKE_SH="included"
 
 r_platform_cmake_generator()
 {
+   log_entry "r_platform_cmake_generator" "$@"
+
    local makepath="$1"
 
    local name
 
    r_fast_basename "${makepath}"
    name="${RVAL}"
+
    case "${name%.*}" in
       nmake)
          RVAL="NMake Makefiles"
@@ -68,11 +71,15 @@ r_platform_cmake_generator()
          esac
       ;;
    esac
+
+   log_fluff "Using ${RVAL} as cmake generator"
 }
 
 
 r_find_cmake()
 {
+   log_entry "r_find_cmake" "$@"
+
    local toolname
    local tooldefaultname
 
@@ -84,9 +91,10 @@ r_find_cmake()
 
 tools_environment_cmake()
 {
-   tools_environment_make "" "cmake"
+   log_entry "tools_environment_cmake" "$@"
 
    local defaultgenerator
+
    r_platform_cmake_generator "${MAKE}"
    defaultgenerator="${RVAL}"
 
@@ -94,6 +102,9 @@ tools_environment_cmake()
 
    CMAKE="${RVAL}"
    CMAKE_GENERATOR="${OPTION_CMAKE_GENERATOR:-${defaultgenerator}}"
+
+   # generator will also determine make to be used
+   tools_environment_make "" "cmake"
 }
 
 

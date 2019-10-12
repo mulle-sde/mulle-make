@@ -85,8 +85,20 @@ r_find_make()
 {
    log_entry "r_find_make" "$@"
 
-   local defaultname="${1:-make${MULLE_EXE_EXTENSION}}"
+   local defaultname="$1"
    local noninja="$2"
+
+   # temporary fix, because MULLE_EXE_EXTENSION was lost during crafting
+   # but I don't know why. If MULLE_UNAME is defined MULLE_EXE_EXTENSION 
+   # should be as well ?
+   
+   case "${MULLE_UNAME}" in 
+      windows)
+         MULLE_EXE_EXTENSION="${MULLE_EXE_EXTENSION:-.exe}"
+      ;;
+   esac
+
+   defaultname="${defaultname:-make${MULLE_EXE_EXTENSION}}"
 
    local toolname
 
@@ -111,12 +123,21 @@ r_find_make()
             then
                fail "ninja${MULLE_EXE_EXTENSION} not found"
             fi
+            log_debug "ninja${MULLE_EXE_EXTENSION} not in PATH"
+         ;;
+
+         'NO')
+            log_debug "Not searching for ninja"
+         ;;
+
+         *)
+            internal_fail "OPTION_NINJA contains garbage \"${OPTION_NINJA}\""
          ;;
       esac
    fi
 
    toolname="${OPTION_MAKE:-${defaultname:-make}}"
-   RVAL="${toolname}"
+   RVAL="${toolname}${MULLE_EXE_EXTENSION}"
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
@@ -142,7 +163,7 @@ tools_environment_common()
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
-         r_verify_binary "tr" "tr" "tr"
+      r_verify_binary "tr" "tr" "tr"
       TR="${RVAL}"
       r_verify_binary "sed" "sed" "sed"
       SED="${RVAL}"
@@ -162,8 +183,6 @@ tools_environment_make()
    local noninja="$1"
    local plugin="$2"
 
-   tools_environment_common
-
    #
    # allow environment to override
    # (makes testing easier)
@@ -177,9 +196,11 @@ tools_environment_make()
 
       r_find_make "${ourmake}" "${noninja}"
       MAKE="${RVAL}"
+
       [ -z "${MAKE}" ] && fail "can't locate make (named \"${ourmake}\" - on this platform)"
    fi
 
+   tools_environment_common
 }
 
 
