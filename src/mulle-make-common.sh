@@ -98,7 +98,6 @@ r_find_make()
       ;;
    esac
 
-   defaultname="${defaultname:-make${MULLE_EXE_EXTENSION}}"
 
    local toolname
 
@@ -136,6 +135,7 @@ r_find_make()
       esac
    fi
 
+   defaultname="${defaultname:-make${MULLE_EXE_EXTENSION}}"
    toolname="${OPTION_MAKE:-${defaultname}}"
    RVAL="${toolname}"
 
