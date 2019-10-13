@@ -86,7 +86,7 @@ build_script()
    buildscript="${projectinfo%;*}"
    projectdir="${projectinfo#*;}"
 
-   r_fast_basename "${buildscript}"
+   r_basename "${buildscript}"
    scriptname="${RVAL}"
 
    local env_common

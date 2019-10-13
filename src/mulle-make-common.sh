@@ -42,110 +42,6 @@ mingw_bitness()
 }
 
 
-r_platform_make()
-{
-   log_entry "r_platform_make" "$@"
-
-   local compilerpath="$1"
-   local plugin="$2"
-
-   local name
-
-   r_fast_basename "${compilerpath}"
-   name="${RVAL}"
-
-   RVAL="make"
-   case "${MULLE_UNAME}" in
-      mingw)
-         case "${plugin}" in
-            'configure')
-               RVAL="mingw32-make"
-            ;;
-
-            *)
-               case "${name%.*}" in
-                  ""|cl|clang-cl|mulle-clang-cl)
-                     RVAL="nmake"
-                  ;;
-
-                  *)
-                     RVAL="mingw32-make"
-                  ;;
-               esac
-            ;;
-         esac
-      ;;
-   esac
-}
-
-
-# common functions for build tools
-
-r_find_make()
-{
-   log_entry "r_find_make" "$@"
-
-   local defaultname="$1"
-   local noninja="$2"
-
-   # temporary fix, because MULLE_EXE_EXTENSION was lost during crafting
-   # but I don't know why. If MULLE_UNAME is defined MULLE_EXE_EXTENSION 
-   # should be as well ?
-   
-   case "${MULLE_UNAME}" in 
-      windows)
-         MULLE_EXE_EXTENSION="${MULLE_EXE_EXTENSION:-.exe}"
-      ;;
-   esac
-
-
-   local toolname
-
-   if [ -z "${noninja}"  ]
-   then
-      #
-      # Ninja is preferable if installed for cmake but not else
-      #
-      case "${OPTION_NINJA}" in
-         "")
-            internal_fail "OPTION_NINJA must not be empty"
-         ;;
-
-         'YES'|"DEFAULT")
-            if [ ! -z "`command -v ninja${MULLE_EXE_EXTENSION}`" ]
-            then
-               RVAL="ninja${MULLE_EXE_EXTENSION}"
-               return
-            fi
-
-            if [ "${OPTION_NINJA}" = 'YES' ]
-            then
-               fail "ninja${MULLE_EXE_EXTENSION} not found"
-            fi
-            log_debug "ninja${MULLE_EXE_EXTENSION} not in PATH"
-         ;;
-
-         'NO')
-            log_debug "Not searching for ninja"
-         ;;
-
-         *)
-            internal_fail "OPTION_NINJA contains garbage \"${OPTION_NINJA}\""
-         ;;
-      esac
-   fi
-
-   defaultname="${defaultname:-make${MULLE_EXE_EXTENSION}}"
-   toolname="${OPTION_MAKE:-${defaultname}}"
-   RVAL="${toolname}"
-
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
-   then
-      r_verify_binary "${toolname}" "make" "${defaultname}"
-   fi
-}
-
-
 tools_environment_common()
 {
    log_entry "tools_environment_common" "$@"
@@ -176,31 +72,134 @@ tools_environment_common()
 }
 
 
-tools_environment_make()
+#
+# no ninja here
+#
+r_platform_make()
 {
-   log_entry "tools_environment_make" "$@"
+   log_entry "r_platform_make" "$@"
 
-   local noninja="$1"
+   local compilerpath="$1"
    local plugin="$2"
+
+   case "${MULLE_UNAME}" in
+      windows)
+         RVAL="nmake.exe"
+      ;;
+
+      mingw)
+         case "${plugin}" in
+            'configure')
+               RVAL="mingw32-make"
+            ;;
+
+            *)
+               local name
+
+               r_basename "${compilerpath}"
+               name="${RVAL}"
+               case "${name%.*}" in
+                  ""|cl|clang-cl|mulle-clang-cl)
+                     RVAL="nmake"
+                  ;;
+
+                  *)
+                     RVAL="mingw32-make"
+                  ;;
+               esac
+            ;;
+         esac
+      ;;
+
+      *)
+         RVAL="make"
+      ;;
+   esac
+}
+
+
+# common functions for build tools
+
+r_use_ninja_instead_of_make()
+{
+   log_entry "r_use_ninja_instead_of_make" "$@"
+
+   #
+   # Ninja is preferable if installed for cmake but not else
+   #
+   local extension
+
+   # temporary fix, because MULLE_EXE_EXTENSION was lost during crafting
+   # but I don't know why. If MULLE_UNAME is defined MULLE_EXE_EXTENSION
+   # should be as well ?
+   case "${MULLE_UNAME}" in
+      windows)
+         extension="${extension:-.exe}"
+      ;;
+   esac
+
+   case "${OPTION_NINJA}" in
+      "")
+         internal_fail "OPTION_NINJA must not be empty"
+      ;;
+
+      'YES'|"DEFAULT")
+         if [ ! -z "`command -v ninja${extension}`" ]
+         then
+            RVAL="ninja${extension}"
+            return 0
+         fi
+
+         if [ "${OPTION_NINJA}" = 'YES' ]
+         then
+            fail "ninja${extension} not found"
+         fi
+         log_debug "ninja${extension} not in PATH"
+      ;;
+
+      'NO')
+         log_debug "Not searching for ninja"
+      ;;
+
+      *)
+         internal_fail "OPTION_NINJA contains garbage \"${OPTION_NINJA}\""
+      ;;
+   esac
+
+   RVAL=
+   return 1
+}
+
+
+#
+# sets the MAKE environment variable
+#
+r_make_for_plugin()
+{
+   log_entry "r_make_for_plugin" "$@"
+
+   local plugin="$1"
+   local no_ninja="$2"
 
    #
    # allow environment to override
    # (makes testing easier)
    #
-   if [ -z "${MAKE}" ]
+   local make
+
+   make="${OPTION_MAKE:-${MAKE}}"
+   if [ -z "${make}" ]
    then
-      local ourmake
-
       r_platform_make "${OPTION_CC}" "${plugin}"
-      ourmake="${RVAL}"
+      make="${RVAL}"
 
-      r_find_make "${ourmake}" "${noninja}"
-      MAKE="${RVAL}"
-
-      [ -z "${MAKE}" ] && fail "can't locate make (named \"${ourmake}\" - on this platform)"
+      if r_use_ninja_instead_of_make "${no_ninja}"
+      then
+         make="${RVAL}"
+      fi
    fi
 
-   tools_environment_common
+   r_verify_binary "${make}" "make" "make"
 }
 
 
@@ -567,7 +566,7 @@ r_find_nearest_matching_pattern()
    local match2
    local new_depth
 
-   r_fast_basename "${expectation}"
+   r_basename "${expectation}"
    match2="${RVAL}"
 
    #

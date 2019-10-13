@@ -36,10 +36,9 @@ r_platform_cmake_generator()
    log_entry "r_platform_cmake_generator" "$@"
 
    local makepath="$1"
-
    local name
 
-   r_fast_basename "${makepath}"
+   r_basename "${makepath}"
    name="${RVAL}"
 
    case "${name%.*}" in
@@ -61,10 +60,6 @@ r_platform_cmake_generator()
                RVAL="MSYS Makefiles"
             ;;
 
-            windows)
-               RVAL="Ninja"
-            ;;
-      
             *)
                RVAL="Unix Makefiles"
             ;;
@@ -93,18 +88,21 @@ tools_environment_cmake()
 {
    log_entry "tools_environment_cmake" "$@"
 
+   tools_environment_common
+
    local defaultgenerator
+
+   r_find_cmake
+   CMAKE="${RVAL}"
+
+   r_make_for_plugin "cmake" ""
+   MAKE="${RVAL}"
 
    r_platform_cmake_generator "${MAKE}"
    defaultgenerator="${RVAL}"
 
-   r_find_cmake
-
-   CMAKE="${RVAL}"
    CMAKE_GENERATOR="${OPTION_CMAKE_GENERATOR:-${defaultgenerator}}"
 
-   # generator will also determine make to be used
-   tools_environment_make "" "cmake"
 }
 
 
@@ -338,13 +336,13 @@ r_cmake_userdefined_definitions()
 
 
 #
-# If we pass command line parameters to cmake or ninja, 
+# If we pass command line parameters to cmake or ninja,
 # we are compiling for a windows filesystem. Those tools
 # can't deal with /mnt/d, but expect d:
 #
 r_convert_path_to_native()
 {
-   case "${MULLE_UNAME}" in 
+   case "${MULLE_UNAME}" in
       windows)
          RVAL="`sed 's|/mnt/\([a-z]\)/|\1:/|g' <<< "$1"`"
       ;;
@@ -442,7 +440,7 @@ build_cmake()
    local absprojectdir
    local projectdir
 
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    projectdir="${RVAL}"
    r_simplified_absolutepath "${projectdir}"
    absprojectdir="${RVAL}"
@@ -659,7 +657,7 @@ build_cmake()
    then
       if [ -z "${OPTION_CMAKE_INCLUDE_PATH}" ] || is_plus_key "CMAKE_INCLUDE_PATH"
       then
-         value="${OPTION_INCLUDE_PATH//:/;}" 
+         value="${OPTION_INCLUDE_PATH//:/;}"
          r_convert_path_to_native "${value}"
          r_concat "${OPTION_CMAKE_INCLUDE_PATH}" "${RVAL}"
          value="${RVAL}"
@@ -674,7 +672,7 @@ build_cmake()
    then
       if [ -z "${OPTION_CMAKE_LIBRARY_PATH}"  ]
       then
-         value="${OPTION_LIB_PATH//:/;}" 
+         value="${OPTION_LIB_PATH//:/;}"
          r_convert_path_to_native "${value}"
          r_concat "${OPTION_CMAKE_LIBRARY_PATH}" "${RVAL}"
          value="${RVAL}"
@@ -688,7 +686,7 @@ build_cmake()
    then
       if [ -z "${OPTION_CMAKE_FRAMEWORK_PATH}" ] || is_plus_key "CMAKE_FRAMEWORK_PATH"
       then
-         value="${OPTION_FRAMEWORKS_PATH//:/;}" 
+         value="${OPTION_FRAMEWORKS_PATH//:/;}"
          r_convert_path_to_native "${value}"
          r_concat "${OPTION_CMAKE_FRAMEWORK_PATH}" "${RVAL}"
          value="${RVAL}"

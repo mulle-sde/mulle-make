@@ -51,7 +51,8 @@ r_find_autoreconf()
 
 tools_environment_autoconf()
 {
-   tools_environment_make "no-ninja" "autoconf"
+   tools_environment_make "autoconf" "no-ninja"
+   tools_environment_common
 
    r_find_autoconf
    AUTOCONF="${RVAL}"
@@ -68,7 +69,7 @@ autoconf_set_needs_rerun()
 
    local configurefile
 
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    configurefile="${RVAL}/configure"
 
    if [ -f "${configurefile}" ]
@@ -96,7 +97,7 @@ build_autoconf()
 
    local projectdir
 
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    projectdir="${RVAL}"
 
    local env_common
@@ -248,7 +249,7 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
 
    local configurefile
 
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    configurefile="${RVAL}/configure"
 
    if [ "${OPTION_SKIP_AUTOCONF}" = 'YES' -a -f "${configurefile}" ]
@@ -270,7 +271,7 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
 
    if [ -z "${AUTOCONF}" ]
    then
-      log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a `fast_basename "${projectfile}"`, but ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
+      log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a `basename -- "${projectfile}"`, but ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
       return 1
    fi
 

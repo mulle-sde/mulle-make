@@ -184,7 +184,7 @@ build_configure()
    local absprojectdir
    local projectdir
 
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    projectdir="${RVAL}"
    r_absolutepath "${projectdir}"
    absprojectdir="${RVAL}"
@@ -303,7 +303,7 @@ r_test_configure()
    fi
 
    projectfile="${RVAL}"
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    projectdir="${RVAL}"
 
    if [ ! -z "${OPTION_PHASE}" ]
@@ -329,13 +329,10 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
       ;;
    esac
 
-   tools_environment_make "no-ninja" "configure"
+   r_make_for_plugin "configure" "no-ninja"
+   MAKE="${RVAL}"
 
-   if [ -z "${MAKE}" ]
-   then
-      log_warning "Found a ./configure, but ${C_RESET}${C_BOLD}make${C_WARNING} is not installed"
-      return 2
-   fi
+   tools_environment_common
 
    RVAL="${projectfile}"
    return 0

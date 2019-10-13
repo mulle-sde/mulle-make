@@ -136,7 +136,7 @@ _build_xcodebuild()
 
    local projectdir
 
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    projectdir="${RVAL}"
 
    #
@@ -487,7 +487,7 @@ r_test_xcodebuild()
       fail "${srcdir#${MULLE_USER_PWD}/}: Xcode does not support build phases"
    fi
 
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    projectdir="${RVAL}"
    tools_environment_xcodebuild "${projectdir}"
 
@@ -497,7 +497,7 @@ r_test_xcodebuild()
       return 1
    fi
 
-   r_fast_basename "${XCODEBUILD}"
+   r_basename "${XCODEBUILD}"
    TOOLNAME="${RVAL}"
 
    RVAL="${projectfile}"

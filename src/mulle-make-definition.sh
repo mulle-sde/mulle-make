@@ -620,7 +620,7 @@ read_defines_dir()
    do
       shopt -u nullglob
 
-      r_fast_basename "${filename}"
+      r_basename "${filename}"
       key="${RVAL}"
 
       # ignore files with an extension
@@ -706,7 +706,7 @@ remove_other_keyfiles_than()
       fi
 
       remove_file_if_present "${otherfile}"
-      r_fast_dirname "${otherfile}"
+      r_dirname "${otherfile}"
       rmdir_if_empty "${RVAL}"
    done
 }

@@ -298,7 +298,7 @@ build_with_sdk_platform_configuration_preferences()
    name="${OPTION_PROJECT_NAME}"
    if [ -z "${name}" ]
    then
-      r_fast_basename "${srcdir}"
+      r_basename "${srcdir}"
       name="${RVAL}"
    fi
 

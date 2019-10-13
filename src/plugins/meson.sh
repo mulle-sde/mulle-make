@@ -58,12 +58,14 @@ r_find_meson()
 
 tools_environment_meson()
 {
-   tools_environment_make "" "meson"
+   r_find_meson
+
+   tools_environment_common
 
    local defaultbackend
+
    r_platform_meson_backend "${NINJA}"
    defaultbackend="${RVAL}"
-   r_find_meson
 
    MESON="${RVAL}"
    MESON_BACKEND="${OPTION_MESON_BACKEND:-${defaultbackend}}"
@@ -143,7 +145,7 @@ build_meson()
    local absprojectdir
    local projectdir
 
-   r_fast_dirname "${projectfile}"
+   r_dirname "${projectfile}"
    projectdir="${RVAL}"
    r_simplified_absolutepath "${projectdir}"
    absprojectdir="${RVAL}"
