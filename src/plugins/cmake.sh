@@ -336,6 +336,26 @@ r_cmake_userdefined_definitions()
    log_debug "User definition: ${RVAL}"
 }
 
+
+#
+# If we pass command line parameters to cmake or ninja, 
+# we are compiling for a windows filesystem. Those tools
+# can't deal with /mnt/d, but expect d:
+#
+r_convert_path_to_native()
+{
+   case "${MULLE_UNAME}" in 
+      windows)
+         RVAL="`sed 's|/mnt/\([a-z]\)/|\1:/|g' <<< "$1"`"
+      ;;
+
+      *)
+         RVAL="$1"
+      ;;
+   esac
+}
+
+
 #
 # remove old kitchendir, create a new one
 # depending on configuration cmake with flags
@@ -495,7 +515,8 @@ build_cmake()
          maketarget=
          if [ ! -z "${OPTION_PREFIX}" ]
          then
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${OPTION_PREFIX}"
+            r_convert_path_to_native "${OPTION_PREFIX}"
+            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
             cmakeflags="${RVAL}"
          fi
       ;;
@@ -505,10 +526,12 @@ build_cmake()
          maketarget="install"
          if [ ! -z "${OPTION_PREFIX}" ]
          then
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${OPTION_PREFIX}"
+            r_convert_path_to_native "${OPTION_PREFIX}"
+            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
             cmakeflags="${RVAL}"
          else
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${dstdir}"
+            r_convert_path_to_native "${dstdir}"
+            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
             cmakeflags="${RVAL}"
          fi
       ;;
@@ -517,7 +540,8 @@ build_cmake()
          maketarget="${cmd}"
          if [ ! -z "${OPTION_PREFIX}" ]
          then
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${OPTION_PREFIX}"
+            r_convert_path_to_native "${OPTION_PREFIX}"
+            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
             cmakeflags="${RVAL}"
          fi
       ;;
@@ -635,8 +659,9 @@ build_cmake()
    then
       if [ -z "${OPTION_CMAKE_INCLUDE_PATH}" ] || is_plus_key "CMAKE_INCLUDE_PATH"
       then
-         value="$(tr ':' ';' <<< "${OPTION_INCLUDE_PATH}")"
-         r_concat "${OPTION_CMAKE_INCLUDE_PATH}" "${value}"
+         value="${OPTION_INCLUDE_PATH//:/;}" 
+         r_convert_path_to_native "${value}"
+         r_concat "${OPTION_CMAKE_INCLUDE_PATH}" "${RVAL}"
          value="${RVAL}"
       fi
 
@@ -649,8 +674,9 @@ build_cmake()
    then
       if [ -z "${OPTION_CMAKE_LIBRARY_PATH}"  ]
       then
-         value="$(tr ':' ';' <<< "${OPTION_LIB_PATH}")"
-         r_concat "${OPTION_CMAKE_LIBRARY_PATH}" "${value}"
+         value="${OPTION_LIB_PATH//:/;}" 
+         r_convert_path_to_native "${value}"
+         r_concat "${OPTION_CMAKE_LIBRARY_PATH}" "${RVAL}"
          value="${RVAL}"
       fi
       r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_LIBRARY_PATH" "${value}"
@@ -662,8 +688,9 @@ build_cmake()
    then
       if [ -z "${OPTION_CMAKE_FRAMEWORK_PATH}" ] || is_plus_key "CMAKE_FRAMEWORK_PATH"
       then
-         value="$(tr ':' ';' <<< "${OPTION_FRAMEWORKS_PATH}")"
-         r_concat "${OPTION_CMAKE_FRAMEWORK_PATH}" "${value}"
+         value="${OPTION_FRAMEWORKS_PATH//:/;}" 
+         r_convert_path_to_native "${value}"
+         r_concat "${OPTION_CMAKE_FRAMEWORK_PATH}" "${RVAL}"
          value="${RVAL}"
       fi
 
@@ -680,7 +707,8 @@ build_cmake()
 
    local makeflags
 
-   r_build_make_flags "${MAKE}" "${OPTION_MAKEFLAGS}" "${kitchendir}"
+   r_convert_path_to_native "${kitchendir}"
+   r_build_make_flags "${MAKE}" "${OPTION_MAKEFLAGS}" "${RVAL}"
    makeflags="${RVAL}"
 
    local run_cmake
