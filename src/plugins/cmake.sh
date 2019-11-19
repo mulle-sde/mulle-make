@@ -550,15 +550,13 @@ build_cmake()
    buildtype="${OPTION_CMAKE_BUILD_TYPE:-${configuration}}"
    if [ ! -z "${buildtype}" ]
    then
-      case "${buildtype}" in
-         Test)
-            buildtype="${OPTION_TEST_CMAKE_BUILD_TYPE:-Debug}"
-            r_cmakeflags_add_flag "${cmakeflags}" "MULLE_TEST:BOOL" "ON"
-            cmakeflags="${RVAL}"
-         ;;
-      esac
-
       r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_BUILD_TYPE" "${buildtype}"
+      cmakeflags="${RVAL}"
+   fi
+
+   if [ "${OPTION_MULLE_TEST}" = 'YES' ]
+   then
+      r_cmakeflags_add_flag "${cmakeflags}" "MULLE_TEST:BOOL" "ON"
       cmakeflags="${RVAL}"
    fi
 

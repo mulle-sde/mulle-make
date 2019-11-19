@@ -328,18 +328,19 @@ r_compiler_ldflags_value()
 
    # doesn't work for me though...
    # https://stackoverflow.com/questions/11731229/dladdr-doesnt-return-the-function-name/11732893?r=SearchResults&s=3|31.5239#11732893
-   if [ "${configuration}" = "Debug" ]
-   then
-      case "${MULLE_UNAME}" in
-         linux)
-            case "${compiler%.*}" in
-               *gcc|*clang)
-                  r_concat "${RVAL}" "-Wl,--export-dynamic"
-               ;;
-            esac
-         ;;
-      esac
-   fi
+   case "${configuration}" in
+      'Debug')
+         case "${MULLE_UNAME}" in
+            linux)
+               case "${compiler%.*}" in
+                  *gcc|*clang)
+                     r_concat "${RVAL}" "-Wl,--export-dynamic"
+                  ;;
+               esac
+            ;;
+         esac
+      ;;
+   esac
 }
 
 :

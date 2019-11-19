@@ -56,7 +56,7 @@ EOF
    --release                  : build with configuration "Release" (Default)
    --remove<key>[+]=<value>   : like -D,but removes value from a previous value
    -U<key>                    : undefine a definition or += definition
-   --test                     : build with configuration "Test"
+   --mulle-test               : build for mulle-test
    --verbose-make             : verbose make output
 EOF
    case "${MULLE_UNAME}" in
@@ -599,15 +599,15 @@ _make_build_main()
          ;;
 
          --debug)
-            OPTION_CONFIGURATION="Debug"
+            OPTION_CONFIGURATION='Debug'
          ;;
 
          --release)
-            OPTION_CONFIGURATION="Release"
+            OPTION_CONFIGURATION='Release'
          ;;
 
-         --test)
-            OPTION_CONFIGURATION="Test"
+         --mulle-test)
+            OPTION_MULLE_TEST='YES'
          ;;
 
          --ninja)
