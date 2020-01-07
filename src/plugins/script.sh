@@ -46,19 +46,46 @@ r_build_script_absolutepath()
    fi
 
    local searchpath
+   local filename
+   local directory
+   local option
 
-   #
-   # Look in craftinfo bin first
-   #
-   searchpath="${MULLE_MAKE_DEFINITION_DIR}/bin:${OPTION_PATH:-${PATH}}"
-   log_fluff "Looking for script \"${OPTION_BUILD_SCRIPT}\" in \"${searchpath}\""
+   r_dirname "${OPTION_BUILD_SCRIPT}"
+   directory="${RVAL}"
 
-   if RVAL="`PATH="${searchpath}" command -v "${OPTION_BUILD_SCRIPT}"`"
+   case "${OPTION_BUILD_SCRIPT}" in
+      /*)
+         searchpath="${directory}"
+      ;;
+
+      */*)
+         r_filepath_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${directory}"
+         searchpath="${RVAL}"
+
+         r_filepath_concat "${DEPENDENCY_DIR}/bin" "${directory}"
+         r_colon_concat "${searchpath}" "${RVAL}"
+         searchpath="${RVAL}"
+      ;;
+
+      *)
+         # ${DEPENDENCY_DIR}/bin ought to be in PATH already
+         # also adhere to OPTION_PATH, but use "PATH" as default
+         r_colon_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${OPTION_PATH:-${PATH}}"
+         searchpath="${RVAL}"
+      ;;
+   esac
+
+   r_basename "${OPTION_BUILD_SCRIPT}"
+   filename="${RVAL}"
+
+   log_fluff "Looking for script \"${filename}\" in \"${searchpath}\""
+   if RVAL="`PATH="${searchpath}" command -v "${filename}"`"
    then
       log_debug "Found \"${RVAL}\""
+      return 0
    fi
 
-   [ ! -z "${RVAL}" ]
+   return 1
 }
 
 

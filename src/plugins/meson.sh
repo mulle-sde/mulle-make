@@ -42,7 +42,7 @@ r_platform_meson_backend()
 
    local toolname
 
-   toolname="${OPTION_NINJA:-${NINJA:-ninja}}"
+   toolname="${OPTION_NINJA_EXE:-${NINJA:-ninja}}"
    r_verify_binary "${toolname}" "ninja" "ninja"
 }
 
@@ -51,7 +51,7 @@ r_find_meson()
 {
    local toolname
 
-   toolname="${OPTION_MESON:-${MESON:-meson}}"
+   toolname="${OPTION_MESON_EXE:-${MESON:-meson}}"
    r_verify_binary "${toolname}" "meson" "meson"
 }
 
@@ -59,15 +59,16 @@ r_find_meson()
 tools_environment_meson()
 {
    r_find_meson
+   MESON="${RVAL}"
 
    tools_environment_common
 
    local defaultbackend
 
    r_platform_meson_backend "${NINJA}"
+   r_basename "${RVAL}"
    defaultbackend="${RVAL}"
 
-   MESON="${RVAL}"
    MESON_BACKEND="${OPTION_MESON_BACKEND:-${defaultbackend}}"
 }
 

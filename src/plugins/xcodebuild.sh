@@ -35,7 +35,7 @@ r_find_xcodebuild()
 {
    local toolname
 
-   toolname="${OPTION_XCODEBUILD:-${XCODEBUILD:-xcodebuild}}"
+   toolname="${OPTION_XCODEBUILD_EXE:-${XCODEBUILD:-xcodebuild}}"
    r_verify_binary "${toolname}" "xcodebuild" "xcodebuild"
 }
 
@@ -347,9 +347,7 @@ EOF
    local logfile1
 
    mkdir_if_missing "${logsdir}"
-   r_build_log_name "${logsdir}" "${TOOLNAME}" "${srcdir}" \
-                            "${configuration}" "${targetname}" "${schemename}" \
-                            "${sdk}"
+   r_build_log_name "${logsdir}" "${TOOLNAME}"
    logfile1="${RVAL}"
 
    local teefile1

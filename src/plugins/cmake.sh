@@ -79,7 +79,7 @@ r_find_cmake()
    local tooldefaultname
 
    tooldefaultname="cmake${MULLE_EXE_EXTENSION}"
-   toolname="${OPTION_CMAKE:-${CMAKE:-${tooldefaultname}}}"
+   toolname="${OPTION_CMAKE_EXE:-${CMAKE:-${tooldefaultname}}}"
    r_verify_binary "${toolname}" "cmake" "${tooldefaultname}"
 }
 
@@ -322,7 +322,7 @@ r_cmake_userdefined_definitions()
    do
       IFS="${DEFAULT_IFS}"
 
-      value="`eval echo "\\\$$key"`"
+      value="${!key}"
       r_escaped_shell_string "${value}"
       r_cmakeflags_add_flag "${cmakeflags}" "${key#OPTION_}" "${value}"
       cmakeflags="${RVAL}"

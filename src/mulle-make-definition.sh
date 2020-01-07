@@ -284,7 +284,7 @@ r_print_definitions()
    do
       IFS="${DEFAULT_IFS}"
 
-      value="`eval echo "\\\$$key"`"
+      value="${!key}"
       r_concat "${s}" "${prefix}${key#OPTION_}${sep}${quote}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    done
@@ -298,7 +298,7 @@ r_print_definitions()
    do
       IFS="${DEFAULT_IFS}"
 
-      value="`eval echo "\\\$$key"`"
+      value="${!key}"
       r_concat "${s}" "${prefix}${key#OPTION_}${plussep}${quote}${pluspref}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    done
@@ -419,8 +419,10 @@ check_key_without_prefix_exists()
          find_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"
       then
          local value
+         local optkey
 
-         value="`eval echo "\\\$OPTION_$key"`"
+         optkey="OPTION_$key"
+         value="${!optkey}"
          log_warning "\"${key}\" has already been defined as \"${value}\""
       fi
    fi
@@ -443,10 +445,12 @@ _make_define_option()
    check_key_without_prefix_exists "${key}" "${option}"
 
    local oldvalue
+   local optkey
 
+   optkey="OPTION_$key"
    if [ ! -z "${option}" ]
    then
-      oldvalue="`eval echo "\\\$OPTION_$key"`"
+      oldvalue="${!optkey}"
       case "${option}" in
          'ifempty')
             if [ ! -z "${oldvalue}" ]
@@ -483,14 +487,9 @@ _make_define_option()
       esac
    fi
 
-   local escaped
+   printf -v "${optkey}" "%s" "${value}"
 
-   r_escaped_shell_string "${value}"
-   escaped="${RVAL}"
-
-   eval "OPTION_${key}=${escaped}"
-
-   log_fluff "OPTION_${key} defined as \"${value}\""
+   log_fluff "${optkey} defined as \"${!optkey}\""
 }
 
 
@@ -907,7 +906,7 @@ get_definition_dir()
    varkey="OPTION_${key}"
    if [ "${OPTION_OUTPUT_KEY}" = 'YES' ]
    then
-      value="`eval echo "\\\$$varkey"`"
+      value="${!varkey}"
       printf "%s\n" "${key}='${value}'"
    else
       eval echo "\$$varkey"
@@ -916,7 +915,7 @@ get_definition_dir()
    # https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
    if [ -z ${varkey+x} ]
    then
-      return 2
+      return 4
    fi
 }
 
@@ -1023,7 +1022,7 @@ make_definition_main()
          if ! [ -d "${OPTION_DEFINITION_DIR}" ]
          then
             log_verbose "Directory \"${OPTION_DEFINITION_DIR}\" not found"
-            return 2
+            return 4
          fi
 
          ${cmd}_definition_dir "${OPTION_DEFINITION_DIR}"

@@ -844,9 +844,11 @@ _make_build_main()
          darwin)
             if [ "${OPTION_PREFER_XCODEBUILD}" = 'YES' ]
             then
-               OPTION_PLUGIN_PREFERENCES="xcodebuild:${OPTION_PLUGIN_PREFERENCES}"
+               r_colon_concat "xcodebuild" "${OPTION_PLUGIN_PREFERENCES}"
+               OPTION_PLUGIN_PREFERENCES="${RVAL}"
             else
-               OPTION_PLUGIN_PREFERENCES="${OPTION_PLUGIN_PREFERENCES}:xcodebuild"
+               r_colon_concat "${OPTION_PLUGIN_PREFERENCES}" "xcodebuild"
+               OPTION_PLUGIN_PREFERENCES="${RVAL}"
             fi
          ;;
       esac

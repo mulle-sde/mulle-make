@@ -197,7 +197,7 @@ _main()
 
    case "${cmd}" in
       project|build|make)
-         # shellcheck source=src/mulle-make-definition.sh
+         # shellcheck source=src/mulle-make-build.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
          # possibly uncomsumed argument

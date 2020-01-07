@@ -299,7 +299,7 @@ r_test_configure()
    if ! r_find_nearest_matching_pattern "${srcdir}" "configure"
    then
       log_fluff "There is no configure project in \"${srcdir}\""
-      return 2
+      return 4
    fi
 
    projectfile="${RVAL}"
