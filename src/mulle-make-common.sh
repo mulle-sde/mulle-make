@@ -138,9 +138,9 @@ r_use_ninja_instead_of_make()
       ;;
    esac
 
-   case "${OPTION_NINJA}" in
+   case "${OPTION_USE_NINJA}" in
       "")
-         internal_fail "OPTION_NINJA must not be empty"
+         internal_fail "OPTION_USE_NINJA must not be empty"
       ;;
 
       'YES'|"DEFAULT")
@@ -150,7 +150,7 @@ r_use_ninja_instead_of_make()
             return 0
          fi
 
-         if [ "${OPTION_NINJA}" = 'YES' ]
+         if [ "${OPTION_USE_NINJA}" = 'YES' ]
          then
             fail "ninja${extension} not found"
          fi
@@ -162,7 +162,7 @@ r_use_ninja_instead_of_make()
       ;;
 
       *)
-         internal_fail "OPTION_NINJA contains garbage \"${OPTION_NINJA}\""
+         internal_fail "OPTION_USE_NINJA contains garbage \"${OPTION_USE_NINJA}\""
       ;;
    esac
 
@@ -193,9 +193,12 @@ r_make_for_plugin()
       r_platform_make "${OPTION_CC}" "${plugin}"
       make="${RVAL}"
 
-      if r_use_ninja_instead_of_make "${no_ninja}"
+      if [ -z "${no_ninja}" ]
       then
-         make="${RVAL}"
+         if r_use_ninja_instead_of_make
+         then
+            make="${RVAL}"
+         fi
       fi
    fi
 
@@ -394,6 +397,7 @@ __add_header_and_library_path_tool_flags()
       ;;
    esac
 
+
    r_concat "${cppflags}" "${headersearchpaths}"
    cppflags="${RVAL}"
 
@@ -418,10 +422,9 @@ __add_header_and_library_path_tool_flags()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "cflags:        ${cflags}"
-      log_trace2 "cxxflags:      ${cxxflags}"
-      log_trace2 "cppflags:      ${cppflags}"
-      log_trace2 "ldflags:       ${ldflags}"
+      log_trace2 "headersearchpaths:    ${headersearchpaths}"
+      log_trace2 "librarysearchpaths:   ${librarysearchpaths}"
+      log_trace2 "frameworksearchpaths: ${headersearchpaths}"
    fi
 }
 

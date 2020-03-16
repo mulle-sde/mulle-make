@@ -35,7 +35,7 @@ r_find_autoconf()
 {
    local toolname
 
-   toolname="${OPTION_AUTOCONF_EXE:-${AUTOCONF:-autoconf}}"
+   toolname="${OPTION_AUTOCONF:-${AUTOCONF:-autoconf}}"
    r_verify_binary "${toolname}" "autoconf" "autoconf"
 }
 
@@ -44,20 +44,22 @@ r_find_autoreconf()
 {
    local toolname
 
-   toolname="${OPTION_AUTORECONF_EXE:-${AUTORECONF:-autoreconf}}"
+   toolname="${OPTION_AUTORECONF:-${AUTORECONF:-autoreconf}}"
    r_verify_binary "${toolname}" "autoreconf" "autoreconf"
 }
 
 
 tools_environment_autoconf()
 {
-   tools_environment_make "autoconf" "no-ninja"
    tools_environment_common
 
    r_find_autoconf
    AUTOCONF="${RVAL}"
    r_find_autoreconf
    AUTORECONF="${RVAL}"
+
+   r_make_for_plugin "autoconf" "no-ninja"
+   MAKE="${RVAL}"
 }
 
 

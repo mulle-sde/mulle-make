@@ -79,7 +79,7 @@ r_find_cmake()
    local tooldefaultname
 
    tooldefaultname="cmake${MULLE_EXE_EXTENSION}"
-   toolname="${OPTION_CMAKE_EXE:-${CMAKE:-${tooldefaultname}}}"
+   toolname="${OPTION_CMAKE:-${CMAKE:-${tooldefaultname}}}"
    r_verify_binary "${toolname}" "cmake" "${tooldefaultname}"
 }
 
@@ -230,7 +230,6 @@ MULLE_MATCH_PATH must not contain empty paths"
 }
 
 
-
 debug_cmake()
 {
    echo ">>>" >&2
@@ -268,7 +267,6 @@ r_cmakeflags_add()
    r_escaped_shell_string "${value}"
    r_concat "${cmakeflags}" "${RVAL}"
 }
-
 
 
 r_cmakeflags_add_toolflags()

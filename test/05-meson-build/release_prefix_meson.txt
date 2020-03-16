@@ -1,4 +1,4 @@
---backend mock-ninja
+--backend ninja
 --buildtype release
 --prefix foo
 build

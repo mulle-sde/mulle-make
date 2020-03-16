@@ -38,11 +38,9 @@ MULLE_MAKE_PLUGIN_MESON_SH="included"
 #
 r_platform_meson_backend()
 {
-   local makepath="$1"
-
    local toolname
 
-   toolname="${OPTION_NINJA_EXE:-${NINJA:-ninja}}"
+   toolname="${OPTION_NINJA:-${NINJA:-ninja}}"
    r_verify_binary "${toolname}" "ninja" "ninja"
 }
 
@@ -51,25 +49,29 @@ r_find_meson()
 {
    local toolname
 
-   toolname="${OPTION_MESON_EXE:-${MESON:-meson}}"
+   toolname="${OPTION_MESON:-${MESON:-meson}}"
    r_verify_binary "${toolname}" "meson" "meson"
 }
 
 
 tools_environment_meson()
 {
+   log_entry "tools_environment_meson" "$@"
+
    r_find_meson
    MESON="${RVAL}"
 
    tools_environment_common
 
-   local defaultbackend
+   local backend
 
-   r_platform_meson_backend "${NINJA}"
+   r_platform_meson_backend
+   NINJA="${RVAL}"
+
    r_basename "${RVAL}"
-   defaultbackend="${RVAL}"
+   backend="${RVAL#mock-}"
 
-   MESON_BACKEND="${OPTION_MESON_BACKEND:-${defaultbackend}}"
+   MESON_BACKEND="${OPTION_MESON_BACKEND:-${backend}}"
 }
 
 
@@ -419,11 +421,6 @@ ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
    then
       fail "${srcdir#${MULLE_USER_PWD}/}: No meson backend available"
    fi
-
-   #
-   # ugly hackage
-   #
-   NINJA="${MESON_BACKEND}"
 
    log_verbose "${srcdir#${MULLE_USER_PWD}/}: Found meson project file \"${projectfile}\""
 

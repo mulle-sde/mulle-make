@@ -75,7 +75,7 @@ build_configure()
    r_compiler_ldflags_value "${OPTION_CC}" "${configuration}"
    ldflags="${RVAL}"
 
-   # hackish! changes cflags and friends
+   # hackish! changes cflags and friends to possibly add dependency dir ?
    __add_path_tool_flags
 
    local maketarget
@@ -191,16 +191,18 @@ build_configure()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "cflags:        ${cflags}"
-      log_trace2 "cppflags:      ${cppflags}"
-      log_trace2 "cxxflags:      ${cxxflags}"
-      log_trace2 "ldflags:       ${ldflags}"
-      log_trace2 "make_flags:    ${make_flags}"
-      log_trace2 "projectfile:   ${projectfile}"
-      log_trace2 "projectdir:    ${projectdir}"
-      log_trace2 "absprojectdir: ${absprojectdir}"
-      log_trace2 "absbuilddir:   ${absbuilddir}"
-      log_trace2 "projectdir:    ${projectdir}"
+      log_trace2 "cflags:          ${cflags}"
+      log_trace2 "cppflags:        ${cppflags}"
+      log_trace2 "cxxflags:        ${cxxflags}"
+      log_trace2 "ldflags:         ${ldflags}"
+      log_trace2 "make_flags:      ${make_flags}"
+      log_trace2 "projectfile:     ${projectfile}"
+      log_trace2 "projectdir:      ${projectdir}"
+      log_trace2 "absprojectdir:   ${absprojectdir}"
+      log_trace2 "absbuilddir:     ${absbuilddir}"
+      log_trace2 "CONFIGUREFLAGS:  ${CONFIGUREFLAGS}"
+      log_trace2 "configure_flags: ${configure_flags}"
+      log_trace2 "arguments:       ${arguments}"
    fi
 
    local logfile1

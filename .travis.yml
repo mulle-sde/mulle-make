@@ -1,14 +1,15 @@
 language: c
 
-dist: trusty
+dist: xenial
 sudo: required
+if: tag IS blank
 
 before_install:
-  - curl -sS "https://www.mulle-kybernetik.com/dists/debian-admin-pub.asc" | sudo apt-key add -
-  - sudo sh -c '( echo "deb [arch=all] http://www.mulle-kybernetik.com `lsb_release -c -s` main" > "/etc/apt/sources.list.d/mulle-nat.mulle-kybernetik.com.list" )'
-  - sudo apt-get update
-  - sudo apt-get -y install mulle-bashfunctions
+   - curl -sS "https://www.mulle-kybernetik.com/dists/debian-admin-pub.asc" | sudo apt-key add -
+   - echo "deb [arch=all] http://www.mulle-kybernetik.com `lsb_release -c -s` ${DEBIAN_REPOSITORY:-main}" | sudo tee "/etc/apt/sources.list.d/mulle-kybernetik.com-${DEBIAN_REPOSITORY:-main}.list" > /dev/null
+   - sudo apt-get update
+   - sudo apt-get -y install mulle-env meson ninja autoconf
 
 script:
   - ./bin/installer /tmp
-  - cd test ; ./run-test -v
+  - cd test && ./run-test

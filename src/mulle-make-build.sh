@@ -174,6 +174,39 @@ EOF
 }
 
 
+_append_tee_eval_exekutor()
+{
+   # You have a funny "not found" problem ? the base directory of output is missing!
+   local output="$1"; shift
+   local teeoutput="$1"; shift
+
+   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   then
+      return
+   fi
+
+   ( eval "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+
+   MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
+   return ${MULLE_EXEKUTOR_RVAL}
+}
+
+
+logging_tee_eval_exekutor()
+{
+   local output="$1"; shift
+   local teeoutput="$1"; shift
+
+   eval_exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
+   _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
+}
+
+
 mkdir_build_directories()
 {
    local kitchendir="$1"
@@ -541,7 +574,7 @@ _make_build_main()
    local OPTION_CONFIGURATION="DEFAULT"
    local OPTION_DETERMINE_SDK="DEFAULT"
    local OPTION_SDK="DEFAULT"
-   local OPTION_NINJA="DEFAULT"
+   local OPTION_USE_NINJA="DEFAULT"
    local OPTION_PLATFORM="DEFAULT"
 
    local OPTION_BUILD_DIR
@@ -611,11 +644,11 @@ _make_build_main()
          ;;
 
          --ninja)
-            OPTION_NINJA='YES'
+            OPTION_USE_NINJA='YES'
          ;;
 
          --no-ninja)
-            OPTION_NINJA='NO'
+            OPTION_USE_NINJA='NO'
          ;;
 
          --determine-sdk)

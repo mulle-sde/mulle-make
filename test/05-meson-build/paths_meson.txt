@@ -1,4 +1,4 @@
---backend mock-ninja
+--backend ninja
 --buildtype release
 [CPPFLAGS=-I/usr/local/include -I/usr/include]
 [LDFLAGS=-L/usr/local/lib -L/usr/lib]

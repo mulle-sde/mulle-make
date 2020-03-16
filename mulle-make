@@ -32,7 +32,7 @@
 [ "${TRACE}" = 'YES' -o "${MULLE_MAKE_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.11.0
+MULLE_EXECUTABLE_VERSION=0.12.0
 
 #
 # This is the main user interface to mulle-make
@@ -95,6 +95,8 @@ Usage:
    Customize your build with \`make -D\` definitions like for example
    "-DFOO=1 -DOTHER_CPPFLAGS=-fPIC". Keep a permanent set of these definitions
    around  with the \'definition\' command.
+
+   See \`mulle-make build -h\` for more help.
 
 Flags:
 EOF
