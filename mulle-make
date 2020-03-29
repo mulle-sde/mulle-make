@@ -32,7 +32,7 @@
 [ "${TRACE}" = 'YES' -o "${MULLE_MAKE_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.12.0
+MULLE_EXECUTABLE_VERSION=0.12.1
 
 #
 # This is the main user interface to mulle-make

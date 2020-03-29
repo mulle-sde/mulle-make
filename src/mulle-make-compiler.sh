@@ -31,54 +31,54 @@
 MULLE_MAKE_COMPILER_SH="included"
 
 
-r_platform_c_compiler()
-{
-   log_entry "r_platform_c_compiler" "$@"
-
-   local name
-
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "CC:  ${OPTION_CC}"
-   fi
-
-   name="${OPTION_CC}"
-
-   case "${MULLE_UNAME}" in
-      mingw)
-         RVAL="${name:-cl}"
-      ;;
-
-      *)
-         RVAL="${name:-cc}"
-      ;;
-   esac
-}
-
-
-r_platform_cxx_compiler()
-{
-   log_entry "r_platform_cxx_compiler" "$@"
-
-   local name
-
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "CXX:  ${OPTION_CXX}"
-   fi
-
-   name="${OPTION_CXX}"
-
-   case "${MULLE_UNAME}" in
-      mingw)
-         RVAL="${name:-cl}"
-      ;;
-
-      *)
-         RVAL="${name:-c++}"
-      ;;
-   esac
-}
+# r_platform_c_compiler()
+# {
+#    log_entry "r_platform_c_compiler" "$@"
+#
+#    local name
+#
+#    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
+#    then
+#       log_trace2 "CC:  ${OPTION_CC}"
+#    fi
+#
+#    name="${OPTION_CC}"
+#
+#    case "${MULLE_UNAME}" in
+#       mingw)
+#          RVAL="${name:-cl}"
+#       ;;
+#
+#       *)
+#          RVAL="${name:-cc}"
+#       ;;
+#    esac
+# }
+#
+#
+# r_platform_cxx_compiler()
+# {
+#    log_entry "r_platform_cxx_compiler" "$@"
+#
+#    local name
+#
+#    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
+#    then
+#       log_trace2 "CXX:  ${OPTION_CXX}"
+#    fi
+#
+#    name="${OPTION_CXX}"
+#
+#    case "${MULLE_UNAME}" in
+#       mingw)
+#          RVAL="${name:-cl}"
+#       ;;
+#
+#       *)
+#          RVAL="${name:-c++}"
+#       ;;
+#    esac
+# }
 
 
 #
@@ -339,6 +339,27 @@ r_compiler_ldflags_value()
                esac
             ;;
          esac
+      ;;
+   esac
+}
+
+
+r_compiler_cmakeflags_values()
+{
+   log_entry "r_compiler_cmakeflags_values" "$@"
+
+   local compiler="$1"
+   local configuration="$2"
+
+   RVAL=""
+   case "${compiler}" in
+      *tcc)
+         headerpath="`mulle-platform includepath --cmake`"
+         RVAL="-DCMAKE_C_COMPILER_WORKS=ON
+-DCMAKE_C_STANDARD_INCLUDE_DIRECTORIES=${headerpath}
+-DHAVE_FLAG_SEARCH_PATHS_FIRST=OFF
+-DHAVE_HEADERPAD_MAX_INSTALL_NAMES=OFF"
+
       ;;
    esac
 }

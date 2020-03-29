@@ -309,23 +309,24 @@ r_cmake_userdefined_definitions()
    # only emit UNKNOWN keys, the known keys are handled
    # by the plugins themselves
    #
-   keys=`all_userdefined_unknown_keys`
+   keys="`all_userdefined_unknown_keys`"
 
    local key
    local value
    local cmakeflags
 
-   IFS=$'\n'
+   set -o noglob; IFS=$'\n'
    for key in ${keys}
    do
-      IFS="${DEFAULT_IFS}"
+      IFS="${DEFAULT_IFS}"; set +o noglob
 
       value="${!key}"
       r_escaped_shell_string "${value}"
       r_cmakeflags_add_flag "${cmakeflags}" "${key#OPTION_}" "${value}"
       cmakeflags="${RVAL}"
    done
-   IFS="${DEFAULT_IFS}"
+   IFS="${DEFAULT_IFS}"; set +o noglob
+
 
    RVAL="${cmakeflags}"
 
@@ -393,19 +394,25 @@ build_cmake()
    local cppflags
    local ldflags
 
-   r_compiler_cflags_value "${OPTION_CC}" "${configuration}" 'NO'
+   local cc
+   local cxx
+
+   cc="${OPTION_CC:-${CC}}"
+   cxx="${OPTION_CXX:-${cc}}"
+
+   r_compiler_cflags_value "${cc}" "${configuration}" 'NO'
    cflags="${RVAL}"
 
    case "${OPTION_PROJECT_LANGUAGE}" in
       [cC]|[oO][bB][jJ]*[cC])
-         r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" 'NO'
+         r_compiler_cxxflags_value "${cxx}" "${configuration}" 'NO'
          cxxflags="${RVAL}"
       ;;
    esac
 
-   r_compiler_cppflags_value "${OPTION_CC}" "${configuration}"
+   r_compiler_cppflags_value "${cc}" "${configuration}"
    cppflags="${RVAL}"
-   r_compiler_ldflags_value "${OPTION_CC}" "${configuration}"
+   r_compiler_ldflags_value "${cc}" "${configuration}"
    ldflags="${RVAL}"
 
    # this produces quoted output for
@@ -504,6 +511,27 @@ build_cmake()
       cmakeflags="${RVAL}"
    fi
 
+   #
+   # For tcc can add some cmake values like CMAKE_C_COMPILER_WORKS=ON
+   # but tcc doesn't work well on OSX because it can't link
+
+   r_compiler_cmakeflags_values "${cc}" "${configuration}"
+   if [ ! -z "${RVAL}" ]
+   then
+      local lines
+      local line
+
+      lines="${RVAL}"
+
+      set -o noglob; IFS=$'\n'
+      for line in ${lines}
+      do
+         r_cmakeflags_add "${cmakeflags}" "${line}"
+         cmakeflags="${RVAL}"
+      done
+      IFS="${DEFAULT_IFS}" ; set +o noglob
+   fi
+
    local maketarget
 
    case "${cmd}" in
@@ -581,25 +609,27 @@ build_cmake()
    r_cmake_sdk_arguments "${cmakeflags}" "${sdk}" "${platform}"
    cmakeflags="${RVAL}"
 
-   if [ ! -z "${OPTION_CMAKE_C_COMPILER:-${OPTION_CC}}" ]
+   value="${OPTION_CMAKE_C_COMPILER:-${OPTION_CC}}"
+   if [ ! -z "${value}" ]
    then
-      r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_C_COMPILER" "${OPTION_CMAKE_C_COMPILER:-${OPTION_CC}}"
+      r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_C_COMPILER" "${value}"
       cmakeflags="${RVAL}"
    fi
 
    if [ "${OPTION_PROJECT_LANGUAGE}" != "c" ]
    then
-      if [ ! -z "${OPTION_CMAKE_CXX_COMPILER:-${OPTION_CXX}}" ]
+      value="${OPTION_CMAKE_CXX_COMPILER:-${OPTION_CXX}}"
+      if [ ! -z "${value}" ]
       then
-         r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_CXX_COMPILER" "${OPTION_CMAKE_CXX_COMPILER:-${OPTION_CXX}}"
+         r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_CXX_COMPILER" "${value}"
          cmakeflags="${RVAL}"
       fi
    fi
 
    # this is now necessary, though undocumented apparently
-   if [ ! -z "${OPTION_CMAKE_LINKER:-${LD}}" ]
+   if [ ! -z "${OPTION_CMAKE_LINKER}" ]
    then
-      r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_LINKER:PATH" "${LD}"
+      r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_LINKER:PATH" "${OPTION_CMAKE_LINKER}"
       cmakeflags="${RVAL}"
    fi
 
