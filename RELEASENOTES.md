@@ -1,3 +1,13 @@
+## 0.13.0
+
+* add --serial option, so that ninja/make don't paralleliz build for easier log reading
+
+## 0.12.0
+
+* add --serial option, so that ninja/make don't parallelize build for easier log reading
+* do not use CC/CXX/LD environment variable values to pass to cmake, since this is superflous
+* somewhat more flexible handling of the script searchpath (you could use subdirectories now) e.g. bin/craftinfo/foobar-build
+
 ## 0.11.0
 
 * changed to mulle-bashfunctions 2 call convention

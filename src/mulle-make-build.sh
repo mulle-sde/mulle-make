@@ -696,6 +696,10 @@ _make_build_main()
             read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
          ;;
 
+         --serial|--no-parallel)
+            OPTION_CORES="1"
+         ;;
+
          -j|--cores)
             read -r OPTION_CORES || fail "missing argument to \"${argument}\""
 
