@@ -1,3 +1,8 @@
+## 0.14.0
+
+* definitions read from files are evaled now
+
+
 ## 0.13.0
 
 * add --serial option, so that ninja/make don't paralleliz build for easier log reading

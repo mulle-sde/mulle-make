@@ -613,6 +613,7 @@ read_defines_dir()
 
    local key
    local value
+   local read_value
    local filename
 
    shopt -s nullglob
@@ -639,11 +640,15 @@ read_defines_dir()
       r_uppercase "${key}"
       key="${RVAL}"
 
-      value="`egrep -v '^#' "${filename}"`"
+      read_value="`egrep -v '^#' "${filename}"`"
 #      if [ -z "${value}" ]
 #      then
 #         continue
 #      fi
+
+      r_expanded_string "${read_value}"
+      value="${RVAL}"
+      log_debug "Evaluated read value \"${read_value}\" to \"${value}\""
 
       "${callback}" "${key}" "${value}" "${option}"
    done
