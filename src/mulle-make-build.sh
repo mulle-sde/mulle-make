@@ -587,6 +587,7 @@ _make_build_main()
    local OPTION_LOAD
    local OPTION_LIBRARY_STYLE
    local OPTION_PREFERRED_LIBRARY_STYLE
+   local OPTION_MULLE_TEST_CMAKE="OFF"
 
    local state
 
@@ -642,6 +643,7 @@ _make_build_main()
 
          --mulle-test)
             OPTION_MULLE_TEST='YES'
+            OPTION_MULLE_TEST_CMAKE="ON" # ghack for definitons to
          ;;
 
          --ninja)
