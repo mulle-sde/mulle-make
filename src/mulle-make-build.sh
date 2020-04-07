@@ -50,7 +50,8 @@ EOF
    --debug                    : build with configuration "Debug"
    --ifempty <key>[+]=<value> : like -D, but only if no previous value exists
    --include-path <path>      : specify header search PATH, separated by :
-   --definition-dir <path>    : specify definition directory
+   --definition-dir <path>    : specify definition directory. Definitions read
+                                from the file system undergo variable expansion
    --library-style <type>     : produced type : static,dynamic,standalone
    --library-path <path>      : specify library search PATH, separated by :
    --release                  : build with configuration "Release" (Default)
