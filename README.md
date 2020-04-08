@@ -14,8 +14,8 @@ It will then proceed to build the project using that tool.
 
 
 > For the sake of understandability, mulle-make does not evaluate any
-> environment variables (such as CFLAGS) during constructing of build tool
-> arguments.
+> environment variables (such as CFLAGS) during construction of the 
+> build tool arguments.
 > Build settings are are either set with `info` directories or with
 > commandline parameters.
 
