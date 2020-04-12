@@ -322,6 +322,14 @@ r_cmake_userdefined_definitions()
 
       value="${!key}"
       r_escaped_shell_string "${value}"
+
+      # change to cmake separator
+      case "${key}" in
+         *_PATH|*_FILES)
+            value="${value//:/;}"
+         ;;
+      esac
+
       r_cmakeflags_add_flag "${cmakeflags}" "${key#OPTION_}" "${value}"
       cmakeflags="${RVAL}"
    done

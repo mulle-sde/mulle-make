@@ -1,3 +1,7 @@
+## 0.14.0
+
+* -D defined variables ending in `_PATH` or `_FILES` undergo a substitution of : to ;
+
 ## 0.13.0
 
 * definitions read from files are evaled now
