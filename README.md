@@ -37,7 +37,7 @@ Essentially, **mulle-make** does:
 
 ```
 src="`find ${PROJECT_DIR} --name "CMakeLists.txt -print`"
-cd "${src}"
+cd "`dirname --"${src}" `"
 mkdir build
 cd build
 cmake ..
