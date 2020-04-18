@@ -36,8 +36,6 @@ to install mulle-sde.
 Essentially, **mulle-make** does:
 
 ```
-src="`find ${PROJECT_DIR} --name "CMakeLists.txt -print`"
-cd "`dirname --"${src}" `"
 mkdir build
 cd build
 cmake ..
