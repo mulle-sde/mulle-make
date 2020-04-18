@@ -34,7 +34,7 @@ digraph G {
     "build"      -> ".log"               [ arrowhead="none", color="#eb3b5a" ]
 
     "share" -> "mulle-craft" -> "project.darwin"
-    "project.darwin" -> "definition" -> set" -> "CFLAGS"  [ arrowhead="none", color="#16a085" ]
+    "project.darwin" -> "definition" -> "set" -> "CFLAGS"  [ arrowhead="none", color="#16a085" ]
 
     "CFLAGS"            [ shape="note", color="#16a085", fontcolor="#16a085" ]
 }
