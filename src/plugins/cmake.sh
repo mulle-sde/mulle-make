@@ -313,6 +313,7 @@ r_cmake_userdefined_definitions()
 
    local key
    local value
+   local cmakevalue
    local cmakeflags
 
    set -o noglob; IFS=$'\n'
@@ -325,8 +326,10 @@ r_cmake_userdefined_definitions()
 
       # change to cmake separator
       case "${key}" in
-         *_PATH|*_FILES)
-            value="${value//:/;}"
+         *_PATH|*_FILES|*_DIRS)
+            cmakevalue="${value//:/;}"
+            log_debug "Change ${key} value \"${value}\" to \"${cmakevalue}\""
+            value="${cmakevalue}"
          ;;
       esac
 
@@ -338,7 +341,7 @@ r_cmake_userdefined_definitions()
 
    RVAL="${cmakeflags}"
 
-   log_debug "User definition: ${RVAL}"
+   log_debug "User cmake definition: ${RVAL}"
 }
 
 

@@ -1,3 +1,7 @@
+### 0.14.2
+
+* add debug output for travis strangeness
+
 ### 0.14.1
 
 * update README a tiny bit
