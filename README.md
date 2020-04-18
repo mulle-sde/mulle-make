@@ -14,7 +14,7 @@ It will then proceed to build the project using that tool.
 
 
 > For the sake of understandability, mulle-make does not evaluate any
-> environment variables (such as CFLAGS) during construction of the 
+> environment variables (such as CFLAGS) during construction of the
 > build tool arguments.
 > Build settings are are either set with `info` directories or with
 > commandline parameters.
@@ -53,8 +53,8 @@ and how to customize it:
 ![](dox/overview.png)
 
 
-## GitHub and Mulle kybernetiK
+## Author
 
-The development is done on
-[Mulle kybernetiK](https://www.mulle-kybernetik.com/software/git/mulle-make/master).
-Releases and bug-tracking are on [GitHub](https://github.com/mulle-sde/mulle-make).
+[Nat!](//www.mulle-kybernetik.com/weblog) for
+[Mulle kybernetiK](//www.mulle-kybernetik.com) and
+[Codeon GmbH](//www.codeon.de)

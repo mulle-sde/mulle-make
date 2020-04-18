@@ -1,3 +1,7 @@
+### 0.14.1
+
+* update README a tiny bit
+
 ## 0.14.0
 
 * -D defined variables ending in `_PATH` or `_FILES` undergo a substitution of : to ;
