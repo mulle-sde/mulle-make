@@ -26,7 +26,6 @@ digraph G {
     "lib"                            [ color="#8854d0", fontcolor="#8854d0" ]
     "project"                            [ color="#7f8c8d", fontcolor="#7f8c8d" ]
 
-    "project"        -> ".mulle-make"   [ arrowhead="none", color="#7f8c8d" ]
     "project"        -> "build"         [ arrowhead="none", color="#7f8c8d" ]
     "project"        -> "dependency"    [ arrowhead="none", color="#7f8c8d" ]
     "dependency" -> "lib"           [ arrowhead="none", color="#8854d0" ]
@@ -35,7 +34,7 @@ digraph G {
     "build"      -> ".log"               [ arrowhead="none", color="#eb3b5a" ]
 
     "share" -> "mulle-craft" -> "project.darwin"
-    "project.darwin" -> "set" -> "CC"             [ arrowhead="none", color="#16a085" ]
+    "project.darwin" -> "definition" -> set" -> "CFLAGS"  [ arrowhead="none", color="#16a085" ]
 
-    "CC"            [ shape="note", color="#16a085", fontcolor="#16a085" ]
+    "CFLAGS"            [ shape="note", color="#16a085", fontcolor="#16a085" ]
 }
