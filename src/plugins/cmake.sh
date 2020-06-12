@@ -494,6 +494,7 @@ build_cmake()
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "PREFIX:        ${OPTION_PREFIX}"
+      log_trace2 "PHASE:         ${OPTION_PHASE}"
       log_trace2 "CMAKEFLAGS:    ${OPTION_CMAKEFLAGS}"
    fi
 
@@ -515,10 +516,8 @@ build_cmake()
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      local phase
-
-      phase="`tr 'a-z' 'A-Z' <<< "${OPTION_PHASE}"`"
-      r_cmakeflags_add_flag "${cmakeflags}" "MULLE_MAKE_PHASE" "${phase}"
+      r_uppercase "${OPTION_PHASE}"
+      r_cmakeflags_add_flag "${cmakeflags}" "MULLE_MAKE_PHASE" "${RVAL}"
       cmakeflags="${RVAL}"
    fi
 

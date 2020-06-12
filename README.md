@@ -16,7 +16,7 @@ It will then proceed to build the project using that tool.
 > For the sake of understandability, mulle-make does not evaluate any
 > environment variables (such as CFLAGS) during construction of the
 > build tool arguments.
-> Build settings are are either set with `info` directories or with
+> Build settings are either set with `definition` directories or with
 > commandline parameters.
 
 
@@ -33,7 +33,7 @@ to install mulle-sde.
 
 ## What **mulle-make** does
 
-Essentially, **mulle-make** does:
+Essentially, **mulle-make** does (for cmake projects):
 
 ```
 mkdir build
@@ -42,7 +42,28 @@ cmake ..
 ninja
 ```
 
-But it can do this for an expandable variety of build tools.
+## Example
+
+Here we use **mulle-make** in conjunction with [mulle-fetch](//github.com/mulle-sde/mulle-fetch) to conveniently download and build an autoconf based project:
+
+```
+$ mulle-fetch https://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.gnu.org/bison/bison-3.5.4.tar.xz
+Fetching bison from https://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.gnu.org/bison/bison-3.5.4.tar.xz.
+$ cd bison/
+$ mulle-make -lx
+==> mkdir -p '/tmp/bison/build'
+==> mkdir -p '/tmp/bison/build/.log'
+=[29701]=> find -L '/tmp/bison' -maxdepth 2 -name CMakeLists.txt -print
+=[29704]=> find -L '/tmp/bison' -maxdepth 2 -name meson.build -print
+=[29707]=> find -L '/tmp/bison' -maxdepth 2 -name configure.ac -print
+=[29711]=> find -L '/tmp/bison' -maxdepth 2 -name configure -print
+Let configure do a Release build of bison for SDK Default in "build" ...
+=[29722]=> cd '/tmp/bison/build'
+=[29723]=> MULLE_MAKE_VERSION='0.14.4' __MULLE_MAKE_ENV_ARGS='': './configure'    >> /tmp/bison/build/.log/configure.log
+=[35879]=> '/usr/bin/make'  VERBOSE=1 -j 40 all >> /tmp/bison/build/.log/make.log
+$
+```
+
 
 
 ## Project structure
