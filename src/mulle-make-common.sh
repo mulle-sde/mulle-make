@@ -472,30 +472,28 @@ r_build_log_name()
    [ -z "${tool}" ]    && internal_fail "tool missing"
 
    r_absolutepath "${logsdir}"
-   r_filepath_concat "${RVAL}" "${tool}"
-   logsdir="${RVAL}"
+
+   local countfile
+
+   countfile="${logsdir}/.count"
 
    local count
-   local logfile
 
-   count="`cat "${logsdir}/.count" 2> /dev/null`"
-   count=${count:-1}
-
-   logfile="${logsdir}.log"
+   count="`cat "${countfile}" 2> /dev/null`"
+   count=${count:-0}
 
    while :
    do
+      # if count exceeds 9 we get a sorting problem
+      printf -v logfile "%s/%02d.%s.log" "${logsdir}" ${count} "${tool}"
+      count=$(( $count + 1 ))
+
       if [ ! -f "${logfile}" ]
       then
+         redirect_exekutor "${countfile}" printf "%s\n" "$count"
          RVAL="${logfile}"
          return
       fi
-
-      logfile="${logsdir}.${count}.log"
-      count=$(( $count + 1 ))
-
-      mkdir_if_missing "${logsdir}"
-      redirect_exekutor "${logsdir}/.count" printf "%s\n" "$count"
    done
 }
 

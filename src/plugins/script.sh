@@ -85,6 +85,8 @@ r_build_script_absolutepath()
       return 0
    fi
 
+   log_warning "Failed to find script \"${filename}\" in \"${searchpath}\""
+
    return 1
 }
 
@@ -170,6 +172,8 @@ build_script()
                      "${env_common}" \
                      "${buildscript}" \
                      ${MULLE_TECHNICAL_FLAGS} \
+                     --logfile "${logfile1}" \
+                     --teefile "${teefile1}" \
                      --build-dir "'${kitchendir}'" \
                      --configuration "'${configuration}'" \
                      --install-dir "'${dstdir}'" \
