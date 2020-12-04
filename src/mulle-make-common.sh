@@ -454,7 +454,7 @@ build_fail()
 
       if [ "$MULLE_TRACE" != "1848" ]
       then
-         log_info "Check the build log: ${C_RESET_BOLD}${logfile#${MULLE_USER_PWD}/}${C_INFO}"
+         log_info "Build log in ${C_RESET_BOLD}${logfile#${MULLE_USER_PWD}/}"
       fi
    fi
    fail "${command} failed with $rval"
