@@ -1,3 +1,10 @@
+## 0.15.0
+
+* "project" is now the 'official' default command name and not the synonymous make/build
+* scripts are now called with --logfile and --teefile arguments *BREAKING CHANGE*
+* logfiles are now more usefully numbered to enable mulle-sde log to show them all in proper succession
+
+
 ### 0.14.4
 
 * fix overview picture

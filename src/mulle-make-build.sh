@@ -135,7 +135,7 @@ Usage:
 
 Options:
 EOF
-   emit_options | LC_ALL=C sort
+   emit_options "common-prefix" | LC_ALL=C sort
 
    exit 1
 }

@@ -32,7 +32,7 @@
 [ "${TRACE}" = 'YES' -o "${MULLE_MAKE_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
-MULLE_EXECUTABLE_VERSION=0.14.4
+MULLE_EXECUTABLE_VERSION=0.15.0
 
 #
 # This is the main user interface to mulle-make
@@ -50,7 +50,7 @@ print_commands()
    local  show_all="${1:-NO}"
 
    SHOWN_COMMANDS="\
-   make          : build project (default)
+   project       : build project (default)
    definition    : manage definitions like build flags for build tools
    install       : build project and install"
 
@@ -96,7 +96,7 @@ Usage:
    "-DFOO=1 -DOTHER_CPPFLAGS=-fPIC". Keep a permanent set of these definitions
    around  with the \'definition\' command.
 
-   See \`mulle-make build -h\` for more help.
+   See \`mulle-make project -h\` for more help.
 
 Flags:
 EOF
