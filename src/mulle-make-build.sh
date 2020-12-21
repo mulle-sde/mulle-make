@@ -326,7 +326,7 @@ build_with_sdk_platform_configuration_preferences()
 
    mkdir_build_directories "${kitchendir}" "${logsdir}"
 
-   # now known to exist, so we can canonialize
+   # now known to exist, so we can canonicalize
    kitchendir="`canonicalize_path "${kitchendir}"`"
    logsdir="`canonicalize_path "${logsdir}"`"
 
