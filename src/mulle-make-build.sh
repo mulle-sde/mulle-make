@@ -871,7 +871,7 @@ _make_build_main()
       if [ ! -z "${MULLE_VIRTUAL_ROOT}" ]
       then
          case "${srcdir}" in
-            */stash/*)
+            */${MULLE_SOURCETREE_STASH_DIRNAME:-stash}/*)
                fail "Source directory \"${srcdir}\" is missing.
 Maybe repair with:
    ${C_RESET_BOLD}mulle-sde clean fetch"
