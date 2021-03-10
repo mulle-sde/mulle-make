@@ -288,6 +288,8 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
       return 1
    fi
 
+   log_verbose "Found autoconf project \"${projectfile#${MULLE_USER_PWD}/}\""
+
    RVAL="${projectfile}"
    return 0
 }

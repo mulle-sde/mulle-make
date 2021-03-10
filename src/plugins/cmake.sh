@@ -882,7 +882,7 @@ r_test_cmake()
       fail "No make available"
    fi
 
-   log_fluff "Found cmake project file \"${projectfile}\""
+   log_verbose "Found cmake project \"${projectfile#${MULLE_USER_PWD}/}\""
 
    RVAL="${projectfile}"
 

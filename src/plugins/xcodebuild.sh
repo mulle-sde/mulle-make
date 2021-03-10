@@ -498,6 +498,8 @@ r_test_xcodebuild()
    r_basename "${XCODEBUILD}"
    TOOLNAME="${RVAL}"
 
+   log_verbose "Found Xcode project \"${projectfile#${MULLE_USER_PWD}/}\""
+
    RVAL="${projectfile}"
 
    return 0

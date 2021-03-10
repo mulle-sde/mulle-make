@@ -336,6 +336,8 @@ ${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
 
    tools_environment_common
 
+   log_verbose "Found configure script \"${projectfile#${MULLE_USER_PWD}/}\""
+
    RVAL="${projectfile}"
    return 0
 }

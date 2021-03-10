@@ -214,6 +214,8 @@ r_test_script()
       return 1
    fi
 
+   log_verbose "Found build script \"${scriptfile#${MULLE_USER_PWD}/}\""
+
    RVAL="${scriptfile};${srcdir}"
 
    return 0

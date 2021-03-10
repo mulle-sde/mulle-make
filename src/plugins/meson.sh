@@ -422,7 +422,7 @@ ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
       fail "${srcdir#${MULLE_USER_PWD}/}: No meson backend available"
    fi
 
-   log_verbose "${srcdir#${MULLE_USER_PWD}/}: Found meson project file \"${projectfile}\""
+   log_verbose "Found meson project \"${projectfile#${MULLE_USER_PWD}/}\""
 
    RVAL="${projectfile}"
 
