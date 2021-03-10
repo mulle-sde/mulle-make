@@ -271,15 +271,25 @@ r_compiler_cflags_value()
    local configuration="$2"
    local addoptflags="$3"
 
-   local result
-
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
+      log_trace2 "ENV CFLAGS:      ${CFLAGS}"
       log_trace2 "CFLAGS:          ${OPTION_CFLAGS}"
       log_trace2 "OTHER_CFLAGS:    ${OPTION_OTHER_CFLAGS}"
    fi
 
-   r_concat "${OPTION_CFLAGS}" "${OPTION_OTHER_CFLAGS}"
+   local result
+
+   # OPTION_LDFLAGS overrides LDFLAGS except it its += defined
+   if is_plus_key "OPTION_CFLAGS"
+   then
+      r_concat "${OPTION_CFLAGS}" "${CFLAGS}"
+   result="${RVAL}"
+   else
+      result="${OPTION_CFLAGS:-${CFLAGS}}"
+   fi
+
+   r_concat "${result}" "${OPTION_OTHER_CFLAGS}"
    result="${RVAL}"
 
    _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
@@ -295,15 +305,25 @@ r_compiler_cxxflags_value()
    local configuration="$2"
    local addoptflags="$3"
 
-   local result
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
+      log_trace2 "ENV CXXFLAGS:    ${CXXFLAGS}"
       log_trace2 "CXXFLAGS:        ${OPTION_CXXFLAGS}"
       log_trace2 "OTHER_CXXFLAGS:  ${OPTION_OTHER_CXXFLAGS}"
    fi
 
-   r_concat "${OPTION_CXXFLAGS}" "${OPTION_OTHER_CXXFLAGS}"
+   local result
+
+   # OPTION_CXXFLAGS overrides CXXFLAGS except it its += defined
+   if is_plus_key "OPTION_CXXFLAGS"
+   then
+      r_concat "${OPTION_CXXFLAGS}" "${CXXFLAGS}"
+      result="${RVAL}"
+   else
+      result="${OPTION_CXXFLAGS:-${CXXFLAGS}}"
+   fi
+   r_concat "${result}" "${OPTION_OTHER_CXXFLAGS}"
    result="${RVAL}"
 
    _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
@@ -318,13 +338,27 @@ r_compiler_ldflags_value()
    local compiler="$1"
    local configuration="$2"
 
+
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
+      log_trace2 "ENV LDFLAGS:     ${LDFLAGS}"
       log_trace2 "LDFLAGS:         ${OPTION_LDFLAGS}"
       log_trace2 "OTHER_LDFLAGS:   ${OPTION_OTHER_LDFLAGS}"
    fi
 
-   r_concat "${OPTION_LDFLAGS}" "${OPTION_OTHER_LDFLAGS}"
+   local result
+
+   # OPTION_LDFLAGS overrides LDFLAGS except it its += defined
+   if is_plus_key "OPTION_LDFLAGS"
+   then
+      r_concat "${OPTION_LDFLAGS}" "${LDFLAGS}"
+      result="${RVAL}"
+   else
+      result="${OPTION_LDFLAGS:-${LDFLAGS}}"
+   fi
+
+   r_concat "${result}" "${OPTION_OTHER_LDFLAGS}"
+   result="${RVAL}"
 
    # doesn't work for me though...
    # https://stackoverflow.com/questions/11731229/dladdr-doesnt-return-the-function-name/11732893?r=SearchResults&s=3|31.5239#11732893
@@ -334,7 +368,8 @@ r_compiler_ldflags_value()
             linux)
                case "${compiler%.*}" in
                   *gcc|*clang)
-                     r_concat "${RVAL}" "-Wl,--export-dynamic"
+                     r_concat "${result}" "-Wl,--export-dynamic"
+                     result="${RVAL}"
                   ;;
                esac
             ;;

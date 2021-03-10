@@ -411,6 +411,7 @@ build_cmake()
    cc="${OPTION_CC:-${CC}}"
    cxx="${OPTION_CXX:-${cc}}"
 
+   # if yes, use it, otherwise use environment CFLAGS as initial value.
    r_compiler_cflags_value "${cc}" "${configuration}" 'NO'
    cflags="${RVAL}"
 

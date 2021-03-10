@@ -133,10 +133,22 @@ Usage:
    Build the project in directory. If directory is omitted, the current
    directory is used.
 
+   Build settings can be specified by the command line or can be read from a
+   definition directoy. Definitions read from the file system undergo variable
+   expansion.
+
 Options:
 EOF
    emit_options "common-prefix" | LC_ALL=C sort
 
+   cat <<EOF >&2
+
+Environment:
+   CFLAGS
+   CXXFLAGS
+   LDFLAGS
+
+EOF
    exit 1
 }
 
