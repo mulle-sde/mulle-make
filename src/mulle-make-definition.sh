@@ -102,11 +102,22 @@ Usage:
    ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set [option] <key> <value>
 
    Set a build setting. There are two different types of build settings.
-   Additive and non-additive. Use non-additive for settings like CC. Use
-   additive for settings like compiler flags.
+   Additive and non-additive. An additive setting will be emitted with a +=,
+   where as a non-addtive setting will be emitted as ?.
+   Previous values of the same key can be either appended to or clobbered.
+
+Example:
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set FOO bar
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set FOO foo
+
+   will produce -DFOO="bar foo"
 
 Options:
-   -+     : create an additive setting (+=)
+   -+        : create an additive setting += instead of =
+   --append  : append the value to an existing value for that key (default)
+   --append0 : like append but without space separation
+   --clobber : clobber any existing previous value
+   --ifempty : only set if no value exists yet
 
 EOF
    exit 1
@@ -167,7 +178,11 @@ OPTION_MESON_BACKEND"
 KNOWN_XCODEBUILD_PLUGIN_OPTIONS="\
 OPTION_XCODEBUILD"
 
-
+#
+# General options are not "blindly" passed as commandline arguments to
+# mulle-make but handled separately. F.e. putting OPTION_MULLE_SDK_PATH in
+# here will effectively remove it from the argument list, which is bad
+#
 KNOWN_GENERAL_OPTIONS="\
 OPTION_BUILD_DIR
 OPTION_BUILD_SCRIPT
@@ -419,14 +434,10 @@ check_key_without_prefix_exists()
       if find_line "${DEFINED_OPTIONS}" "OPTION_${key}"  ||
          find_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"
       then
-         local value
-         local optkey
-
-         optkey="OPTION_$key"
-         value="${!optkey}"
-         log_warning "\"${key}\" has already been defined as \"${value}\""
+         return 0
       fi
    fi
+   return 1
 }
 
 
@@ -442,51 +453,59 @@ _make_define_option()
    local value="$2"
    local option="$3"
 
+   local mayclobber
+
    check_option_key_without_prefix "${key}"
-   check_key_without_prefix_exists "${key}" "${option}"
 
    local oldvalue
    local optkey
 
    optkey="OPTION_$key"
-   if [ ! -z "${option}" ]
-   then
-      oldvalue="${!optkey}"
-      case "${option}" in
-         'ifempty')
-            if [ ! -z "${oldvalue}" ]
-            then
-               log_debug "Skip as ${key} is already defined as \"${oldvalue}"
-               return 1
-            fi
-         ;;
+   oldvalue="${!optkey}"
+   case "${option}" in
+      'ifempty')
+         if [ ! -z "${oldvalue}" ]
+         then
+            log_debug "Skip as ${key} is already defined as \"${oldvalue}"
+            return 1
+         fi
+      ;;
 
-         'remove')
-            if [ -z "${oldvalue}" ]
-            then
-               log_debug "${key} is already empty"
-               return 1
-            fi
+      'remove')
+         if [ -z "${oldvalue}" ]
+         then
+            log_debug "${key} is already empty"
+            return 1
+         fi
 
-            r_escaped_sed_pattern "${value}"
-            value="`sed "s/${RVAL}//g" <<< "${oldvalue}"`"
+         r_escaped_sed_pattern "${value}"
+         value="`sed "s/${RVAL}//g" <<< "${oldvalue}"`"
 
-            if [ "${value}" = "${oldvalue}" ]
-            then
-               log_debug "Remove did not remove anything"
-            fi
-         ;;
+         if [ "${value}" = "${oldvalue}" ]
+         then
+            log_debug "Remove did not remove anything"
+         fi
+      ;;
 
-         'append')
-            r_concat "${oldvalue}" "${value}"
-            value="${RVAL}"
-         ;;
+      ''|'append')
+         r_concat "${oldvalue}" "${value}"
+         value="${RVAL}"
+      ;;
 
-         'append0')
-            value="${oldvalue}${value}"
-         ;;
-      esac
-   fi
+      'append0')
+         value="${oldvalue}${value}"
+      ;;
+
+
+      'clobber')
+         if check_key_without_prefix_exists "${key}" "${option}" \
+            && [ "${oldvalue}" != "${value}" ]
+         then
+            log_warning "warning: \"${key}\" previously defined as \
+\"${oldvalue}\" now redefined as \"${value}\""
+         fi
+      ;;
+   esac
 
    printf -v "${optkey}" "%s" "${value}"
 
@@ -676,21 +695,23 @@ read_definition_dir()
       return
    fi
 
-   log_verbose "Read info ${C_RESET_BOLD}${directory}${C_VERBOSE}"
+   log_verbose "Read definition ${C_RESET_BOLD}${directory}${C_VERBOSE}"
 
    directory="${directory}"
 
    read_defines_dir "${directory}/set/remove"   "make_define_option" "remove"
+   read_defines_dir "${directory}/set/clobber"  "make_define_option"
    read_defines_dir "${directory}/set/ifempty"  "make_define_option" "ifempty"
    read_defines_dir "${directory}/set/append"   "make_define_option" "append"
    read_defines_dir "${directory}/set/append0"  "make_define_option" "append0"
-   read_defines_dir "${directory}/set"          "make_define_option"
+   read_defines_dir "${directory}/set"          "make_define_option" "append"
 
    read_defines_dir "${directory}/plus/remove"  "make_define_plusoption" "remove"
+   read_defines_dir "${directory}/plus/clobber" "make_define_plusoption"
    read_defines_dir "${directory}/plus/ifempty" "make_define_plusoption" "ifempty"
    read_defines_dir "${directory}/plus/append"  "make_define_plusoption" "append"
    read_defines_dir "${directory}/plus/append0" "make_define_plusoption" "append0"
-   read_defines_dir "${directory}/plus"         "make_define_plusoption"
+   read_defines_dir "${directory}/plus"         "make_define_plusoption" "append"
 }
 
 
@@ -766,11 +787,13 @@ remove_definition_dir()
                               "${directory}/set/append/${key}" \
                               "${directory}/set/append0/${key}" \
                               "${directory}/set/ifempty/${key}"\
+                              "${directory}/set/clobber/${key}"\
                               "${directory}/set/remove/${key}"  \
                               "${directory}/plus/${key}"\
                               "${directory}/plus/append/${key}"\
                               "${directory}/plus/append0/${key}"\
                               "${directory}/plus/ifempty/${key}"\
+                              "${directory}/plus/clobber/${key}"\
                               "${directory}/plus/remove/${key}"
 
    rmdir_if_empty "${directory}/plus"
@@ -799,7 +822,7 @@ set_definition_dir()
             OPTION_MODIFIER='plus'
          ;;
 
-         --append|--append0|--ifempty|--remove)
+         --append|--append0|--ifempty|--remove|--clobber)
             OPTION_MODIFIER="${argument:2}"
          ;;
 
@@ -849,11 +872,13 @@ set_definition_dir()
                               "${directory}/set/append/${key}" \
                               "${directory}/set/append0/${key}" \
                               "${directory}/set/ifempty/${key}"\
+                              "${directory}/set/clobber/${key}"\
                               "${directory}/set/remove/${key}"  \
                               "${directory}/plus/${key}"\
                               "${directory}/plus/append/${key}"\
                               "${directory}/plus/append0/${key}"\
                               "${directory}/plus/ifempty/${key}"\
+                              "${directory}/plus/clobber/${key}"\
                               "${directory}/plus/remove/${key}"
 
 
