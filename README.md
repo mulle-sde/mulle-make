@@ -13,13 +13,6 @@ It will then proceed to build the project using that tool.
 ![](dox/mulle-sde-overview.png)
 
 
-> For the sake of understandability, mulle-make does not evaluate any
-> environment variables (such as CFLAGS) during construction of the
-> build tool arguments.
-> Build settings are either set with `definition` directories or with
-> commandline parameters.
-
-
 Executable   | Description
 -------------|--------------------------------
 `mulle-make` | Build a single project

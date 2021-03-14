@@ -130,7 +130,15 @@ r_darwin_sdkpath_for_sdk()
       then
          # hardcode SDK for now
          sdkpath="`xcode-select  -print-path`" || exit 1
-         r_filepath_concat "${sdkpath}" "SDKs/MacOSX10.6.sdk"
+         case "`sw_vers -productVersion 2> /dev/null`" in
+            10\.6\.*)
+              r_filepath_concat "${sdkpath}" "SDKs/MacOSX10.6.sdk"
+            ;;
+
+            *)
+               r_filepath_concat "${sdkpath}" "Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+            ;;
+         esac
          sdkpath="${RVAL}"
          if [ ! -d "${sdkpath}" ]
          then
@@ -198,6 +206,7 @@ r_compiler_cppflags_value()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
+      log_trace2 "ENV CPPFLAGS:   ${CPPFLAGS}"
       log_trace2 "CPPFLAGS:       ${OPTION_CPPFLAGS}"
       log_trace2 "OTHER_CPPFLAG:  ${OPTION_OTHER_CPPFLAGS}"
    fi
@@ -205,7 +214,15 @@ r_compiler_cppflags_value()
    local cppflags
    local definition
 
-   r_concat "${OPTION_CPPFLAGS}" "${OPTION_OTHER_CPPFLAGS}"
+   if is_plus_key "OPTION_CPPFLAGS"
+   then
+      r_concat "${OPTION_CPPFLAGS}" "${CPPFLAGS}"
+      cppflags="${RVAL}"
+   else
+      cppflags="${OPTION_CPPFLAGS:-${CPPFLAGS}}"
+   fi
+
+   r_concat "${result}" "${OPTION_OTHER_CPPFLAGS}"
    cppflags="${RVAL}"
 
    case "${compiler%.*}" in
@@ -284,7 +301,7 @@ r_compiler_cflags_value()
    if is_plus_key "OPTION_CFLAGS"
    then
       r_concat "${OPTION_CFLAGS}" "${CFLAGS}"
-   result="${RVAL}"
+      result="${RVAL}"
    else
       result="${OPTION_CFLAGS:-${CFLAGS}}"
    fi

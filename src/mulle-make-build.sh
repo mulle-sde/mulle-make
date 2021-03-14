@@ -43,20 +43,16 @@ EOF
    fi
 
       cat <<EOF
-   --append <key>[+]=<value>  : like -D, but appends value to a previous value
    -D<key>=<value>            : set the definition named key to value
    -D<key>+=<value>           : append a += definition for the buildtool
    --build-dir <dir>          : specify build directory
    --debug                    : build with configuration "Debug"
-   --ifempty <key>[+]=<value> : like -D, but only if no previous value exists
    --include-path <path>      : specify header search PATH, separated by :
-   --definition-dir <path>    : specify definition directory. Definitions read
-                                from the file system undergo variable expansion
+   --definition-dir <path>    : specify definition directory
    --library-style <type>     : produced type : static,dynamic,standalone
    --library-path <path>      : specify library search PATH, separated by :
+   --no-ninja                 : prefer make over ninja
    --release                  : build with configuration "Release" (Default)
-   --remove<key>[+]=<value>   : like -D,but removes value from a previous value
-   -U<key>                    : undefine a definition or += definition
    --mulle-test               : build for mulle-test
    --verbose-make             : verbose make output
 EOF
@@ -92,16 +88,20 @@ EOF
    fi
 
    cat <<EOF
+   --append <key>[+]=<value>  : like -D, but appends value to a previous value
    --configuration <name>     : configuration to build like Debug or Release
    --clean                    : always clean before building
+   --ifempty <key>[+]=<value> : like -D, but only if no previous value exists
    --log-dir <dir>            : specify log directory
    --no-determine-sdk         : don't try to figure out the default SDK
-   --no-ninja                 : prefer make over ninja
    --phase <name>             : run make phase (for parallel builds)
+   --platform <name>          : platform to build for (Default)
    --project-name <name>      : explicitly set project name
    --project-language <c|cpp> : set project language
+   --remove<key>[+]=<value>   : like -D,but removes value from a previous value
    --sdk <name>               : SDK to use (Default)
    --tool-preferences <list>  : tool preference order. Tools are separated by ','
+   -U<key>                    : undefine a definition or += definition
 EOF
    case "${MULLE_UNAME}" in
       darwin)
@@ -275,8 +275,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${kitchendir#${PWD}/}\" ...
                                  "${kitchendir}" \
                                  "${logsdir}"
       then
-         log_error "build_${preference} should exit on failure and not return"
-         return 1
+         internal_fail "build_${preference} should exit on failure and not return"
       fi
    )
 }
@@ -468,7 +467,7 @@ There are no plugins available for requested tools \"`echo ${OPTION_PLUGIN_PREFE
    platform="${OPTION_PLATFORM}"
    case "${platform}" in
       DEFAULT)
-         platform="Default"
+         platform="${MULLE_UNAME}"
       ;;
 
       "")
@@ -567,6 +566,7 @@ _make_build_main()
    local OPTION_LIBRARY_STYLE
    local OPTION_PREFERRED_LIBRARY_STYLE
    local OPTION_MULLE_TEST_CMAKE="OFF"
+   local OPTION_RERUN_CMAKE
 
    local state
 
@@ -745,6 +745,10 @@ _make_build_main()
                   fail "--prefix \"${OPTION_PREFIX}\", prefix must be absolute or empty"
                ;;
             esac
+         ;;
+
+         --rerun-cmake)
+            OPTION_RERUN_CMAKE='YES'
          ;;
 
          -s|--sdk)

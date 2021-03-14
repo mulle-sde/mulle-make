@@ -246,7 +246,7 @@ r_test_autoconf()
 
       fail "${srcdir#${MULLE_USER_PWD}/}: autoconf does not support build phases
 ${C_INFO}This is probably a misconfiguration in your sourcetree. Suggest:
-${C_RESET_BOLD}mulle-sde dependency unmark <name> no-singlephase"
+${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
    fi
 
    local configurefile

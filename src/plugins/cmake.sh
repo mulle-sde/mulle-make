@@ -113,21 +113,19 @@ r_cmakeflags_add_sdk_parameter()
    local cmakeflags="$1"
    local sdk="$2"
 
-   if [ "${OPTION_DETERMINE_SDK}" = 'NO' ]
+   if [ "${OPTION_DETERMINE_SDK}" != 'NO' ]
    then
-      return
+      case "${MULLE_UNAME}" in
+         "darwin")
+            r_compiler_get_sdkpath "${sdk}"
+            if [ ! -z "${RVAL}" ]
+            then
+               r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_OSX_SYSROOT" "${RVAL}"
+               return
+            fi
+         ;;
+      esac
    fi
-
-   case "${MULLE_UNAME}" in
-      "darwin")
-         r_compiler_get_sdkpath "${sdk}"
-         if [ ! -z "${RVAL}" ]
-         then
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_OSX_SYSROOT" "${RVAL}"
-            return 0
-         fi
-      ;;
-   esac
 
    RVAL="${cmakeflags}"
 }
@@ -145,6 +143,8 @@ r_cmake_sdk_arguments()
    local sdk="$2"
    local platform="$3"
 
+   RVAL="${cmakeflags}"
+
    case "${sdk}" in
       macos*)
       ;;
@@ -155,18 +155,21 @@ r_cmake_sdk_arguments()
       # See: https://github.com/leetal/ios-cmake/blob/master/ios.toolchain.cmake
       #
       iphoneos*)
-         r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_OSX_ARCHITECTURES" "armv7;armv7s;arm64;arm64e"
-         cmakeflags="${RVAL}"
+         r_cmakeflags_add_flag "${RVAL}" \
+                               "CMAKE_OSX_ARCHITECTURES" \
+                               "armv7;armv7s;arm64;arm64e"
       ;;
 
       iphonesimulator*)
-         r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_OSX_ARCHITECTURES" "x86_64"
-         cmakeflags="${RVAL}"
+         r_cmakeflags_add_flag "${RVAL}" \
+                               "CMAKE_OSX_ARCHITECTURES" \
+                               "x86_64"
       ;;
 
       android*)
-         r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_TOOLCHAIN_FILE" "\${ANDROID_NDK}/build/cmake/android.toolchain.cmake"
-         cmakeflags="${RVAL}"
+         r_cmakeflags_add_flag "${RVAL}" \
+                               "CMAKE_TOOLCHAIN_FILE" \
+                               "\${ANDROID_NDK}/build/cmake/android.toolchain.cmake"
       ;;
    esac
 }
@@ -411,7 +414,13 @@ build_cmake()
    cc="${OPTION_CC:-${CC}}"
    cxx="${OPTION_CXX:-${cc}}"
 
+   #
+   # We are clobbering the CMAKE_C_FLAGS variable, which means that cmake will
+   # not pickup CFLAGS. What we do here is look of OPTION_CFLAGS is defined and
    # if yes, use it, otherwise use environment CFLAGS as initial value.
+   #
+   # https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html#variable:CMAKE_%3CLANG%3E_FLAGS
+
    r_compiler_cflags_value "${cc}" "${configuration}" 'NO'
    cflags="${RVAL}"
 
@@ -433,7 +442,6 @@ build_cmake()
    #  cxxflags
    #  ldflags
    #
-
 
    # __add_sdk_path_tool_flags # will be done below
    __add_header_and_library_path_tool_flags
@@ -751,7 +759,7 @@ build_cmake()
    run_cmake='YES'
 
    # phases need to rerun cmake
-   if [ -z "${OPTION_PHASE}" ]
+   if [ -z "${OPTION_PHASE}" -a "${OPTION_RERUN_CMAKE}" != 'YES' ]
    then
       if ! cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
       then
