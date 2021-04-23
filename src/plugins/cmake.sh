@@ -79,7 +79,7 @@ r_find_cmake()
    local tooldefaultname
 
    tooldefaultname="cmake${MULLE_EXE_EXTENSION}"
-   toolname="${OPTION_CMAKE:-${CMAKE:-${tooldefaultname}}}"
+   toolname="${DEFINITION_CMAKE:-${CMAKE:-${tooldefaultname}}}"
    r_verify_binary "${toolname}" "cmake" "${tooldefaultname}"
 }
 
@@ -101,7 +101,7 @@ tools_environment_cmake()
    r_platform_cmake_generator "${MAKE}"
    defaultgenerator="${RVAL}"
 
-   CMAKE_GENERATOR="${OPTION_CMAKE_GENERATOR:-${defaultgenerator}}"
+   CMAKE_GENERATOR="${DEFINITION_CMAKE_GENERATOR:-${defaultgenerator}}"
 
 }
 
@@ -113,7 +113,7 @@ r_cmakeflags_add_sdk_parameter()
    local cmakeflags="$1"
    local sdk="$2"
 
-   if [ "${OPTION_DETERMINE_SDK}" != 'NO' ]
+   if [ "${DEFINITION_DETERMINE_SDK}" != 'NO' ]
    then
       case "${MULLE_UNAME}" in
          "darwin")
@@ -336,7 +336,7 @@ r_cmake_userdefined_definitions()
          ;;
       esac
 
-      r_cmakeflags_add_flag "${cmakeflags}" "${key#OPTION_}" "${value}"
+      r_cmakeflags_add_flag "${cmakeflags}" "${key#DEFINITION_}" "${value}"
       cmakeflags="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"; set +o noglob
@@ -379,15 +379,17 @@ build_cmake()
 
    [ $# -ge 9 ] || internal_fail "api error"
 
-   local cmd="$1"; shift
-   local projectfile="$1"; shift
-   local sdk="$1"; shift
-   local platform="$1"; shift
-   local configuration="$1"; shift
-   local srcdir="$1"; shift
-   local dstdir="$1"; shift
-   local kitchendir="$1"; shift
-   local logsdir="$1"; shift
+   local cmd="$1"
+   local projectfile="$2"
+   local sdk="$3"
+   local platform="$4"
+   local configuration="$5"
+   local srcdir="$6"
+   local dstdir="$7"
+   local kitchendir="$8"
+   local logsdir="$9"
+
+   shift 9
 
    [ -z "${cmd}" ] && internal_fail "cmd is empty"
    [ -z "${projectfile}" ] && internal_fail "projectfile is empty"
@@ -411,12 +413,12 @@ build_cmake()
    local cc
    local cxx
 
-   cc="${OPTION_CC:-${CC}}"
-   cxx="${OPTION_CXX:-${cc}}"
+   cc="${DEFINITION_CC:-${CC}}"
+   cxx="${DEFINITION_CXX:-${cc}}"
 
    #
    # We are clobbering the CMAKE_C_FLAGS variable, which means that cmake will
-   # not pickup CFLAGS. What we do here is look of OPTION_CFLAGS is defined and
+   # not pickup CFLAGS. What we do here is look of DEFINITION_CFLAGS is defined and
    # if yes, use it, otherwise use environment CFLAGS as initial value.
    #
    # https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html#variable:CMAKE_%3CLANG%3E_FLAGS
@@ -424,7 +426,7 @@ build_cmake()
    r_compiler_cflags_value "${cc}" "${configuration}" 'NO'
    cflags="${RVAL}"
 
-   case "${OPTION_PROJECT_LANGUAGE}" in
+   case "${DEFINITION_PROJECT_LANGUAGE}" in
       [cC]|[oO][bB][jJ]*[cC])
          r_compiler_cxxflags_value "${cxx}" "${configuration}" 'NO'
          cxxflags="${RVAL}"
@@ -443,9 +445,37 @@ build_cmake()
    #  ldflags
    #
 
-   # __add_sdk_path_tool_flags # will be done below
-   __add_header_and_library_path_tool_flags
+   #
+   # r_sdkpath_tool_flags for platforms other than macos
+   # where we are using CMAKE_OSX_SYSROOT
+   #
+   case "${MULLE_UNAME}" in 
+      darwin)
+      ;;
 
+      *)
+         local sdkflags
+
+         r_sdkpath_tool_flags "${sdk}"
+         sdkflags="${RVAL}"
+         r_concat "${cppflags}" "${sdkflags}"
+         cppflags="${RVAL}"
+         r_concat "${ldflags}" "${sdkflags}"
+         ldflags="${RVAL}"
+      ;;
+   esac
+
+   r_headerpath_preprocessor_flags
+   r_concat "${cppflags}" "${RVAL}"
+   cppflags="${RVAL}"
+
+   r_librarypath_linker_flags
+   r_concat "${ldflags}" "${RVAL}"
+   ldflags="${RVAL}"
+   
+   #
+   # basically adds some flags for android based on chosen SDK
+   #
    r_sdk_cflags "${sdk}" "${platform}"
    r_concat "${cflags}" "${RVAL}"
 
@@ -454,7 +484,7 @@ build_cmake()
       r_concat "${cflags}" "${cppflags}"
       cflags="${RVAL}"
 
-      if [ "${OPTION_PROJECT_LANGUAGE}" != "c" ]
+      if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
       then
          r_concat "${cxxflags}" "${cppflags}"
          cxxflags="${RVAL}"
@@ -498,20 +528,20 @@ build_cmake()
 
    local cmakeflags
 
-   cmakeflags="${OPTION_CMAKEFLAGS}"
+   cmakeflags="${DEFINITION_CMAKEFLAGS}"
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "PREFIX:        ${OPTION_PREFIX}"
+      log_trace2 "PREFIX:        ${DEFINITION_PREFIX}"
       log_trace2 "PHASE:         ${OPTION_PHASE}"
-      log_trace2 "CMAKEFLAGS:    ${OPTION_CMAKEFLAGS}"
+      log_trace2 "CMAKEFLAGS:    ${DEFINITION_CMAKEFLAGS}"
    fi
 
    #
    # this should export a compile_commands.json command, which
    # by default should be helpful
    #
-   if [ "${OPTION_CMAKE_COMPILE_COMMANDS}" != 'NO' ]
+   if [ "${DEFINITION_CMAKE_COMPILE_COMMANDS}" != 'NO' ]
    then
       r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_EXPORT_COMPILE_COMMANDS" "ON"
       cmakeflags="${RVAL}"
@@ -556,9 +586,9 @@ build_cmake()
    case "${cmd}" in
       build|project)
          maketarget=
-         if [ ! -z "${OPTION_PREFIX}" ]
+         if [ ! -z "${DEFINITION_PREFIX}" ]
          then
-            r_convert_path_to_native "${OPTION_PREFIX}"
+            r_convert_path_to_native "${DEFINITION_PREFIX}"
             r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
             cmakeflags="${RVAL}"
          fi
@@ -567,9 +597,9 @@ build_cmake()
       install)
          [ -z "${dstdir}" ] && internal_fail "srcdir is empty"
          maketarget="install"
-         if [ ! -z "${OPTION_PREFIX}" ]
+         if [ ! -z "${DEFINITION_PREFIX}" ]
          then
-            r_convert_path_to_native "${OPTION_PREFIX}"
+            r_convert_path_to_native "${DEFINITION_PREFIX}"
             r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
             cmakeflags="${RVAL}"
          else
@@ -581,9 +611,9 @@ build_cmake()
 
       *)
          maketarget="${cmd}"
-         if [ ! -z "${OPTION_PREFIX}" ]
+         if [ ! -z "${DEFINITION_PREFIX}" ]
          then
-            r_convert_path_to_native "${OPTION_PREFIX}"
+            r_convert_path_to_native "${DEFINITION_PREFIX}"
             r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
             cmakeflags="${RVAL}"
          fi
@@ -592,7 +622,7 @@ build_cmake()
 
    local buildtype
 
-   buildtype="${OPTION_CMAKE_BUILD_TYPE:-${configuration}}"
+   buildtype="${DEFINITION_CMAKE_BUILD_TYPE:-${configuration}}"
    if [ ! -z "${buildtype}" ]
    then
       r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_BUILD_TYPE" "${buildtype}"
@@ -605,7 +635,7 @@ build_cmake()
       cmakeflags="${RVAL}"
    fi
 
-   case "${OPTION_LIBRARY_STYLE}" in
+   case "${DEFINITION_LIBRARY_STYLE}" in
       standalone)
          r_cmakeflags_add_flag "${cmakeflags}" "STANDALONE:BOOL" "ON"
          cmakeflags="${RVAL}"
@@ -628,16 +658,16 @@ build_cmake()
    r_cmake_sdk_arguments "${cmakeflags}" "${sdk}" "${platform}"
    cmakeflags="${RVAL}"
 
-   value="${OPTION_CMAKE_C_COMPILER:-${OPTION_CC}}"
+   value="${DEFINITION_CMAKE_C_COMPILER:-${DEFINITION_CC}}"
    if [ ! -z "${value}" ]
    then
       r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_C_COMPILER" "${value}"
       cmakeflags="${RVAL}"
    fi
 
-   if [ "${OPTION_PROJECT_LANGUAGE}" != "c" ]
+   if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
    then
-      value="${OPTION_CMAKE_CXX_COMPILER:-${OPTION_CXX}}"
+      value="${DEFINITION_CMAKE_CXX_COMPILER:-${DEFINITION_CXX}}"
       if [ ! -z "${value}" ]
       then
          r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_CXX_COMPILER" "${value}"
@@ -646,13 +676,12 @@ build_cmake()
    fi
 
    # this is now necessary, though undocumented apparently
-   if [ ! -z "${OPTION_CMAKE_LINKER}" ]
+   if [ ! -z "${DEFINITION_CMAKE_LINKER}" ]
    then
-      r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_LINKER:PATH" "${OPTION_CMAKE_LINKER}"
+      r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_LINKER:PATH" "${DEFINITION_CMAKE_LINKER}"
       cmakeflags="${RVAL}"
    fi
 
-   local escaped
    local value
 
    #
@@ -660,31 +689,31 @@ build_cmake()
    # -DFOO="a string", doesn't work correctly. Not sure about the other flags
    # (didn't have problems)
    #
-   value="${OPTION_CMAKE_C_FLAGS:-${cflags}}"
+   value="${DEFINITION_CMAKE_C_FLAGS:-${cflags}}"
    if [ ! -z "${value}" ]
    then
       r_cmakeflags_add_toolflags "${cmakeflags}" "CMAKE_C_FLAGS" "${value}"
       cmakeflags="${RVAL}"
    fi
 
-   value="${OPTION_CMAKE_CXX_FLAGS:-${cxxflags}}"
+   value="${DEFINITION_CMAKE_CXX_FLAGS:-${cxxflags}}"
    if [ ! -z "${value}" ]
    then
       r_cmakeflags_add_toolflags "${cmakeflags}" "CMAKE_CXX_FLAGS" "${value}"
       cmakeflags="${RVAL}"
    fi
 
-   if [ ! -z "${OPTION_CMAKE_SHARED_LINKER_FLAGS:-${ldflags}}" ]
+   if [ ! -z "${DEFINITION_CMAKE_SHARED_LINKER_FLAGS:-${ldflags}}" ]
    then
-      value="${OPTION_CMAKE_SHARED_LINKER_FLAGS:-${ldflags}}"
+      value="${DEFINITION_CMAKE_SHARED_LINKER_FLAGS:-${ldflags}}"
 
       r_cmakeflags_add_toolflags "${cmakeflags}" "CMAKE_SHARED_LINKER_FLAGS" "${value}"
       cmakeflags="${RVAL}"
    fi
 
-   if [ ! -z "${OPTION_CMAKE_EXE_LINKER_FLAGS:-${ldflags}}" ]
+   if [ ! -z "${DEFINITION_CMAKE_EXE_LINKER_FLAGS:-${ldflags}}" ]
    then
-      value="${OPTION_CMAKE_SHARED_LINKER_FLAGS:-${ldflags}}"
+      value="${DEFINITION_CMAKE_SHARED_LINKER_FLAGS:-${ldflags}}"
 
       r_cmakeflags_add_toolflags "${cmakeflags}" "CMAKE_EXE_LINKER_FLAGS" "${value}"
       cmakeflags="${RVAL}"
@@ -697,14 +726,14 @@ build_cmake()
    #
    local value
 
-   value=${OPTION_CMAKE_INCLUDE_PATH:-${OPTION_INCLUDE_PATH}}
+   value=${DEFINITION_CMAKE_INCLUDE_PATH:-${DEFINITION_INCLUDE_PATH}}
    if [ ! -z "${value}" ]
    then
-      if [ -z "${OPTION_CMAKE_INCLUDE_PATH}" ] || is_plus_key "CMAKE_INCLUDE_PATH"
+      if [ -z "${DEFINITION_CMAKE_INCLUDE_PATH}" ] || is_plus_key "CMAKE_INCLUDE_PATH"
       then
-         value="${OPTION_INCLUDE_PATH//:/;}"
+         value="${DEFINITION_INCLUDE_PATH//:/;}"
          r_convert_path_to_native "${value}"
-         r_concat "${OPTION_CMAKE_INCLUDE_PATH}" "${RVAL}"
+         r_concat "${DEFINITION_CMAKE_INCLUDE_PATH}" "${RVAL}"
          value="${RVAL}"
       fi
 
@@ -712,28 +741,28 @@ build_cmake()
       cmakeflags="${RVAL}"
    fi
 
-   value=${OPTION_CMAKE_LIBRARY_PATH:-${OPTION_LIB_PATH}}
-   if [ ! -z "${OPTION_CMAKE_LIBRARY_PATH:-${OPTION_LIB_PATH}}" ]
+   value=${DEFINITION_CMAKE_LIBRARY_PATH:-${DEFINITION_LIB_PATH}}
+   if [ ! -z "${DEFINITION_CMAKE_LIBRARY_PATH:-${DEFINITION_LIB_PATH}}" ]
    then
-      if [ -z "${OPTION_CMAKE_LIBRARY_PATH}"  ]
+      if [ -z "${DEFINITION_CMAKE_LIBRARY_PATH}"  ]
       then
-         value="${OPTION_LIB_PATH//:/;}"
+         value="${DEFINITION_LIB_PATH//:/;}"
          r_convert_path_to_native "${value}"
-         r_concat "${OPTION_CMAKE_LIBRARY_PATH}" "${RVAL}"
+         r_concat "${DEFINITION_CMAKE_LIBRARY_PATH}" "${RVAL}"
          value="${RVAL}"
       fi
       r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_LIBRARY_PATH" "${value}"
       cmakeflags="${RVAL}"
    fi
 
-   value=${OPTION_CMAKE_FRAMEWORK_PATH:-${OPTION_FRAMEWORKS_PATH}}
+   value=${DEFINITION_CMAKE_FRAMEWORK_PATH:-${DEFINITION_FRAMEWORKS_PATH}}
    if [ ! -z "${value}" ]
    then
-      if [ -z "${OPTION_CMAKE_FRAMEWORK_PATH}" ] || is_plus_key "CMAKE_FRAMEWORK_PATH"
+      if [ -z "${DEFINITION_CMAKE_FRAMEWORK_PATH}" ] || is_plus_key "CMAKE_FRAMEWORK_PATH"
       then
-         value="${OPTION_FRAMEWORKS_PATH//:/;}"
+         value="${DEFINITION_FRAMEWORKS_PATH//:/;}"
          r_convert_path_to_native "${value}"
-         r_concat "${OPTION_CMAKE_FRAMEWORK_PATH}" "${RVAL}"
+         r_concat "${DEFINITION_CMAKE_FRAMEWORK_PATH}" "${RVAL}"
          value="${RVAL}"
       fi
 
@@ -749,9 +778,16 @@ build_cmake()
    cmakeflags="${RVAL}"
 
    local makeflags
+   local makefile 
+   local native_builddir
 
-   r_convert_path_to_native "${kitchendir}"
-   r_build_make_flags "${MAKE}" "${OPTION_MAKEFLAGS}" "${RVAL}"
+   r_convert_path_to_native "${absbuilddir}"
+   native_kitchendir="${RVAL}"
+
+   r_build_makefile "${MAKE}" "${native_builddir}"
+   makefile="${RVAL}"
+
+   r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}" 
    makeflags="${RVAL}"
 
    local run_cmake
@@ -793,17 +829,20 @@ found in \"${absprojectdir}\""
    local teefile1
    local teefile2
    local grepper
+   local greplog
 
    teefile1="/dev/null"
    teefile2="/dev/null"
    grepper="log_grep_warning_error"
+   greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" and \"${logfile2#${MULLE_USER_PWD}/}\""
+      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" \
+and \"${logfile2#${MULLE_USER_PWD}/}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
@@ -812,18 +851,19 @@ found in \"${absprojectdir}\""
       teefile1="${RVAL}"
       teefile2="${teefile1}"
       grepper="log_delete_all"
+      greplog='NO'
    fi
 
    (
       exekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
 
-      PATH="${OPTION_PATH:-${PATH}}"
+      PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
 
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
-      fi
+      fi 
 
       set -o pipefail # should be set already
       if [ "${run_cmake}" = 'YES' ]
@@ -835,14 +875,14 @@ found in \"${absprojectdir}\""
                                "${cmakeflags}" \
                                "'${projectdir}'" | ${grepper}
          then
-            build_fail "${logfile1}" "cmake" "${PIPESTATUS[ 0]}"
+            build_fail "${logfile1}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
       fi
       if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
-               "'${MAKE}'" "${MAKEFLAGS}" "${makeflags}" "${maketarget}"  | ${grepper}
+               "'${MAKE}'" "${MAKEFLAGS}" "${makeflags}" "${maketarget}" | ${grepper}
       then
-         build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}"
+         build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
    ) || exit 1
 }
@@ -882,7 +922,8 @@ r_test_cmake()
 
    if [ -z "${CMAKE}" ]
    then
-      log_warning "Found a CMakeLists.txt, but ${C_RESET}${C_BOLD}cmake${C_WARNING} is not installed"
+      log_warning "Found a CMakeLists.txt, but \
+${C_RESET}${C_BOLD}cmake${C_WARNING} is not installed"
       return 1
    fi
 

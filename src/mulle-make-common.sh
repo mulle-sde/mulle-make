@@ -49,12 +49,12 @@ tools_environment_common()
    # no problem if those are empty
    if [ -z "${CC}" ]
    then
-      CC="${OPTION_CC}"
+      CC="${DEFINITION_CC}"
    fi
 
    if [ -z "${CXX}" ]
    then
-      CXX="${OPTION_CXX}"
+      CXX="${DEFINITION_CXX}"
    fi
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
@@ -138,19 +138,15 @@ r_use_ninja_instead_of_make()
       ;;
    esac
 
-   case "${OPTION_USE_NINJA}" in
-      "")
-         internal_fail "OPTION_USE_NINJA must not be empty"
-      ;;
-
-      'YES'|"DEFAULT")
+   case "${DEFINITION_USE_NINJA:-YES}" in
+      'YES')
          if [ ! -z "`command -v ninja${extension}`" ]
          then
             RVAL="ninja${extension}"
             return 0
          fi
 
-         if [ "${OPTION_USE_NINJA}" = 'YES' ]
+         if [ "${DEFINITION_USE_NINJA}" = 'YES' ]
          then
             fail "ninja${extension} not found"
          fi
@@ -162,7 +158,7 @@ r_use_ninja_instead_of_make()
       ;;
 
       *)
-         internal_fail "OPTION_USE_NINJA contains garbage \"${OPTION_USE_NINJA}\""
+         internal_fail "DEFINITION_USE_NINJA contains garbage \"${DEFINITION_USE_NINJA}\""
       ;;
    esac
 
@@ -187,10 +183,10 @@ r_make_for_plugin()
    #
    local make
 
-   make="${OPTION_MAKE:-${MAKE}}"
+   make="${DEFINITION_MAKE:-${MAKE}}"
    if [ -z "${make}" ]
    then
-      r_platform_make "${OPTION_CC}" "${plugin}"
+      r_platform_make "${DEFINITION_CC}" "${plugin}"
       make="${RVAL}"
 
       if [ -z "${no_ninja}" ]
@@ -248,27 +244,44 @@ r_makeflags_add()
 }
 
 
-r_build_make_flags()
+r_build_makefile()
 {
-   log_entry "r_build_make_flags" "$@"
+   log_entry "r_build_makefile" "$@"
 
    local make="$1"
-   local make_flags="$2"
-   local kitchendir="$3"
+   local kitchendir="$2"
 
    local make_verbose_flags
    local cores
 
    cores="${OPTION_CORES}"
 
-   #
-   # hackish
-   # figure out if we need to run cmake, by looking for cmakefiles and
-   # checking if they are newer than the MAKEFILE
-   #
    case "${make}" in
       *ninja*)
-         makefile="${kitchendir}/build.ninja"
+         RVAL="${kitchendir}/build.ninja"
+      ;;
+
+      *make*)
+         RVAL="${kitchendir}/Makefile"
+      ;;
+   esac
+}
+
+
+r_build_make_flags()
+{
+   log_entry "r_build_make_flags" "$@"
+
+   local make="$1"
+   local make_flags="$2"
+
+   local make_verbose_flags
+   local cores
+
+   cores="${OPTION_CORES}"
+
+   case "${make}" in
+      *ninja*)
          make_verbose_flags="-v"
          if [ ! -z "${OPTION_LOAD}" ]
          then
@@ -279,7 +292,6 @@ r_build_make_flags()
       ;;
 
       *make*)
-         makefile="${kitchendir}/Makefile"
          make_verbose_flags="VERBOSE=1"
 
          if [ -z "${cores}" ]
@@ -348,93 +360,94 @@ r_convert_path_to_cflags()
 }
 
 
-#
-# modifies quasi-global
-#
-# cppflags
-# ldflags
-#
-# The flags are escaped for processing by make
-# i.e. can be placed into CFLAGS="${CFLAGS}"
-#
-__add_sdk_path_tool_flags()
+r_sdkpath_tool_flags()
 {
-   log_entry "__add_sdk_path_tool_flags" "$@"
+   log_entry "r_sdkpath_tool_flags" "$@"
 
-   r_compiler_get_sdkpath "${sdk}"
+   local sdk="$1"
 
    local sdkpath
 
+   r_compiler_get_sdkpath "${sdk}"
    sdkpath="${RVAL}"
+
    if [ ! -z "${sdkpath}" ]
    then
       r_convert_file_to_cflag "${sdkpath}" "-isysroot "
-      result="${RVAL}"
-      r_concat "${result}" "${cppflags}"
-      cppflags="${RVAL}"
+      return 0
+   fi 
 
-      r_concat "${result}" "${ldflags}"
-      ldflags="${RVAL}"
-   fi
+   return 1
 }
 
 
-__add_header_and_library_path_tool_flags()
+r_headerpath_preprocessor_flags()
 {
-   log_entry "__add_header_and_library_path_tool_flags" "$@"
+   log_entry "r_headerpath_preprocessor_flags" "$@"
 
    local headersearchpaths
+   local frameworksearchpaths
 
-   case "${OPTION_CC}" in
+   case "${DEFINITION_CC}" in
       *clang*|*gcc)
-         r_convert_path_to_cflags "${OPTION_INCLUDE_PATH}" "-isystem "
+         r_convert_path_to_cflags "${DEFINITION_INCLUDE_PATH}" "-isystem "
          headersearchpaths="${RVAL}"
       ;;
 
       *)
-         r_convert_path_to_cflags "${OPTION_INCLUDE_PATH}" "-I"
+         r_convert_path_to_cflags "${DEFINITION_INCLUDE_PATH}" "-I"
          headersearchpaths="${RVAL}"
       ;;
    esac
 
-
-   r_concat "${cppflags}" "${headersearchpaths}"
-   cppflags="${RVAL}"
-
-   local librarysearchpaths
-
-   r_convert_path_to_cflags "${OPTION_LIB_PATH}" "-L"
-   librarysearchpaths="${RVAL}"
-   r_concat "${ldflags}" "${librarysearchpaths}"
-   ldflags="${RVAL}"
-
    case "${MULLE_UNAME}" in
       darwin)
-         local frameworksearchpaths
-
-         r_convert_path_to_cflags "${OPTION_FRAMEWORKS_PATH}" "-F"
+         r_convert_path_to_cflags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
          frameworksearchpaths="${RVAL}"
-
-         r_concat "${ldflags}" "${frameworksearchpaths}"
-         ldflags="${RVAL}"
       ;;
    esac
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "headersearchpaths:    ${headersearchpaths}"
-      log_trace2 "librarysearchpaths:   ${librarysearchpaths}"
-      log_trace2 "frameworksearchpaths: ${headersearchpaths}"
+      log_trace2 "frameworksearchpaths: ${frameworksearchpaths}"
    fi
+
+   r_concat "${headersearchpaths}" "${frameworksearchpaths}"
 }
 
 
-__add_path_tool_flags()
+r_librarypath_linker_flags()
+{
+   local librarysearchpaths
+   local frameworksearchpaths
+
+   r_convert_path_to_cflags "${DEFINITION_LIB_PATH}" "-L"
+   librarysearchpaths="${RVAL}"
+
+   case "${MULLE_UNAME}" in
+      darwin)
+         r_convert_path_to_cflags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
+         frameworksearchpaths="${RVAL}"
+      ;;
+   esac
+
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
+   then
+      log_trace2 "librarysearchpaths:   ${librarysearchpaths}"
+      log_trace2 "frameworksearchpaths: ${frameworksearchpaths}"
+   fi
+
+   r_concat "${librarysearchpaths}" "${frameworksearchpaths}"
+}
+
+
+_add_path_tool_cppflags()
 {
    log_entry "__add_path_tool_flags" "$@"
 
-   __add_sdk_path_tool_flags
-   __add_header_and_library_path_tool_flags
+   _add_sdk_path_tool_flags "$@"
+   _add_header_and_library_path_tool_flags
 }
 
 
@@ -445,8 +458,9 @@ build_fail()
    local logfile="$1"
    local command="$2"
    local rval="$3"
+   local greplog="${4:-YES}"
 
-   if [ -f "${logfile}" ]
+   if [ "${greplog}" = 'YES' ] && [ -f "${logfile}" ]
    then
       printf "${C_RED}"
       egrep -B1 -A5 -w "[Ee]rror|FAILED:" "${logfile}" >&2
@@ -457,7 +471,16 @@ build_fail()
          log_info "Build log in ${C_RESET_BOLD}${logfile#${MULLE_USER_PWD}/}"
       fi
    fi
-   fail "${command} failed with $rval"
+
+   case "$rval" in 
+      127)
+         fail "${command} is apparently not in PATH"
+      ;;
+
+      *)
+         fail "${command} failed with $rval"
+      ;;
+   esac
 }
 
 

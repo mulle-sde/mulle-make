@@ -35,7 +35,7 @@ r_find_xcodebuild()
 {
    local toolname
 
-   toolname="${OPTION_XCODEBUILD:-${XCODEBUILD:-xcodebuild}}"
+   toolname="${DEFINITION_XCODEBUILD:-${XCODEBUILD:-xcodebuild}}"
    r_verify_binary "${toolname}" "xcodebuild" "xcodebuild"
 }
 
@@ -50,26 +50,26 @@ tools_environment_xcodebuild()
 
 
 #
-# use this with +=
+# use this with += ?
 #
-_xcode_get_setting()
-{
-   log_entry "_xcode_get_setting" "$@"
-
-   eval_exekutor "xcodebuild -showBuildSettings $*" || fail "failed to read xcode settings"
-}
-
-
-xcode_get_setting()
-{
-   log_entry "xcode_get_setting" "$@"
-
-   local key=$1; shift
-
-   _xcode_get_setting "$@" | egrep "^[ ]*${key}" | sed 's/^[^=]*=[ ]*\(.*\)/\1/'
-
-   return 0
-}
+# _xcode_get_setting()
+# {
+#    log_entry "_xcode_get_setting" "$@"
+# 
+#    exekutor "${XCODEBUILD:-xcodebuild}" -showBuildSettings "$@" || fail "failed to read xcode settings"
+# }
+# 
+# 
+# xcode_get_setting()
+# {
+#    log_entry "xcode_get_setting" "$@"
+# 
+#    local key=$1; shift
+# 
+#    _xcode_get_setting "$@" | egrep "^[ ]*${key}" | sed 's/^[^=]*=[ ]*\(.*\)/\1/'
+# 
+#    return 0
+# }
 
 
 #
@@ -112,21 +112,24 @@ _build_xcodebuild()
 {
    log_entry "_build_xcodebuild" "$@"
 
-   [ $# -eq 11 ] || internal_fail "api error"
+   [ $# -ge 11 ] || internal_fail "api error"
 
-   local cmd="$1"; shift
+   local cmd="$1"
+   local projectfile="$2"
+   local sdk="$3"
+   local platform="$4"
+   local configuration="$5"
+   local srcdir="$6"
+   local dstdir="$7"
+   local kitchendir="$8"
+   local logsdir="$9"
 
-   local projectfile="$1"; shift
-   local sdk="$1"; shift
-   local platform="$1"; shift
-   local configuration="$1"; shift
-   local srcdir="$1"; shift
-   local dstdir="$1"; shift
-   local kitchendir="$1"; shift
-   local logsdir="$1"; shift
+   shift 9
 
    local schemename="$1"
    local targetname="$2"
+
+   shift 2
 
    [ ! -z "${configuration}" ] || internal_fail "configuration is empty"
    [ ! -z "${srcdir}" ]        || internal_fail "srcdir is empty"
@@ -221,7 +224,7 @@ EOF
    # an empty xcconfig is nice, because it acts as a reset for ?
    local xcconfig
 
-   xcconfig="${OPTION_XCODE_XCCONFIG_FILE}"
+   xcconfig="${DEFINITION_XCODE_XCCONFIG_FILE}"
    if [ ! -z "${xcconfig}" ]
    then
       r_concat "${arguments}" "-xcconfig '${xcconfig}'"
@@ -244,14 +247,14 @@ EOF
       ;;
    esac
 
-   buildsettings="ARCHS='${OPTION_XCODE_ARCHS:-\${ARCHS_STANDARD}}'"
+   buildsettings="ARCHS='${DEFINITION_XCODE_ARCHS:-\${ARCHS_STANDARD}}'"
    r_concat "${buildsettings}" "DSTROOT='${dstdir:-${absbuilddir}}'"
    buildsettings="${RVAL}"
    r_concat "${buildsettings}" "OBJROOT='${absbuilddir}/obj'"
    buildsettings="${RVAL}"
    r_concat "${buildsettings}" "SYMROOT='${absbuilddir}/'"
    buildsettings="${RVAL}"
-   r_concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${OPTION_ONLY_ACTIVE_ARCH:-NO}'"
+   r_concat "${buildsettings}" "ONLY_ACTIVE_ARCH='${DEFINITION_ONLY_ACTIVE_ARCH:-NO}'"
    buildsettings="${RVAL}"
 
    local env_common
@@ -263,41 +266,41 @@ EOF
    local cxxflags
    local ldflags
 
-   if [ ! -z "${OPTION_CFLAGS}" ]
+   if [ ! -z "${DEFINITION_CFLAGS}" ]
    then
-      r_concat "${buildsettings}" "CFLAGS='${OPTION_CFLAGS}'"
+      r_concat "${buildsettings}" "CFLAGS='${DEFINITION_CFLAGS}'"
       buildsettings="${RVAL}"
    fi
-   if [ ! -z "${OPTION_CXXFLAGS}" ]
+   if [ ! -z "${DEFINITION_CXXFLAGS}" ]
    then
-      r_concat "${buildsettings}" "CXXFLAGS='${OPTION_CXXFLAGS}'"
+      r_concat "${buildsettings}" "CXXFLAGS='${DEFINITION_CXXFLAGS}'"
       buildsettings="${RVAL}"
    fi
-   if [ ! -z "${OPTION_LDFLAGS}" ]
+   if [ ! -z "${DEFINITION_LDFLAGS}" ]
    then
-      r_concat "${buildsettings}" "LDFLAGS='${OPTION_LDFLAGS}'"
-      buildsettings="${RVAL}"
-   fi
-
-   if [ ! -z "${OPTION_OTHER_CFLAGS}" ]
-   then
-      r_concat "${buildsettings}" "OTHER_CFLAGS='${OPTION_OTHER_CFLAGS}'"
-      buildsettings="${RVAL}"
-   fi
-   if [ ! -z "${OPTION_OTHER_CXXFLAGS}" ]
-   then
-      r_concat "${buildsettings}" "OTHER_CXXFLAGS='${OPTION_OTHER_CXXFLAGS}'"
-      buildsettings="${RVAL}"
-   fi
-   if [ ! -z "${OPTION_OTHER_LDFLAGS}" ]
-   then
-      r_concat "${buildsettings}" "OTHER_LDFLAGS='${OPTION_OTHER_LDFLAGS}'"
+      r_concat "${buildsettings}" "LDFLAGS='${DEFINITION_LDFLAGS}'"
       buildsettings="${RVAL}"
    fi
 
-   if [ ! -z "${OPTION_PREFIX}" ]
+   if [ ! -z "${DEFINITION_OTHER_CFLAGS}" ]
    then
-      r_concat "${buildsettings}" "DYLIB_INSTALL_NAME_BASE='${OPTION_PREFIX}'"
+      r_concat "${buildsettings}" "OTHER_CFLAGS='${DEFINITION_OTHER_CFLAGS}'"
+      buildsettings="${RVAL}"
+   fi
+   if [ ! -z "${DEFINITION_OTHER_CXXFLAGS}" ]
+   then
+      r_concat "${buildsettings}" "OTHER_CXXFLAGS='${DEFINITION_OTHER_CXXFLAGS}'"
+      buildsettings="${RVAL}"
+   fi
+   if [ ! -z "${DEFINITION_OTHER_LDFLAGS}" ]
+   then
+      r_concat "${buildsettings}" "OTHER_LDFLAGS='${DEFINITION_OTHER_LDFLAGS}'"
+      buildsettings="${RVAL}"
+   fi
+
+   if [ ! -z "${DEFINITION_PREFIX}" ]
+   then
+      r_concat "${buildsettings}" "DYLIB_INSTALL_NAME_BASE='${DEFINITION_PREFIX}'"
       buildsettings="${RVAL}"
    fi
 
@@ -313,7 +316,7 @@ EOF
    #
    local value
 
-   r_convert_path_to_value "${OPTION_INCLUDE_PATH}"
+   r_convert_path_to_value "${DEFINITION_INCLUDE_PATH}"
    value="${RVAL}"
    if [ ! -z "${value}" ]
    then
@@ -321,7 +324,7 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   r_convert_path_to_value "${OPTION_LIB_PATH}"
+   r_convert_path_to_value "${DEFINITION_LIB_PATH}"
    value="${RVAL}"
    if [ ! -z "${value}" ]
    then
@@ -329,7 +332,7 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   r_convert_path_to_value "${OPTION_FRAMEWORKS_PATH}"
+   r_convert_path_to_value "${DEFINITION_FRAMEWORKS_PATH}"
    value="${RVAL}"
    if [ ! -z "${value}" ]
    then
@@ -352,9 +355,11 @@ EOF
 
    local teefile1
    local grepper
-
+   local greplog 
+   
    teefile1="/dev/null"
    grepper="log_grep_warning_error"
+   greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -368,6 +373,7 @@ EOF
       r_safe_tty
       teefile1="${RVAL}"
       grepper="log_delete_all"
+      greplog='NO'
    fi
 
    (
@@ -375,9 +381,9 @@ EOF
 
       exekutor cd "${projectdir}" || exit 1
 
-      # DONT READ CONFIG SETTING IN THIS INDENT
+      # DONT READ CONFIG SETTING IN THIS INDENT ?
 
-      PATH="${OPTION_PATH:-${PATH}}"
+      PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
@@ -392,7 +398,7 @@ EOF
                                        "${arguments}" \
                                        "${buildsettings}" | ${grepper}
       then
-         build_fail "${logfile}" "${TOOLNAME}" "${PIPESTATUS[ 0]}"
+         build_fail "${logfile}" "${TOOLNAME}" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
    ) || exit 1
 }
@@ -409,7 +415,7 @@ build_xcodebuild()
    local scheme
    local schemes
 
-   schemes="${OPTION_SCHEMES}"
+   schemes="${DEFINITION_SCHEMES}"
    IFS=$'\n'
    set -o noglob
    for scheme in $schemes
@@ -426,7 +432,7 @@ build_xcodebuild()
    local target
    local targets
 
-   targets="${OPTION_TARGETS}"
+   targets="${DEFINITION_TARGETS}"
 
    IFS=$'\n'
    set -o noglob
@@ -463,7 +469,7 @@ r_test_xcodebuild()
    RVAL=""
 
     # always pass project directly
-   projectfile="${OPTION_PROJECT_FILE}"
+   projectfile="${DEFINITION_PROJECT_FILE}"
    if [ ! -z "${projectfile}" ]
    then
       projectfile="${srcdir}/${projectfile}"

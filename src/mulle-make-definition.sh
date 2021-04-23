@@ -142,88 +142,90 @@ EOF
 
 #
 # grep through project to get the options:_
-# egrep -h -o -w 'OPTION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | LC_ALL=C sort -u
+# egrep -h -o -w 'DEFINITION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | LC_ALL=C sort -u
 #
-KNOWN_AUTOCONF_PLUGIN_OPTIONS="\
-OPTION_AUTOCONF
-OPTION_AUTORECONF
-OPTION_AUTOCONFFLAGS
-OPTION_AUTORECONFFLAGS"
+KNOWN_AUTOCONF_PLUGIN_DEFINITIONS="\
+DEFINITION_AUTOCONF
+DEFINITION_AUTORECONF
+DEFINITION_AUTOCONFFLAGS
+DEFINITION_AUTORECONFFLAGS"
 
-KNOWN_CMAKE_PLUGIN_OPTIONS="\
-OPTION_CMAKE
-OPTION_CMAKE_BUILD_TYPE
-OPTION_CMAKE_C_FLAGS
-OPTION_CMAKE_CXX_FLAGS
-OPTION_CMAKE_C_COMPILER
-OPTION_CMAKE_CXX_COMPILER
-OPTION_CMAKE_LINKER
-OPTION_CMAKE_SHARED_LINKER_FLAGS
-OPTION_CMAKE_EXE_LINKER_FLAGS
-OPTION_CMAKE_INCLUDE_PATH
-OPTION_CMAKE_LIBRARY_PATH
-OPTION_CMAKE_FRAMEWORK_PATH
-OPTION_CMAKE_INSTALL_PREFIX
-OPTION_CMAKEFLAGS
-OPTION_CMAKE_GENERATOR"
+KNOWN_CMAKE_PLUGIN_DEFINITIONS="\
+DEFINITION_CMAKE
+DEFINITION_CMAKE_BUILD_TYPE
+DEFINITION_CMAKE_C_FLAGS
+DEFINITION_CMAKE_CXX_FLAGS
+DEFINITION_CMAKE_C_COMPILER
+DEFINITION_CMAKE_CXX_COMPILER
+DEFINITION_CMAKE_LINKER
+DEFINITION_CMAKE_SHARED_LINKER_FLAGS
+DEFINITION_CMAKE_EXE_LINKER_FLAGS
+DEFINITION_CMAKE_INCLUDE_PATH
+DEFINITION_CMAKE_LIBRARY_PATH
+DEFINITION_CMAKE_FRAMEWORK_PATH
+DEFINITION_CMAKE_INSTALL_PREFIX
+DEFINITION_CMAKEFLAGS
+DEFINITION_CMAKE_GENERATOR"
 
-KNOWN_CONFIGURE_PLUGIN_OPTIONS="\
-OPTION_CONFIGUREFLAGS"
+KNOWN_CONFIGURE_PLUGIN_DEFINITIONS="\
+DEFINITION_CONFIGUREFLAGS"
 
-KNOWN_MESON_PLUGIN_OPTIONS="\
-OPTION_MESON
-OPTION_MESONFLAGS
-OPTION_MESON_BACKEND"
+KNOWN_MESON_PLUGIN_DEFINITIONS="\
+DEFINITION_MESON
+DEFINITION_MESONFLAGS
+DEFINITION_MESON_BACKEND"
 
-KNOWN_XCODEBUILD_PLUGIN_OPTIONS="\
-OPTION_XCODEBUILD"
+KNOWN_XCODEBUILD_PLUGIN_DEFINITIONS="\
+DEFINITION_XCODEBUILD
+DEFINITION_XCODE_XCCONFIG_FILE"
 
 #
 # General options are not "blindly" passed as commandline arguments to
-# mulle-make but handled separately. F.e. putting OPTION_MULLE_SDK_PATH in
+# mulle-make but handled separately. F.e. putting DEFINITION_MULLE_SDK_PATH in
 # here will effectively remove it from the argument list, which is bad
 #
-KNOWN_GENERAL_OPTIONS="\
-OPTION_BUILD_DIR
-OPTION_BUILD_SCRIPT
-OPTION_CC
-OPTION_CFLAGS
-OPTION_CLEAN_BEFORE_BUILD
-OPTION_CONFIGURATION
-OPTION_CPPFLAGS
-OPTION_CXX
-OPTION_CXXFLAGS
-OPTION_DETERMINE_SDK
-OPTION_FRAMEWORKS_PATH
-OPTION_GCC_PREPROCESSOR_DEFINITIONS
-OPTION_INCLUDE_PATH
-OPTION_LDFLAGS
-OPTION_LIB_PATH
-OPTION_LOG_DIR
-OPTION_MAKE
-OPTION_NINJA
-OPTION_MAKETARGET
-OPTION_OTHER_CFLAGS
-OPTION_OTHER_CPPFLAGS
-OPTION_OTHER_CXXFLAGS
-OPTION_OTHER_LDFLAGS
-OPTION_PLUGIN_PREFERENCES
-OPTION_PREFIX
-OPTION_PROJECT_FILE
-OPTION_PROJECT_LANGUAGE
-OPTION_PROJECT_NAME
-OPTION_SCHEMES
-OPTION_SDK
-OPTION_TARGETS
-OPTION_USE_NINJA
-OPTION_WARNING_CFLAGS"
+KNOWN_GENERAL_DEFINITIONS="\
+DEFINITION_BUILD_DIR
+DEFINITION_BUILD_SCRIPT
+DEFINITION_CC
+DEFINITION_CFLAGS
+DEFINITION_CLEAN_BEFORE_BUILD
+DEFINITION_CONFIGURATION
+DEFINITION_CPPFLAGS
+DEFINITION_CXX
+DEFINITION_CXXFLAGS
+DEFINITION_DETERMINE_SDK
+DEFINITION_FRAMEWORKS_PATH
+DEFINITION_GCC_PREPROCESSOR_DEFINITIONS
+DEFINITION_INCLUDE_PATH
+DEFINITION_LDFLAGS
+DEFINITION_LIB_PATH
+DEFINITION_LOG_DIR
+DEFINITION_MAKE
+DEFINITION_NINJA
+DEFINITION_MAKETARGET
+DEFINITION_OTHER_CFLAGS
+DEFINITION_OTHER_CPPFLAGS
+DEFINITION_OTHER_CXXFLAGS
+DEFINITION_OTHER_LDFLAGS
+DEFINITION_PLUGIN_PREFERENCES
+DEFINITION_PREFIX
+DEFINITION_PREFER_XCODEBUILD
+DEFINITION_PROJECT_FILE
+DEFINITION_PROJECT_LANGUAGE
+DEFINITION_PROJECT_NAME
+DEFINITION_SCHEMES
+DEFINITION_SDK
+DEFINITION_TARGETS
+DEFINITION_USE_NINJA
+DEFINITION_WARNING_CFLAGS"
 
-KNOWN_OPTIONS="${KNOWN_GENERAL_OPTIONS}
-${KNOWN_AUTOCONF_PLUGIN_OPTIONS}
-${KNOWN_CMAKE_PLUGIN_OPTIONS}
-${KNOWN_CONFIGURE_PLUGIN_OPTIONS}
-${KNOWN_MESON_PLUGIN_OPTIONS}
-${KNOWN_XCODEBUILD_PLUGIN_OPTIONS}"
+KNOWN_DEFINITIONS="${KNOWN_GENERAL_DEFINITIONS}
+${KNOWN_AUTOCONF_PLUGIN_DEFINITIONS}
+${KNOWN_CMAKE_PLUGIN_DEFINITIONS}
+${KNOWN_CONFIGURE_PLUGIN_DEFINITIONS}
+${KNOWN_MESON_PLUGIN_DEFINITIONS}
+${KNOWN_XCODEBUILD_PLUGIN_DEFINITIONS}"
 
 
 #
@@ -232,18 +234,18 @@ all_userdefined_unknown_keys()
 {
    log_entry "all_userdefined_unknown_keys" "$@"
 
-   if [ -z "${DEFINED_OPTIONS}" ]
+   if [ -z "${DEFINED_SET_DEFINITIONS}" ]
    then
       return
    fi
 
    local pattern
 
-   pattern="$(tr '\012' '|' <<< "${KNOWN_OPTIONS}")"
+   pattern="$(tr '\012' '|' <<< "${KNOWN_DEFINITIONS}")"
    pattern="$(sed 's/\(.*\)|$/\1/g' <<< "${pattern}")"
 
-   log_debug "${DEFINED_OPTIONS}"
-   egrep -v -x "${pattern}" <<< "${DEFINED_OPTIONS}"
+   log_debug "${DEFINED_SET_DEFINITIONS}"
+   egrep -v -x "${pattern}" <<< "${DEFINED_SET_DEFINITIONS}"
 }
 
 
@@ -251,18 +253,18 @@ all_userdefined_unknown_plus_keys()
 {
    log_entry "all_userdefined_unknown_plus_keys" "$@"
 
-   if [ -z "${DEFINED_PLUS_OPTIONS}" ]
+   if [ -z "${DEFINED_PLUS_DEFINITIONS}" ]
    then
       return
    fi
 
    local pattern
 
-   pattern="$(tr '\012' '|' <<< "${KNOWN_OPTIONS}")"
+   pattern="$(tr '\012' '|' <<< "${KNOWN_DEFINITIONS}")"
    pattern="$(sed 's/\(.*\)|$/\1/g' <<< "${pattern}")"
 
-   log_debug "${DEFINED_PLUS_OPTIONS}"
-   egrep -v -x "${pattern}" <<< "${DEFINED_PLUS_OPTIONS}"
+   log_debug "${DEFINED_PLUS_DEFINITIONS}"
+   egrep -v -x "${pattern}" <<< "${DEFINED_PLUS_DEFINITIONS}"
 }
 
 
@@ -270,7 +272,7 @@ is_plus_key()
 {
    log_entry "is_plus_key" "$@"
 
-   fgrep -q -F -x -e "$1" <<< "${DEFINED_PLUS_OPTIONS}"
+   fgrep -q -F -x -e "$1" <<< "${DEFINED_PLUS_DEFINITIONS}"
 }
 
 
@@ -301,7 +303,7 @@ r_print_definitions()
       IFS="${DEFAULT_IFS}"
 
       value="${!key}"
-      r_concat "${s}" "${prefix}${key#OPTION_}${sep}${quote}${value}${quote}" "${concatsep}"
+      r_concat "${s}" "${prefix}${key#DEFINITION_}${sep}${quote}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
@@ -315,7 +317,7 @@ r_print_definitions()
       IFS="${DEFAULT_IFS}"
 
       value="${!key}"
-      r_concat "${s}" "${prefix}${key#OPTION_}${plussep}${quote}${pluspref}${value}${quote}" "${concatsep}"
+      r_concat "${s}" "${prefix}${key#DEFINITION_}${plussep}${quote}${pluspref}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
@@ -384,8 +386,8 @@ check_option_key_without_prefix()
          fail "Empty key"
       ;;
 
-      OPTION_*)
-         fail "Key \"${key}\" must not have OPTION_ prefix"
+      DEFINITION_*)
+         fail "Key \"${key}\" must not have DEFINITION_ prefix"
       ;;
    esac
 
@@ -400,19 +402,19 @@ check_option_key_without_prefix()
    local match
    local escaped
 
-   if ! find_line "${KNOWN_OPTIONS}" "OPTION_${key}"
+   if ! find_line "${KNOWN_DEFINITIONS}" "DEFINITION_${key}"
    then
       local message
       local hint
 
       case "${key}" in
-         OPTION_*)
-            hint="\n(Hint: Do not specify the OPTION_ prefix yourself)"
+         DEFINITION_*)
+            hint="\n(Hint: Do not specify the DEFINITION_ prefix yourself)"
          ;;
       esac
 
       message="\"${key}\" is not a known option"
-      if [ "${OPTION_ALLOW_UNKNOWN_OPTION}" != 'NO' ]
+      if [ "${DEFINITION_ALLOW_UNKNOWN_OPTION}" != 'NO' ]
       then
          log_fluff "${message}. Maybe OK, especially with cmake and xcode."
       else
@@ -431,8 +433,8 @@ check_key_without_prefix_exists()
 
    if [ -z "${option}" ]
    then
-      if find_line "${DEFINED_OPTIONS}" "OPTION_${key}"  ||
-         find_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"
+      if find_line "${DEFINED_SET_DEFINITIONS}" "DEFINITION_${key}"  ||
+         find_line "${DEFINED_PLUS_DEFINITIONS}" "DEFINITION_${key}"
       then
          return 0
       fi
@@ -443,7 +445,7 @@ check_key_without_prefix_exists()
 
 #
 # this defines a non-exported variable with prefix
-# OPTION_
+# DEFINITION_
 #
 _make_define_option()
 {
@@ -460,7 +462,7 @@ _make_define_option()
    local oldvalue
    local optkey
 
-   optkey="OPTION_$key"
+   optkey="DEFINITION_$key"
    oldvalue="${!optkey}"
    case "${option}" in
       'ifempty')
@@ -487,7 +489,7 @@ _make_define_option()
          fi
       ;;
 
-      ''|'append')
+      'append')
          r_concat "${oldvalue}" "${value}"
          value="${RVAL}"
       ;;
@@ -497,7 +499,7 @@ _make_define_option()
       ;;
 
 
-      'clobber')
+      ''|'clobber')
          if check_key_without_prefix_exists "${key}" "${option}" \
             && [ "${oldvalue}" != "${value}" ]
          then
@@ -520,10 +522,10 @@ make_undefine_option()
 
    local key="$1"
 
-   unset "OPTION_${key}"
+   unset "DEFINITION_${key}"
 
-   DEFINED_OPTIONS="`fgrep -v -x -e "OPTION_${key}" <<< "${DEFINED_OPTIONS}" `"
-   DEFINED_PLUS_OPTIONS="`fgrep -v -x -e "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}" `"
+   DEFINED_SET_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
+   DEFINED_PLUS_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
 }
 
 
@@ -539,14 +541,14 @@ make_define_option()
    fi
 
    # ensure append doesn't duplicate
-   case "${DEFINED_OPTIONS}" in
-      "OPTION_${key}")
-         DEFINED_OPTIONS="`fgrep -v -x "OPTION_${key}" <<< "${DEFINED_OPTIONS}" `"
+   case "${DEFINED_SET_DEFINITIONS}" in
+      "DEFINITION_${key}")
+         DEFINED_SET_DEFINITIONS="`fgrep -v -x "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
       ;;
    esac
 
-   r_add_line "${DEFINED_OPTIONS}" "OPTION_${key}"
-   DEFINED_OPTIONS="${RVAL}"
+   r_add_line "${DEFINED_SET_DEFINITIONS}" "DEFINITION_${key}"
+   DEFINED_SET_DEFINITIONS="${RVAL}"
 }
 
 
@@ -562,20 +564,20 @@ make_define_plusoption()
    fi
 
    # ensure append doesn't duplicate
-   case "${DEFINED_PLUS_OPTIONS}" in
-      "OPTION_${key}")
-         DEFINED_PLUS_OPTIONS="`fgrep -v -x "OPTION_${key}" <<< "${DEFINED_PLUS_OPTIONS}" `"
+   case "${DEFINED_PLUS_DEFINITIONS}" in
+      "DEFINITION_${key}")
+         DEFINED_PLUS_DEFINITIONS="`fgrep -v -x "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
       ;;
    esac
 
-   r_add_line "${DEFINED_PLUS_OPTIONS}" "OPTION_${key}"
-   DEFINED_PLUS_OPTIONS="${RVAL}"
+   r_add_line "${DEFINED_PLUS_DEFINITIONS}" "DEFINITION_${key}"
+   DEFINED_PLUS_DEFINITIONS="${RVAL}"
 }
 
 
-make_define_option_keyvalue()
+make_define_set_keyvalue()
 {
-   log_entry "make_define_option_keyvalue" "$@"
+   log_entry "make_define_set_keyvalue" "$@"
 
    local keyvalue="$1"
    local option="$2"
@@ -597,9 +599,9 @@ make_define_option_keyvalue()
 }
 
 
-make_define_plusoption_keyvalue()
+make_define_plus_keyvalue()
 {
-   log_entry "make_define_plusoption_keyvalue" "$@"
+   log_entry "make_define_plus_keyvalue" "$@"
 
    local keyvalue="$1"
    local option="$2"
@@ -659,7 +661,10 @@ read_defines_dir()
       r_uppercase "${key}"
       key="${RVAL}"
 
-      read_value="`egrep -v '^#' "${filename}"`"
+      # multiple lines coalesced with space
+      read_value="`egrep -v '^#' "${filename}" | tr '\n' ' '`"
+      r_trim_whitespace "${read_value}"
+      read_value="${RVAL}"
 #      if [ -z "${value}" ]
 #      then
 #         continue
@@ -934,7 +939,7 @@ get_definition_dir()
 
    local varkey
 
-   varkey="OPTION_${key}"
+   varkey="DEFINITION_${key}"
    if [ "${OPTION_OUTPUT_KEY}" = 'YES' ]
    then
       value="${!varkey}"
@@ -985,7 +990,7 @@ list_definition_dir()
 
    local lf="
 "
-   r_print_definitions "${DEFINED_OPTIONS}" "${DEFINED_PLUS_OPTIONS}" \
+   r_print_definitions "${DEFINED_SET_DEFINITIONS}" "${DEFINED_PLUS_DEFINITIONS}" \
                        "" \
                        "=" \
                        "+=" \
@@ -1060,7 +1065,7 @@ make_definition_main()
       ;;
 
       show|keys)
-         sed -e 's/^OPTION_//' <<< "${KNOWN_OPTIONS}" | LC_ALL=C sort -u
+         sed -e 's/^DEFINITION_//' <<< "${KNOWN_DEFINITIONS}" | LC_ALL=C sort -u
       ;;
 
       set)

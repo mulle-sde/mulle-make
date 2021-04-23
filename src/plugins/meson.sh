@@ -40,7 +40,7 @@ r_platform_meson_backend()
 {
    local toolname
 
-   toolname="${OPTION_NINJA:-${NINJA:-ninja}}"
+   toolname="${DEFINITION_NINJA:-${NINJA:-ninja}}"
    r_verify_binary "${toolname}" "ninja" "ninja"
 }
 
@@ -49,7 +49,7 @@ r_find_meson()
 {
    local toolname
 
-   toolname="${OPTION_MESON:-${MESON:-meson}}"
+   toolname="${DEFINITION_MESON:-${MESON:-meson}}"
    r_verify_binary "${toolname}" "meson" "meson"
 }
 
@@ -71,7 +71,7 @@ tools_environment_meson()
    r_basename "${RVAL}"
    backend="${RVAL#mock-}"
 
-   MESON_BACKEND="${OPTION_MESON_BACKEND:-${backend}}"
+   MESON_BACKEND="${DEFINITION_MESON_BACKEND:-${backend}}"
 }
 
 
@@ -105,15 +105,17 @@ build_meson()
 
    [ $# -ge 9 ] || internal_fail "api error"
 
-   local cmd="$1"; shift
-   local projectfile="$1"; shift
-   local sdk="$1"; shift
-   local platform="$1"; shift
-   local configuration="$1"; shift
-   local srcdir="$1"; shift
-   local dstdir="$1"; shift
-   local kitchendir="$1"; shift
-   local logsdir="$1"; shift
+   local cmd="$1"
+   local projectfile="$2"
+   local sdk="$3"
+   local platform="$4"
+   local configuration="$5"
+   local srcdir="$6"
+   local dstdir="$7"
+   local kitchendir="$8"
+   local logsdir="$9"
+
+   shift 9
 
    [ -z "${cmd}" ] && internal_fail "cmd is empty"
    [ -z "${projectfile}" ] && internal_fail "projectfile is empty"
@@ -132,16 +134,49 @@ build_meson()
    local cppflags
    local ldflags
 
-   r_compiler_cflags_value "${OPTION_CC}" "${configuration}" 'NO'
+   r_compiler_cflags_value "${DEFINITION_CC}" "${configuration}" 'NO'
    cflags="${RVAL}"
-   r_compiler_cxxflags_value "${OPTION_CXX:-${OPTION_CC}}" "${configuration}" 'NO'
+   r_compiler_cxxflags_value "${DEFINITION_CXX:-${DEFINITION_CC}}" "${configuration}" 'NO'
    cxxflags="${RVAL}"
-   r_compiler_cppflags_value "${OPTION_INCLUDE_PATH}"
+   r_compiler_cppflags_value "${DEFINITION_INCLUDE_PATH}"
    cppflags="${RVAL}"
-   r_compiler_ldflags_value "${OPTION_CC}" "${configuration}"
+   r_compiler_ldflags_value "${DEFINITION_CC}" "${configuration}"
    ldflags="${RVAL}"
 
-   __add_path_tool_flags
+   local sdkflags
+
+   r_sdkpath_tool_flags "${sdk}"
+   sdkflags="${RVAL}"
+   r_concat "${cppflags}" "${sdkflags}"
+   cppflags="${RVAL}"
+   r_concat "${ldflags}" "${sdkflags}"
+   ldflags="${RVAL}"
+
+   r_headerpath_preprocessor_flags
+   r_concat "${cppflags}" "${RVAL}"
+   cppflags="${RVAL}"
+
+   r_librarypath_linker_flags
+   r_concat "${ldflags}" "${RVAL}"
+   ldflags="${RVAL}"
+
+   #
+   # basically adds some flags for android based on chosen SDK
+   #
+   r_sdk_cflags "${sdk}" "${platform}"
+   r_concat "${cflags}" "${RVAL}"
+
+   if [ ! -z "${cppflags}" ]
+   then
+      r_concat "${cflags}" "${cppflags}"
+      cflags="${RVAL}"
+
+      if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
+      then
+         r_concat "${cxxflags}" "${cppflags}"
+         cxxflags="${RVAL}"
+      fi
+   fi
 
    local rel_project_dir
    local absbuilddir
@@ -178,16 +213,16 @@ build_meson()
 
    passed_keys=
    meson_env=
-   meson_flags="${OPTION_MESONFLAGS}"
+   meson_flags="${DEFINITION_MESONFLAGS}"
 
    local maketarget
 
    case "${cmd}" in
       build|project|make)
          maketarget=
-         if [ ! -z "${OPTION_PREFIX}" ]
+         if [ ! -z "${DEFINITION_PREFIX}" ]
          then
-            r_concat "${meson_flags}" "--prefix '${OPTION_PREFIX}'"
+            r_concat "${meson_flags}" "--prefix '${DEFINITION_PREFIX}'"
             meson_flags="${RVAL}"
          fi
       ;;
@@ -201,9 +236,9 @@ build_meson()
 
       *)
          maketarget="${cmd}"
-         if [ ! -z "${OPTION_PREFIX}" ]
+         if [ ! -z "${DEFINITION_PREFIX}" ]
          then
-            r_concat "${meson_flags}" "--prefix '${OPTION_PREFIX}'"
+            r_concat "${meson_flags}" "--prefix '${DEFINITION_PREFIX}'"
             meson_flags="${RVAL}"
          fi
       ;;
@@ -216,17 +251,17 @@ build_meson()
       meson_flags="${RVAL}"
    fi
 
-   if [ ! -z "${OPTION_CC}" ]
+   if [ ! -z "${DEFINITION_CC}" ]
    then
-      r_concat "${meson_env}" "CC='${OPTION_CC}'"
+      r_concat "${meson_env}" "CC='${DEFINITION_CC}'"
       meson_env="${RVAL}"
       r_colon_concat "${passed_keys}" "CC"
       passed_keys="${RVAL}"
    fi
 
-   if [ ! -z "${OPTION_CXX}" ]
+   if [ ! -z "${DEFINITION_CXX}" ]
    then
-      r_concat "${meson_env}" "CXX='${OPTION_CXX}'"
+      r_concat "${meson_env}" "CXX='${DEFINITION_CXX}'"
       meson_env="${RVAL}"
       r_colon_concat "${passed_keys}" "CXX"
       passed_keys="${RVAL}"
@@ -278,7 +313,7 @@ build_meson()
 
    local ninja_flags
 
-   ninja_flags="${OPTION_NINJAFLAGS}"
+   ninja_flags="${DEFINITION_NINJAFLAGS}"
 
    if [ ! -z "${OPTION_CORES}" ]
    then
@@ -319,10 +354,12 @@ build_meson()
    local teefile1
    local teefile2
    local grepper
-
+   local greplog
+   
    teefile1="/dev/null"
    teefile2="/dev/null"
    grepper="log_grep_warning_error"
+   greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -338,6 +375,7 @@ build_meson()
       teefile1="${RVAL}"
       teefile2="${teefile1}"
       grepper="log_delete_all"
+      greplog='NO'
    fi
 
    (
@@ -369,7 +407,7 @@ build_meson()
                             "${meson_flags}" \
                             "'${kitchendir}'" | ${grepper}
       then
-         build_fail "${logfile1}" "meson" "${PIPESTATUS[ 0]}"
+         build_fail "${logfile1}" "meson" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
 
       exekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
@@ -378,7 +416,7 @@ build_meson()
                "${env_common}" \
                "'${NINJA}'" "${ninja_flags}" ${maketarget} | ${grepper}
       then
-         build_fail "${logfile2}" "ninja" "${PIPESTATUS[ 0]}"
+         build_fail "${logfile2}" "ninja" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
    ) || exit 1
 }

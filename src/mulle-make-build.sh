@@ -134,8 +134,10 @@ Usage:
    directory is used.
 
    Build settings can be specified by the command line or can be read from a
-   definition directoy. Definitions read from the file system undergo variable
-   expansion.
+   definition directory. Definitions read from the file system undergo variable
+   expansion. You generally do not interact with ${MULLE_USAGE_NAME} through
+   environment variables (though there are four notable exceptions) but 
+   though these definition directories.
 
 Options:
 EOF
@@ -144,6 +146,7 @@ EOF
    cat <<EOF >&2
 
 Environment:
+   CFLAGS
    CFLAGS
    CXXFLAGS
    LDFLAGS
@@ -194,7 +197,7 @@ mkdir_build_directories()
 
    [ -z "${kitchendir}" ] && internal_fail "kitchendir is empty"
 
-   if [ -d "${kitchendir}" -a "${OPTION_CLEAN_BEFORE_BUILD}" = 'YES' ]
+   if [ -d "${kitchendir}" -a "${DEFINITION_CLEAN_BEFORE_BUILD}" = 'YES' ]
    then
       log_fluff "Cleaning build directory \"${kitchendir}\""
       rmdir_safer "${kitchendir}"
@@ -214,7 +217,7 @@ mkdir_build_directories()
 # need to run in subshell so that plugin changes
 # to variables are ignored
 #
-build_with_preference_if_possible()
+__build_with_preference_if_possible()
 {
    [ ! -z "${configuration}" ] || internal_fail "configuration not defined"
    [ ! -z "${name}" ]          || internal_fail "name not defined"
@@ -223,7 +226,7 @@ build_with_preference_if_possible()
    [ ! -z "${preference}" ]    || internal_fail "preference not defined"
    [ ! -z "${cmd}" ]           || internal_fail "cmd not defined"
    [ ! -z "${srcdir}" ]        || internal_fail "srcdir not defined"
-# dstdir can be empty (check what OPTION_PREFIX does differently)
+# dstdir can be empty (check what DEFINITION_PREFIX does differently)
 #   [ ! -z "${dstdir}" ]        || internal_fail "dstdir not defined"
    [ ! -z "${kitchendir}" ]      || internal_fail "kitchendir not defined"
    [ ! -z "${logsdir}" ]       || internal_fail "logsdir not defined"
@@ -248,10 +251,10 @@ build_with_preference_if_possible()
       local conftext
 
       conftext="${configuration}"
-      OPTION_LIBRARY_STYLE="${OPTION_LIBRARY_STYLE:-${OPTION_PREFERRED_LIBRARY_STYLE}}"
-      if [ ! -z "${OPTION_LIBRARY_STYLE}" ]
+      DEFINITION_LIBRARY_STYLE="${DEFINITION_LIBRARY_STYLE:-${DEFINITION_PREFERRED_LIBRARY_STYLE}}"
+      if [ ! -z "${DEFINITION_LIBRARY_STYLE}" ]
       then
-         conftext="${conftext}/${OPTION_LIBRARY_STYLE}"
+         conftext="${conftext}/${DEFINITION_LIBRARY_STYLE}"
       fi
 
       blurb="Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
@@ -307,7 +310,7 @@ build_with_sdk_platform_configuration_preferences()
 
    local name
 
-   name="${OPTION_PROJECT_NAME}"
+   name="${DEFINITION_PROJECT_NAME}"
    if [ -z "${name}" ]
    then
       r_basename "${srcdir}"
@@ -321,19 +324,11 @@ build_with_sdk_platform_configuration_preferences()
 
    local kitchendir
 
-   kitchendir="${OPTION_BUILD_DIR}"
-   if [ -z "${kitchendir}" ]
-   then
-      kitchendir="${srcdir}/build"
-   fi
+   kitchendir="${DEFINITION_BUILD_DIR:-${srcdir}/build}"
 
    local logsdir
 
-   logsdir="${OPTION_LOG_DIR}"
-   if [ -z "${logsdir}" ]
-   then
-      logsdir="${kitchendir}/.log"
-   fi
+   logsdir="${DEFINITION_LOG_DIR:-${kitchendir}/.log}"
 
    mkdir_build_directories "${kitchendir}" "${logsdir}"
 
@@ -349,7 +344,7 @@ build_with_sdk_platform_configuration_preferences()
    do
       set +o noglob
       # pass local context w/o arguments
-      build_with_preference_if_possible
+      __build_with_preference_if_possible
 
       rval="$?"
       if [ "${rval}" != 127 ]
@@ -410,19 +405,36 @@ build()
       read_definition_dir "${definitiondir}"
    fi
 
+   if [ -z  "${DEFINITION_PLUGIN_PREFERENCES}" ]
+   then
+      DEFINITION_PLUGIN_PREFERENCES='cmake:meson:autoconf:configure'
+      case "${MULLE_UNAME}" in
+         darwin)
+            if [ "${DEFINITION_PREFER_XCODEBUILD}" = 'YES' ]
+            then
+               r_colon_concat "xcodebuild" "${DEFINITION_PLUGIN_PREFERENCES}"
+               DEFINITION_PLUGIN_PREFERENCES="${RVAL}"
+            else
+               r_colon_concat "${DEFINITION_PLUGIN_PREFERENCES}" "xcodebuild"
+               DEFINITION_PLUGIN_PREFERENCES="${RVAL}"
+            fi
+         ;;
+      esac
+   fi
+
    #
    # If we have a script, can we use it ?
    # If yes, we only use the script and fail for every other plugin
    #
-   if [ ! -z "${OPTION_BUILD_SCRIPT}" ]
+   if [ ! -z "${DEFINITION_BUILD_SCRIPT}" ]
    then
       if [ "${OPTION_ALLOW_SCRIPT}" != 'YES' ]
       then
-         fail "No permission to run script \"${OPTION_BUILD_SCRIPT}\".
+         fail "No permission to run script \"${DEFINITION_BUILD_SCRIPT}\".
 ${C_INFO}Use --allow-script option or enable scripts permanently with:
 ${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
       fi
-      OPTION_PLUGIN_PREFERENCES="script"
+      DEFINITION_PLUGIN_PREFERENCES="script"
       log_verbose "A script is defined, only considering a script build now"
    else
       log_fluff "No script defined"
@@ -430,22 +442,24 @@ ${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
 
 
    # used to receive values from build_load_plugins
-   local AVAILABLE_PLUGINS
+   local plugins
 
-   build_load_plugins "${OPTION_PLUGIN_PREFERENCES}" # can't be subshell !
-   if [ -z "${AVAILABLE_PLUGINS}" ]
+   r_build_load_plugins "${DEFINITION_PLUGIN_PREFERENCES}" # can't be subshell !
+   plugins="${RVAL}"
+
+   if [ -z "${plugins}" ]
    then
       fail "Don't know how to build \"${srcdir}\".
-There are no plugins available for requested tools \"`echo ${OPTION_PLUGIN_PREFERENCES}`\""
+There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_PREFERENCES}`\""
    fi
 
-   log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: `echo ${AVAILABLE_PLUGINS}`"
+   log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: ${plugins}"
 
    local sdk
 
-   sdk="${OPTION_SDK}"
+   sdk="${DEFINITION_SDK:-Default}"
    case "${sdk}" in
-      DEFAULT)
+      Default)
          sdk="Default"
       ;;
 
@@ -457,6 +471,10 @@ There are no plugins available for requested tools \"`echo ${OPTION_PLUGIN_PREFE
          esac
       ;;
 
+      Debug|Release)
+         log_warning "SDK named like a standard configuration"
+      ;;
+
       "")
          fail "An Empty sdk is not possible (use \"Default\")"
       ;;
@@ -464,22 +482,22 @@ There are no plugins available for requested tools \"`echo ${OPTION_PLUGIN_PREFE
 
    local platform
 
-   platform="${OPTION_PLATFORM}"
-   case "${platform}" in
-      DEFAULT)
+   platform="${DEFINITION_PLATFORM}"
+   case "${platform:-Default}" in
+      "Default")
          platform="${MULLE_UNAME}"
       ;;
 
-      "")
-         fail "An empty platform is not possible (use \"Default\")"
+      Debug|Release)
+         log_warning "Platform named like a standard configuration"
       ;;
    esac
 
    local configuration
 
-   configuration="${OPTION_CONFIGURATION}"
-   case "${configuration}" in
-      DEFAULT)
+   configuration="${DEFINITION_CONFIGURATION}"
+   case "${configuration:-Default}" in
+      Default)
          configuration="Release"
       ;;
 
@@ -494,13 +512,13 @@ There are no plugins available for requested tools \"`echo ${OPTION_PLUGIN_PREFE
                                                      "${sdk}" \
                                                      "${platform}" \
                                                      "${configuration}" \
-                                                     "${AVAILABLE_PLUGINS}"
+                                                     "${plugins}"
    case "$?" in
       0)
       ;;
 
       127)
-         fail "Don't know how to build \"${srcdir}\" with plugins \"${AVAILABLE_PLUGINS}\""
+         fail "Don't know how to build \"${srcdir}\" with plugins \"${plugins}\""
       ;;
 
       *)
@@ -516,8 +534,8 @@ list_main()
 
    local lf="
 "
-   r_print_definitions "${DEFINED_OPTIONS}" \
-                       "${DEFINED_PLUS_OPTIONS}" \
+   r_print_definitions "${DEFINED_SET_DEFINITIONS}" \
+                       "${DEFINED_PLUS_DEFINITIONS}" \
                        "" \
                        "=" \
                        "+=" \
@@ -547,25 +565,29 @@ _make_build_main()
    # will set MULLE_CORES
    r_get_core_count
 
-   local OPTION_PLUGIN_PREFERENCES='DEFAULT'
-   local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
-   local OPTION_CLEAN_BEFORE_BUILD="DEFAULT"
-   local OPTION_CONFIGURATION="DEFAULT"
-   local OPTION_DETERMINE_SDK="DEFAULT"
-   local OPTION_SDK="DEFAULT"
-   local OPTION_USE_NINJA="DEFAULT"
-   local OPTION_PLATFORM="DEFAULT"
+   #
+   # TODO: DEFINITIONS should not have DEFAULT values 
+   #     
+   local OPTION_ALLOW_UNKNOWN_OPTION
 
-   local OPTION_BUILD_DIR
-   local OPTION_LOG_DIR
-   local OPTION_PREFIX
-   local OPTION_INFO_DIR="DEFAULT"
-   local OPTION_ALLOW_SCRIPT="DEFAULT"
+   local DEFINITION_CLEAN_BEFORE_BUILD
+   local DEFINITION_CONFIGURATION
+   local DEFINITION_DETERMINE_SDK
+   local DEFINITION_SDK
+   local DEFINITION_USE_NINJA
+   local DEFINITION_PLATFORM
+   local DEFINITION_LIBRARY_STYLE
+   local DEFINITION_PREFERRED_LIBRARY_STYLE
+
+   # why are these definitions ?
+   local DEFINITION_BUILD_DIR
+   local DEFINITION_LOG_DIR
+   local DEFINITION_PREFIX
+
+   local OPTION_INFO_DIR
+   local OPTION_ALLOW_SCRIPT
    local OPTION_CORES
    local OPTION_LOAD
-   local OPTION_LIBRARY_STYLE
-   local OPTION_PREFERRED_LIBRARY_STYLE
-   local OPTION_MULLE_TEST_CMAKE="OFF"
    local OPTION_RERUN_CMAKE
 
    local state
@@ -613,65 +635,64 @@ _make_build_main()
          ;;
 
          --debug)
-            OPTION_CONFIGURATION='Debug'
+            DEFINITION_CONFIGURATION='Debug'
          ;;
 
          --release)
-            OPTION_CONFIGURATION='Release'
+            DEFINITION_CONFIGURATION='Release'
          ;;
 
          --mulle-test)
             OPTION_MULLE_TEST='YES'
-            OPTION_MULLE_TEST_CMAKE="ON" # ghack for definitons to
          ;;
 
          --ninja)
-            OPTION_USE_NINJA='YES'
+            DEFINITION_USE_NINJA='YES'
          ;;
 
          --no-ninja)
-            OPTION_USE_NINJA='NO'
+            DEFINITION_USE_NINJA='NO'
          ;;
 
          --determine-sdk)
-            OPTION_DETERMINE_SDK='YES'
+            DEFINITION_DETERMINE_SDK='YES'
          ;;
 
          --no-determine-sdk)
-            OPTION_DETERMINE_SDK='NO'
+            DEFINITION_DETERMINE_SDK='NO'
          ;;
 
          --name|--project-name)
-            read -r OPTION_PROJECT_NAME || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_PROJECT_NAME || fail "missing argument to \"${argument}\""
          ;;
 
          --language|--project-language)
-            read -r OPTION_PROJECT_LANGUAGE || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_PROJECT_LANGUAGE || fail "missing argument to \"${argument}\""
          ;;
 
-         --tools|--tool-preferences)
+         --plugins|--plugin-preferences|--tools|--tool-preferences)
             read -r argument || fail "missing argument to \"${argument}\""
 
             # convenient to allow empty parameter here (for mulle-bootstrap)
             if [ ! -z "${argument}" ]
             then
-               OPTION_PLUGIN_PREFERENCES="${argument}"
+               DEFINITION_PLUGIN_PREFERENCES="${argument}"
             fi
          ;;
 
          --xcode-config-file)
-            read -r OPTION_XCODE_XCCONFIG_FILE || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_XCODE_XCCONFIG_FILE || fail "missing argument to \"${argument}\""
          ;;
 
          #
          # with shortcuts
          #
          --build-dir)
-            read -r OPTION_BUILD_DIR || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_BUILD_DIR || fail "missing argument to \"${argument}\""
          ;;
 
          -c|--configuration)
-            read -r OPTION_CONFIGURATION || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_CONFIGURATION || fail "missing argument to \"${argument}\""
          ;;
 
          -d|--definition-dir|--info-dir|--makeinfo-dir)
@@ -693,24 +714,24 @@ _make_build_main()
          ;;
 
          --clean|-k)
-            OPTION_CLEAN_BEFORE_BUILD='YES'
+            DEFINITION_CLEAN_BEFORE_BUILD='YES'
          ;;
 
          --no-clean|-K)
-            OPTION_CLEAN_BEFORE_BUILD='NO'
+            DEFINITION_CLEAN_BEFORE_BUILD='NO'
          ;;
 
          --preferred-library-style)
-            read -r OPTION_PREFERRED_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_PREFERRED_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
          ;;
 
          --library-style)
-            read -r OPTION_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
          ;;
 
 
          --log-dir)
-            read -r OPTION_LOG_DIR || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_LOG_DIR || fail "missing argument to \"${argument}\""
          ;;
 
          -l|--load)
@@ -728,7 +749,7 @@ _make_build_main()
          ;;
 
          --platform)
-            read -r OPTION_PLATFORM || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_PLATFORM || fail "missing argument to \"${argument}\""
          ;;
 
          --phase)
@@ -736,15 +757,19 @@ _make_build_main()
          ;;
 
          --prefix)
-            read -r OPTION_PREFIX || fail "missing argument to \"${argument}\""
-            case "${OPTION_PREFIX}" in
+            read -r DEFINITION_PREFIX || fail "missing argument to \"${argument}\""
+            case "${DEFINITION_PREFIX}" in
                ""|/*)
                ;;
 
                *)
-                  fail "--prefix \"${OPTION_PREFIX}\", prefix must be absolute or empty"
+                  fail "--prefix \"${DEFINITION_PREFIX}\", prefix must be absolute or empty"
                ;;
             esac
+         ;;
+
+         --prefer-xcodebuild)
+            DEFINITION_PREFER_XCODEBUILD='YES'
          ;;
 
          --rerun-cmake)
@@ -752,7 +777,7 @@ _make_build_main()
          ;;
 
          -s|--sdk)
-            read -r OPTION_SDK || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_SDK || fail "missing argument to \"${argument}\""
          ;;
 
          '-D'*'+='*)
@@ -765,7 +790,7 @@ _make_build_main()
             # allow multiple -D+= values to appen values
             # useful for -DCFLAGS+= the most often used flag
             #
-            make_define_plusoption_keyvalue "${argument:2}" "append"
+            make_define_plus_keyvalue "${argument:2}" "append"
          ;;
 
          '-D'*)
@@ -774,7 +799,7 @@ _make_build_main()
                . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
             fi
 
-            make_define_option_keyvalue "${argument:2}"
+            make_define_set_keyvalue "${argument:2}"
          ;;
 
          '--ifempty'|'--append'|'--append0'|'--remove')
@@ -786,11 +811,11 @@ _make_build_main()
             read -r keyvalue || fail "missing argument to \"${argument}\""
             case "${keyvalue}" in
                *'+='*)
-                  make_define_plusoption_keyvalue "${keyvalue}" "${argument:2}"
+                  make_define_plus_keyvalue "${keyvalue}" "${argument:2}"
                ;;
 
                *)
-                  make_define_option_keyvalue "${keyvalue}" "${argument:2}"
+                  make_define_set_keyvalue "${keyvalue}" "${argument:2}"
                ;;
             esac
          ;;
@@ -806,17 +831,17 @@ _make_build_main()
 
          # as in /Library/Frameworks:Frameworks etc.
          -F|--frameworks-path)
-            read -r OPTION_FRAMEWORKS_PATH || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_FRAMEWORKS_PATH || fail "missing argument to \"${argument}\""
          ;;
 
          # as in /usr/include:/usr/local/include
          -I|--include-path)
-            read -r OPTION_INCLUDE_PATH || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_INCLUDE_PATH || fail "missing argument to \"${argument}\""
          ;;
 
          # as in /usr/lib:/usr/local/lib
          -L|--lib-path|--library-path)
-            read -r OPTION_LIB_PATH || fail "missing argument to \"${argument}\""
+            read -r DEFINITION_LIB_PATH || fail "missing argument to \"${argument}\""
          ;;
 
          -*)
@@ -860,23 +885,6 @@ _make_build_main()
       . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-sdk.sh" || return 1
    fi
 
-   if [ "${OPTION_PLUGIN_PREFERENCES}" = 'DEFAULT' ]
-   then
-      OPTION_PLUGIN_PREFERENCES='cmake:meson:autoconf:configure'
-      case "${MULLE_UNAME}" in
-         darwin)
-            if [ "${OPTION_PREFER_XCODEBUILD}" = 'YES' ]
-            then
-               r_colon_concat "xcodebuild" "${OPTION_PLUGIN_PREFERENCES}"
-               OPTION_PLUGIN_PREFERENCES="${RVAL}"
-            else
-               r_colon_concat "${OPTION_PLUGIN_PREFERENCES}" "xcodebuild"
-               OPTION_PLUGIN_PREFERENCES="${RVAL}"
-            fi
-         ;;
-      esac
-   fi
-
    local srcdir
 
    # export some variables
@@ -897,8 +905,8 @@ Maybe repair with:
       fail "Source directory \"${srcdir}\" is missing"
    fi
 
-   case "${OPTION_INFO_DIR}" in
-      'DEFAULT')
+   case "${OPTION_INFO_DIR:-Default}" in
+      'Default')
          OPTION_INFO_DIR="${srcdir}/.mulle/etc/craft/definition"
       ;;
 
@@ -931,16 +939,16 @@ Maybe repair with:
       ;;
 
       install)
-         # OPTION_PREFIX is used for regular builds that do not install
+         # DEFINITION_PREFIX is used for regular builds that do not install
          # if it is not defined, we require a destination directory
          local dstdir
 
          read -r dstdir
-         if [ ! -z "${OPTION_PREFIX}" ]
+         if [ ! -z "${DEFINITION_PREFIX}" ]
          then
             if [ -z "${dstdir}" ]
             then
-               dstdir="${OPTION_PREFIX}"
+               dstdir="${DEFINITION_PREFIX}"
             fi
          fi
 

@@ -35,7 +35,7 @@ r_find_autoconf()
 {
    local toolname
 
-   toolname="${OPTION_AUTOCONF:-${AUTOCONF:-autoconf}}"
+   toolname="${DEFINITION_AUTOCONF:-${AUTOCONF:-autoconf}}"
    r_verify_binary "${toolname}" "autoconf" "autoconf"
 }
 
@@ -44,7 +44,7 @@ r_find_autoreconf()
 {
    local toolname
 
-   toolname="${OPTION_AUTORECONF:-${AUTORECONF:-autoreconf}}"
+   toolname="${DEFINITION_AUTORECONF:-${AUTORECONF:-autoreconf}}"
    r_verify_binary "${toolname}" "autoreconf" "autoreconf"
 }
 
@@ -87,15 +87,17 @@ build_autoconf()
 
    [ $# -ge 9 ] || internal_fail "api error"
 
-   local command="$1"; shift
-   local projectfile="$1"; shift
-   local sdk="$1"; shift
-   local platform="$1"; shift
-   local configuration="$1"; shift
-   local srcdir="$1"; shift
-   local dstdir="$1"; shift
-   local kitchendir="$1"; shift
-   local logsdir="$1"; shift
+   local cmd="$1"
+   local projectfile="$2"
+   local sdk="$3"
+   local platform="$4"
+   local configuration="$5"
+   local srcdir="$6"
+   local dstdir="$7"
+   local kitchendir="$8"
+   local logsdir="$9"
+
+   shift 9
 
    local projectdir
 
@@ -110,8 +112,8 @@ build_autoconf()
    local autoconf_flags
    local autoreconf_flags
 
-   autoconf_flags="${OPTION_AUTOCONFFLAGS}"
-   autoreconf_flags="${OPTION_AUTORECONFFLAGS:--vif}"
+   autoconf_flags="${DEFINITION_AUTOCONFFLAGS}"
+   autoreconf_flags="${DEFINITION_AUTORECONFFLAGS:--vif}"
 
    mkdir_if_missing "${kitchendir}"
 
@@ -130,17 +132,20 @@ build_autoconf()
    local teefile1
    local teefile2
    local grepper
+   local greplog
 
    teefile1="/dev/null"
    teefile2="/dev/null"
    grepper="log_grep_warning_error"
+   greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" and \"${logfile2#${MULLE_USER_PWD}/}\""
+      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" \
+and \"${logfile2#${MULLE_USER_PWD}/}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
@@ -149,12 +154,13 @@ build_autoconf()
       teefile1="${RVAL}"
       teefile2="${teefile1}"
       grepper="log_delete_all"
+      greplog='NO'
    fi
 
    (
       exekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
 
-      PATH="${OPTION_PATH:-${PATH}}"
+      PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
@@ -162,26 +168,41 @@ build_autoconf()
       fi
 
       set -o pipefail # should be set already
-      if ! [ -f "aclocal4.am" ]
+
+      if [ -x "autogen.sh" ]
       then
-          # use absolute paths for configure, safer (and easier to read IMO)
-         if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
-                                        "${env_common}" \
-                                        "${AUTORECONF}" \
-                                        "${autoreconf_flags}" | ${grepper}
+         r_build_log_name "${logsdir}" "autogen.sh"
+         logfile1="${RVAL}"
+
+         if ! NOCONFIGURE=1 logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+                                                      "${env_common}" \
+                                                      "./autogen.sh" | ${grepper}
          then
             autoconf_set_needs_rerun "${projectfile}"
-            build_fail "${logfile1}" "autoreconf" "${PIPESTATUS[ 0]}"
+            build_fail "${logfile1}" "autogen.sh" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
-      fi
+      else
+         if ! [ -f "aclocal4.am" ]
+         then
+             # use absolute paths for configure, safer (and easier to read IMO)
+            if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+                                           "${env_common}" \
+                                           "${AUTORECONF}" \
+                                           "${autoreconf_flags}" | ${grepper}
+            then
+               autoconf_set_needs_rerun "${projectfile}"
+               build_fail "${logfile1}" "autoreconf" "${PIPESTATUS[ 0]}" "${greplog}"
+            fi
+         fi
 
-       # use absolute paths for configure, safer (and easier to read IMO)
-      if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
-                                     "${AUTOCONF}" \
-                                     "${autoconf_flags}" | ${grepper}
-      then
-         autoconf_set_needs_rerun "${projectfile}"
-         build_fail "${logfile2}" "autoconf" "${PIPESTATUS[ 0]}"
+          # use absolute paths for configure, safer (and easier to read IMO)
+         if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
+                                        "${AUTOCONF}" \
+                                        "${autoconf_flags}" | ${grepper}
+         then
+            autoconf_set_needs_rerun "${projectfile}"
+            build_fail "${logfile2}" "autoconf" "${PIPESTATUS[ 0]}" "${greplog}"
+         fi
       fi
    ) || exit 1
 
@@ -197,17 +218,18 @@ build_autoconf()
    fi
    PROJECTFILE="${RVAL}"
 
-   [ -z "${PROJECTFILE}" ] && internal_fail "r_test_configure did not set PROJECTFILE"
+   [ -z "${PROJECTFILE}" ] \
+   && internal_fail "r_test_configure did not set PROJECTFILE"
          #statements
 
    log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a reconf of \
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${kitchendir}\" ..."
 
-   if ! build_configure "${command}" \
+   if ! build_configure "${cmd}" \
                         "${PROJECTFILE}"  \
-                        "${configuration}" \
-                        "${platform}" \
                         "${sdk}" \
+                        "${platform}" \
+                        "${configuration}" \
                         "${srcdir}" \
                         "${dstdir}" \
                         "${kitchendir}" \
@@ -234,7 +256,8 @@ r_test_autoconf()
    then
       if ! r_find_nearest_matching_pattern "${srcdir}" "configure.in"
       then
-         log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no autoconf project found."
+         log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no autoconf \
+project found."
          return 1
       fi
    fi
@@ -254,17 +277,19 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
    r_dirname "${projectfile}"
    configurefile="${RVAL}/configure"
 
-   if [ "${OPTION_SKIP_AUTOCONF}" = 'YES' -a -f "${configurefile}" ]
+   if [ "${DEFINITION_SKIP_AUTOCONF}" = 'YES' -a -f "${configurefile}" ]
    then
-      log_fluff "${srcdir#${MULLE_USER_PWD}/}: Skip to configure due to option SKIP_AUTOCONF being set..."
+      log_fluff "${srcdir#${MULLE_USER_PWD}/}: Skip to configure due to \
+option SKIP_AUTOCONF being set..."
       return 1
    fi
 
-   if [ "${OPTION_AUTOCONF_CLEAN}" != 'NO' ]
+   if [ "${DEFINITION_AUTOCONF_CLEAN}" != 'NO' ]
    then
       if [ "${configurefile}" -nt "${projectfile}" ]
       then
-         log_fluff "${srcdir#${MULLE_USER_PWD}/}: Autoconf has already run once, skip to configure..."
+         log_fluff "${srcdir#${MULLE_USER_PWD}/}: Autoconf has already run \
+once, skip to configure..."
          return 1
       fi
    fi
@@ -273,13 +298,16 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
 
    if [ -z "${AUTOCONF}" ]
    then
-      log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a `basename -- "${projectfile}"`, but ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
+      r_basename "${projectfile}"
+      log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a \"${RVAL}\", but \
+${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
       return 1
    fi
 
    if [ -z "${AUTORECONF}" ]
    then
-      log_warning "${srcdir#${MULLE_USER_PWD}/}: No autoreconf executable found, will continue though"
+      log_warning "${srcdir#${MULLE_USER_PWD}/}: No autoreconf executable \
+found, will continue though"
    fi
 
    if [ -z "${MAKE}" ]

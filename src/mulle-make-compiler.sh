@@ -39,10 +39,10 @@ MULLE_MAKE_COMPILER_SH="included"
 #
 #    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
 #    then
-#       log_trace2 "CC:  ${OPTION_CC}"
+#       log_trace2 "CC:  ${DEFINITION_CC}"
 #    fi
 #
-#    name="${OPTION_CC}"
+#    name="${DEFINITION_CC}"
 #
 #    case "${MULLE_UNAME}" in
 #       mingw)
@@ -64,10 +64,10 @@ MULLE_MAKE_COMPILER_SH="included"
 #
 #    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
 #    then
-#       log_trace2 "CXX:  ${OPTION_CXX}"
+#       log_trace2 "CXX:  ${DEFINITION_CXX}"
 #    fi
 #
-#    name="${OPTION_CXX}"
+#    name="${DEFINITION_CXX}"
 #
 #    case "${MULLE_UNAME}" in
 #       mingw)
@@ -105,7 +105,7 @@ _r_compiler_configuration_options()
       *)
          case "${configuration}" in
             Debug|Test)
-               RVAL="${OPTION_CC_DEBUG:--g -O0}"
+               RVAL="${DEFINITION_CC_DEBUG:--g -O0}"
             ;;
          esac
       ;;
@@ -169,7 +169,7 @@ r_compiler_get_sdkpath()
 
    RVAL=""
 
-   if [ "${OPTION_DETERMINE_SDK}" = 'NO' ]
+   if [ "${DEFINITION_DETERMINE_SDK}" = 'NO' ]
    then
       return 1
    fi
@@ -207,34 +207,34 @@ r_compiler_cppflags_value()
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "ENV CPPFLAGS:   ${CPPFLAGS}"
-      log_trace2 "CPPFLAGS:       ${OPTION_CPPFLAGS}"
-      log_trace2 "OTHER_CPPFLAG:  ${OPTION_OTHER_CPPFLAGS}"
+      log_trace2 "CPPFLAGS:       ${DEFINITION_CPPFLAGS}"
+      log_trace2 "OTHER_CPPFLAG:  ${DEFINITION_OTHER_CPPFLAGS}"
    fi
 
    local cppflags
    local definition
 
-   if is_plus_key "OPTION_CPPFLAGS"
+   if is_plus_key "DEFINITION_CPPFLAGS"
    then
-      r_concat "${OPTION_CPPFLAGS}" "${CPPFLAGS}"
+      r_concat "${DEFINITION_CPPFLAGS}" "${CPPFLAGS}"
       cppflags="${RVAL}"
    else
-      cppflags="${OPTION_CPPFLAGS:-${CPPFLAGS}}"
+      cppflags="${DEFINITION_CPPFLAGS:-${CPPFLAGS}}"
    fi
 
-   r_concat "${result}" "${OPTION_OTHER_CPPFLAGS}"
+   r_concat "${result}" "${DEFINITION_OTHER_CPPFLAGS}"
    cppflags="${RVAL}"
 
    case "${compiler%.*}" in
       c++|cc|gcc*|*clang*|"")
          if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
          then
-            log_trace2 "OPTION_GCC_PREPROCESSOR_DEFINITIONS:  ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}"
+            log_trace2 "DEFINITION_GCC_PREPROCESSOR_DEFINITIONS:  ${DEFINITION_GCC_PREPROCESSOR_DEFINITIONS}"
          fi
 
          IFS=","
          set -o noglob
-         for definition in ${OPTION_GCC_PREPROCESSOR_DEFINITIONS}
+         for definition in ${DEFINITION_GCC_PREPROCESSOR_DEFINITIONS}
          do
             "${flag_definer}" "${i}"
             r_concat "${cppflags}" "${RVAL}"
@@ -264,10 +264,10 @@ _r_compiler_cflags_value()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "WARNING_CFLAGS:  ${OPTION_WARNING_CFLAGS}"
+      log_trace2 "WARNING_CFLAGS:  ${DEFINITION_WARNING_CFLAGS}"
    fi
 
-   result="${OPTION_WARNING_CFLAGS}"
+   result="${DEFINITION_WARNING_CFLAGS}"
 
    if [ "${addoptflags}" = 'YES' ]
    then
@@ -291,22 +291,22 @@ r_compiler_cflags_value()
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "ENV CFLAGS:      ${CFLAGS}"
-      log_trace2 "CFLAGS:          ${OPTION_CFLAGS}"
-      log_trace2 "OTHER_CFLAGS:    ${OPTION_OTHER_CFLAGS}"
+      log_trace2 "CFLAGS:          ${DEFINITION_CFLAGS}"
+      log_trace2 "OTHER_CFLAGS:    ${DEFINITION_OTHER_CFLAGS}"
    fi
 
    local result
 
-   # OPTION_LDFLAGS overrides LDFLAGS except it its += defined
-   if is_plus_key "OPTION_CFLAGS"
+   # DEFINITION_LDFLAGS overrides LDFLAGS except it its += defined
+   if is_plus_key "DEFINITION_CFLAGS"
    then
-      r_concat "${OPTION_CFLAGS}" "${CFLAGS}"
+      r_concat "${DEFINITION_CFLAGS}" "${CFLAGS}"
       result="${RVAL}"
    else
-      result="${OPTION_CFLAGS:-${CFLAGS}}"
+      result="${DEFINITION_CFLAGS:-${CFLAGS}}"
    fi
 
-   r_concat "${result}" "${OPTION_OTHER_CFLAGS}"
+   r_concat "${result}" "${DEFINITION_OTHER_CFLAGS}"
    result="${RVAL}"
 
    _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
@@ -326,21 +326,21 @@ r_compiler_cxxflags_value()
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "ENV CXXFLAGS:    ${CXXFLAGS}"
-      log_trace2 "CXXFLAGS:        ${OPTION_CXXFLAGS}"
-      log_trace2 "OTHER_CXXFLAGS:  ${OPTION_OTHER_CXXFLAGS}"
+      log_trace2 "CXXFLAGS:        ${DEFINITION_CXXFLAGS}"
+      log_trace2 "OTHER_CXXFLAGS:  ${DEFINITION_OTHER_CXXFLAGS}"
    fi
 
    local result
 
-   # OPTION_CXXFLAGS overrides CXXFLAGS except it its += defined
-   if is_plus_key "OPTION_CXXFLAGS"
+   # DEFINITION_CXXFLAGS overrides CXXFLAGS except it its += defined
+   if is_plus_key "DEFINITION_CXXFLAGS"
    then
-      r_concat "${OPTION_CXXFLAGS}" "${CXXFLAGS}"
+      r_concat "${DEFINITION_CXXFLAGS}" "${CXXFLAGS}"
       result="${RVAL}"
    else
-      result="${OPTION_CXXFLAGS:-${CXXFLAGS}}"
+      result="${DEFINITION_CXXFLAGS:-${CXXFLAGS}}"
    fi
-   r_concat "${result}" "${OPTION_OTHER_CXXFLAGS}"
+   r_concat "${result}" "${DEFINITION_OTHER_CXXFLAGS}"
    result="${RVAL}"
 
    _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
@@ -359,22 +359,22 @@ r_compiler_ldflags_value()
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "ENV LDFLAGS:     ${LDFLAGS}"
-      log_trace2 "LDFLAGS:         ${OPTION_LDFLAGS}"
-      log_trace2 "OTHER_LDFLAGS:   ${OPTION_OTHER_LDFLAGS}"
+      log_trace2 "LDFLAGS:         ${DEFINITION_LDFLAGS}"
+      log_trace2 "OTHER_LDFLAGS:   ${DEFINITION_OTHER_LDFLAGS}"
    fi
 
    local result
 
-   # OPTION_LDFLAGS overrides LDFLAGS except it its += defined
-   if is_plus_key "OPTION_LDFLAGS"
+   # DEFINITION_LDFLAGS overrides LDFLAGS except it its += defined
+   if is_plus_key "DEFINITION_LDFLAGS"
    then
-      r_concat "${OPTION_LDFLAGS}" "${LDFLAGS}"
+      r_concat "${DEFINITION_LDFLAGS}" "${LDFLAGS}"
       result="${RVAL}"
    else
-      result="${OPTION_LDFLAGS:-${LDFLAGS}}"
+      result="${DEFINITION_LDFLAGS:-${LDFLAGS}}"
    fi
 
-   r_concat "${result}" "${OPTION_OTHER_LDFLAGS}"
+   r_concat "${result}" "${DEFINITION_OTHER_LDFLAGS}"
    result="${RVAL}"
 
    # doesn't work for me though...

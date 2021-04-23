@@ -120,14 +120,16 @@ build_load_plugin()
 }
 
 
-build_load_plugins()
+r_build_load_plugins()
 {
-   log_entry "build_load_plugins" "$@"
+   log_entry "r_build_load_plugins" "$@"
 
    local preferences="$1"
 
    local preference
-   AVAILABLE_PLUGINS=
+   local result 
+
+   result=
    IFS=':'; set -o noglob
    for preference in ${preferences}
    do
@@ -137,11 +139,13 @@ build_load_plugins()
       then
          continue
       fi
-      r_add_line "${AVAILABLE_PLUGINS}" "${preference}"
-      AVAILABLE_PLUGINS="${RVAL}"
+      r_add_line "${result}" "${preference}"
+      result="${RVAL}"
    done
 
    IFS="${DEFAULT_IFS}"; set +o noglob
+
+   RVAL="${result}"
 }
 
 :

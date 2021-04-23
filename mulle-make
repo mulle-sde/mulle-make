@@ -96,6 +96,11 @@ Usage:
    "-DFOO=1 -DOTHER_CPPFLAGS=-fPIC". Keep a permanent set of these definitions
    around  with the \'definition\' command.
 
+   mulle-make will try to guess what kind of build system to use and how to 
+   invoke it. But there is no guarantee that it will work. As mulle-make can
+   run outside of a mulle-env environment, you can also pass in CFLAGS and
+   other environment variables.
+
    See \`mulle-make project -h\` for more help.
 
 Flags:
@@ -202,7 +207,7 @@ _main()
          # shellcheck source=src/mulle-make-build.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
-         # possibly uncomsumed argument
+         # possibly unconsumed argument
          make_build_main "${argument}"
       ;;
 
@@ -317,7 +322,8 @@ _init()
       then
          if [ -z "`command -v "${executablepath}"`" ]
          then
-            echo "Fatal Error: Could not find mulle-bashfunctions-env in PATH ($PATH) - mulle-bashfunctions not installed ?" >&2
+            echo "Fatal Error: Could not find mulle-bashfunctions-env in \
+PATH ($PATH) - mulle-bashfunctions not installed ?" >&2
          else
             echo "Fatal Error: Could not find libexec of mulle-bashfunctions-env ($PWD)" >&2
          fi

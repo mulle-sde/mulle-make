@@ -39,7 +39,7 @@ r_sdk_cflags()
    local sdk="$1"
    local platform="$2"
 
-   if [ "${OPTION_DETERMINE_SDK}" = 'NO' ]
+   if [ "${DEFINITION_DETERMINE_SDK}" = 'NO' ]
    then
       return
    fi

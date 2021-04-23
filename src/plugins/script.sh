@@ -33,14 +33,14 @@ MULLE_MAKE_PLUGIN_SCRIPT_SH="included"
 
 r_build_script_absolutepath()
 {
-   if [ -z "${OPTION_BUILD_SCRIPT}" ]
+   if [ -z "${DEFINITION_BUILD_SCRIPT}" ]
    then
       log_fluff "There is no BUILD_SCRIPT defined"
       return 1
    fi
 
-   RVAL="${OPTION_BUILD_SCRIPT}"
-   if is_absolutepath "${OPTION_BUILD_SCRIPT}"
+   RVAL="${DEFINITION_BUILD_SCRIPT}"
+   if is_absolutepath "${DEFINITION_BUILD_SCRIPT}"
    then
       return 0
    fi
@@ -50,10 +50,10 @@ r_build_script_absolutepath()
    local directory
    local option
 
-   r_dirname "${OPTION_BUILD_SCRIPT}"
+   r_dirname "${DEFINITION_BUILD_SCRIPT}"
    directory="${RVAL}"
 
-   case "${OPTION_BUILD_SCRIPT}" in
+   case "${DEFINITION_BUILD_SCRIPT}" in
       /*)
          searchpath="${directory}"
       ;;
@@ -69,13 +69,13 @@ r_build_script_absolutepath()
 
       *)
          # ${DEPENDENCY_DIR}/bin ought to be in PATH already
-         # also adhere to OPTION_PATH, but use "PATH" as default
-         r_colon_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${OPTION_PATH:-${PATH}}"
+         # also adhere to DEFINITION_PATH, but use "PATH" as default
+         r_colon_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${DEFINITION_PATH:-${PATH}}"
          searchpath="${RVAL}"
       ;;
    esac
 
-   r_basename "${OPTION_BUILD_SCRIPT}"
+   r_basename "${DEFINITION_BUILD_SCRIPT}"
    filename="${RVAL}"
 
    log_fluff "Looking for script \"${filename}\" in \"${searchpath}\""
@@ -97,15 +97,17 @@ build_script()
 
    [ $# -ge 9 ] || internal_fail "api error"
 
-   local command="$1"; shift
-   local projectinfo="$1"; shift
-   local sdk="$1"; shift
-   local platform="$1"; shift
-   local configuration="$1"; shift
-   local srcdir="$1"; shift
-   local dstdir="$1"; shift
-   local kitchendir="$1"; shift
-   local logsdir="$1"; shift
+   local cmd="$1"
+   local projectfile="$2"
+   local sdk="$3"
+   local platform="$4"
+   local configuration="$5"
+   local srcdir="$6"
+   local dstdir="$7"
+   local kitchendir="$8"
+   local logsdir="$9"
+
+   shift 9
 
    local buildscript
    local projectdir
@@ -137,9 +139,11 @@ build_script()
 
    local teefile1
    local grepper
-
+   local greplog
+   
    teefile1="/dev/null"
    grepper="log_grep_warning_error"
+   greplog="YES"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -153,6 +157,7 @@ build_script()
       r_safe_tty
       teefile1="${RVAL}"
       grepper="log_delete_all"
+      greplog="NO"
    fi
 
    (
@@ -179,9 +184,9 @@ build_script()
                      --install-dir "'${dstdir}'" \
                      --platform "'${platform}'" \
                      --sdk "'${sdk}'" \
-                     "'${command}'"  | ${grepper}
+                     "'${cmd}'"  | ${grepper}
       then
-         build_fail "${logfile1}" "${scriptname}" "${PIPESTATUS[ 0]}"
+         build_fail "${logfile1}" "${scriptname}" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
    ) || exit 1
 }
