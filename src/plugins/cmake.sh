@@ -779,12 +779,12 @@ build_cmake()
 
    local makeflags
    local makefile 
-   local native_builddir
+   local native_kitchendir
 
    r_convert_path_to_native "${absbuilddir}"
    native_kitchendir="${RVAL}"
 
-   r_build_makefile "${MAKE}" "${native_builddir}"
+   r_build_makefile "${MAKE}" "${native_kitchendir}"
    makefile="${RVAL}"
 
    r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}" 
@@ -792,18 +792,27 @@ build_cmake()
 
    local run_cmake
 
-   run_cmake='YES'
-
+   #
    # phases need to rerun cmake
-   if [ -z "${OPTION_PHASE}" -a "${OPTION_RERUN_CMAKE}" != 'YES' ]
+   #
+   if [ ! -z "${OPTION_PHASE}" ]
+   then
+      run_cmake='YES'
+   else
+      run_cmake="${OPTION_RERUN_CMAKE:-DEFAULT}"
+   fi
+
+   if [ "${run_cmake}" = 'DEFAULT' ]
    then
       if ! cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
       then
          run_cmake='NO'
-         log_fluff "Cmake run skipped as no changes to cmake files have been \
+         log_fluff "cmake skipped, as no changes to cmake files have been \
 found in \"${absprojectdir}\""
+      else
+         run_cmake='YES'
       fi
-   fi
+   fi      
 
    local env_common
 
