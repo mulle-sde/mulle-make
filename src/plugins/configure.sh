@@ -101,17 +101,22 @@ build_configure()
    r_sdk_cflags "${sdk}" "${platform}"
    r_concat "${cflags}" "${RVAL}"
 
-   if [ ! -z "${cppflags}" ]
-   then
-      r_concat "${cflags}" "${cppflags}"
-      cflags="${RVAL}"
+#
+# cppflags should not be duplicated into CFLAGS and CXXFLAGS for configure.
+# cmake has no CMAKE_CPP_FLAGS so we have to do it there
 
-      if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
-      then
-         r_concat "${cxxflags}" "${cppflags}"
-         cxxflags="${RVAL}"
-      fi
-   fi
+#
+#   if [ ! -z "${cppflags}" ]
+#   then
+#      r_concat "${cflags}" "${cppflags}"
+#      cflags="${RVAL}"
+#
+#      if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
+#      then
+#         r_concat "${cxxflags}" "${cppflags}"
+#         cxxflags="${RVAL}"
+#      fi
+#   fi
 
    local maketarget
    local arguments

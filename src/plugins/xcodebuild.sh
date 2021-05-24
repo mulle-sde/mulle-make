@@ -55,19 +55,19 @@ tools_environment_xcodebuild()
 # _xcode_get_setting()
 # {
 #    log_entry "_xcode_get_setting" "$@"
-# 
+#
 #    exekutor "${XCODEBUILD:-xcodebuild}" -showBuildSettings "$@" || fail "failed to read xcode settings"
 # }
-# 
-# 
+#
+#
 # xcode_get_setting()
 # {
 #    log_entry "xcode_get_setting" "$@"
-# 
+#
 #    local key=$1; shift
-# 
+#
 #    _xcode_get_setting "$@" | egrep "^[ ]*${key}" | sed 's/^[^=]*=[ ]*\(.*\)/\1/'
-# 
+#
 #    return 0
 # }
 
@@ -355,8 +355,8 @@ EOF
 
    local teefile1
    local grepper
-   local greplog 
-   
+   local greplog
+
    teefile1="/dev/null"
    grepper="log_grep_warning_error"
    greplog='YES'

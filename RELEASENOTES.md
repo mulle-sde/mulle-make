@@ -1,3 +1,11 @@
+## 0.16.0
+
+* autoconf now supports `autogen.sh`
+* improved grep through log files in non-verbose mode
+* make the set command append by default for the benefit of definition files
+* **CFLAGS, CXXFLAGS and LDFLAGS are now picked up from the environment**
+
+
 ## 0.15.0
 
 * "project" is now the 'official' default command name and not the synonymous make/build

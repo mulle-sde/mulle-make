@@ -121,6 +121,7 @@ build_autoconf()
    # so merge into CFLAGS and CXXFLAGS
 
    local logfile1
+   local logfile2
 
    mkdir_if_missing "${logsdir}"
 

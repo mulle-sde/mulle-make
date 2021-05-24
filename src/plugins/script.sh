@@ -140,7 +140,7 @@ build_script()
    local teefile1
    local grepper
    local greplog
-   
+
    teefile1="/dev/null"
    grepper="log_grep_warning_error"
    greplog="YES"

@@ -474,7 +474,19 @@ build_fail()
 
    case "$rval" in 
       127)
-         fail "${command} is apparently not in PATH"
+         if [ -z "${MULLE_VIRTUAL_ROOT}" ]
+         then
+            fail "${command} is apparently not in PATH."
+         fi
+
+         if [ -z `mudo command -v "${command}"` ]
+         then
+            fail "${command} is not installed in PATH."
+         fi
+
+         fail "${command} is not available.
+${C_INFO}You may want to add it with
+${C_RESET_BOLD}   mulle-sde tool --global add --optional ${command}"
       ;;
 
       *)
@@ -501,7 +513,8 @@ r_build_log_name()
    countfile="${logsdir}/.count"
 
    local count
-
+   local logfile 
+   
    count="`cat "${countfile}" 2> /dev/null`"
    count=${count:-0}
 
@@ -513,7 +526,7 @@ r_build_log_name()
 
       if [ ! -f "${logfile}" ]
       then
-         redirect_exekutor "${countfile}" printf "%s\n" "$count"
+         redirect_exekutor "${countfile}" printf "%s\n" "${count}"
          RVAL="${logfile}"
          return
       fi

@@ -449,7 +449,7 @@ build_cmake()
    # r_sdkpath_tool_flags for platforms other than macos
    # where we are using CMAKE_OSX_SYSROOT
    #
-   case "${MULLE_UNAME}" in 
+   case "${MULLE_UNAME}" in
       darwin)
       ;;
 
@@ -472,12 +472,14 @@ build_cmake()
    r_librarypath_linker_flags
    r_concat "${ldflags}" "${RVAL}"
    ldflags="${RVAL}"
-   
+
    #
    # basically adds some flags for android based on chosen SDK
    #
    r_sdk_cflags "${sdk}" "${platform}"
    r_concat "${cflags}" "${RVAL}"
+
+   # cmake has no CMAKE_CPP_FLAGS so we have to merge them into CMAKE_C_CFLAGS
 
    if [ ! -z "${cppflags}" ]
    then
@@ -778,7 +780,7 @@ build_cmake()
    cmakeflags="${RVAL}"
 
    local makeflags
-   local makefile 
+   local makefile
    local native_kitchendir
 
    r_convert_path_to_native "${absbuilddir}"
@@ -787,7 +789,7 @@ build_cmake()
    r_build_makefile "${MAKE}" "${native_kitchendir}"
    makefile="${RVAL}"
 
-   r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}" 
+   r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"
    makeflags="${RVAL}"
 
    local run_cmake
@@ -812,7 +814,7 @@ found in \"${absprojectdir}\""
       else
          run_cmake='YES'
       fi
-   fi      
+   fi
 
    local env_common
 
@@ -872,7 +874,7 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
-      fi 
+      fi
 
       set -o pipefail # should be set already
       if [ "${run_cmake}" = 'YES' ]

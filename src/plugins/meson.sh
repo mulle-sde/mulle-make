@@ -166,17 +166,21 @@ build_meson()
    r_sdk_cflags "${sdk}" "${platform}"
    r_concat "${cflags}" "${RVAL}"
 
-   if [ ! -z "${cppflags}" ]
-   then
-      r_concat "${cflags}" "${cppflags}"
-      cflags="${RVAL}"
+   #
+   # not really sure about what MESON wants, assume its like configure
+   # and does CPPFLAGS
 
-      if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
-      then
-         r_concat "${cxxflags}" "${cppflags}"
-         cxxflags="${RVAL}"
-      fi
-   fi
+   # if [ ! -z "${cppflags}" ]
+   # then
+   #    r_concat "${cflags}" "${cppflags}"
+   #    cflags="${RVAL}"
+   #
+   #    if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
+   #    then
+   #       r_concat "${cxxflags}" "${cppflags}"
+   #       cxxflags="${RVAL}"
+   #    fi
+   # fi
 
    local rel_project_dir
    local absbuilddir
@@ -355,7 +359,7 @@ build_meson()
    local teefile2
    local grepper
    local greplog
-   
+
    teefile1="/dev/null"
    teefile2="/dev/null"
    grepper="log_grep_warning_error"

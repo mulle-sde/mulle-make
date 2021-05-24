@@ -393,7 +393,9 @@ check_option_key_without_prefix()
 
    local identifier
 
-   identifier="`printf "%s" "${key}" | tr -c 'a-zA-Z0-9' '_' | tr 'a-z' 'A-Z'`"
+   r_identifier "${key}"
+   identifier="${RVAL}"
+
    if [ "${key}" != "${identifier}" ]
    then
       fail "\"${key}\" is not a proper upcase identifier. Suggestion: \"${identifier}\""
@@ -695,12 +697,12 @@ read_definition_dir()
    then
       if [ ! -z "${directory}" ]
       then
-         log_fluff "There is no \"${directory}\" here ($PWD)"
+         log_fluff "There is no \"${directory#${MULLE_USER_PWD}/}\" here ($PWD)"
       fi
       return
    fi
 
-   log_verbose "Read definition ${C_RESET_BOLD}${directory}${C_VERBOSE}"
+   log_verbose "Read definition ${C_RESET_BOLD}${directory#${MULLE_USER_PWD}/}${C_VERBOSE}"
 
    directory="${directory}"
 
@@ -724,7 +726,7 @@ remove_other_keyfiles_than()
 {
    log_entry "remove_other_keyfiles_than" "$@"
 
-   local keyfile="$1" ; shift
+   local keyfile="$1" ; shift # empty is ok
 
    local otherfile
    while [ $# -ne 0 ]

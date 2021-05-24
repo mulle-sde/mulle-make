@@ -160,11 +160,14 @@ install_usage()
 {
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} install [options] [srcdir] [dstdir]
+   ${MULLE_USAGE_NAME} install [options] [src] [dst]
 
-   Build the project in src. Then the build results are installed in
-   dst.  If dst is omitted '/tmp' is used. If --prefix is specified, do not
-   specify dst.
+   Build the project in the directory src. Then the build results are 
+   installed in dst.  If dst is omitted '/tmp' is used. If --prefix is 
+   specified during options, do not specify dst as well.
+
+Example:
+   mulle-sde install "${HOME}/src/mulle-buffer" /tmp/usr
 
 Options:
 EOF
@@ -518,7 +521,10 @@ There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_P
       ;;
 
       127)
-         fail "Don't know how to build \"${srcdir}\" with plugins \"${plugins}\""
+         local pluginstring
+
+         pluginstring="`sort <<< "${plugins}" | tr '\n' ',' `"
+         fail "Don't know how to build \"${srcdir}\" with plugins ${pluginstring%%,}"
       ;;
 
       *)
