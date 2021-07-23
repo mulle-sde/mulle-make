@@ -1,9 +1,6 @@
 ## 0.16.0
 
-* autoconf now supports `autogen.sh`
-* improved grep through log files in non-verbose mode
-* make the set command append by default for the benefit of definition files
-* **CFLAGS, CXXFLAGS and LDFLAGS are now picked up from the environment**
+* Various small improvements
 
 
 ## 0.15.0
