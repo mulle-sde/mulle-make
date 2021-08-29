@@ -319,12 +319,17 @@ r_cmake_userdefined_definitions()
    local cmakevalue
    local cmakeflags
 
-   set -o noglob; IFS=$'\n'
+   shell_disable_glob; IFS=$'\n'
    for key in ${keys}
    do
-      IFS="${DEFAULT_IFS}"; set +o noglob
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
 
-      value="${!key}"
+      if [ ! -z "${ZSH_VERSION}" ]
+      then
+         value="${(P)key}"
+      else
+         value="${!key}"
+      fi
       r_escaped_shell_string "${value}"
 
       # change to cmake separator
@@ -339,7 +344,7 @@ r_cmake_userdefined_definitions()
       r_cmakeflags_add_flag "${cmakeflags}" "${key#DEFINITION_}" "${value}"
       cmakeflags="${RVAL}"
    done
-   IFS="${DEFAULT_IFS}"; set +o noglob
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
 
 
    RVAL="${cmakeflags}"
@@ -478,6 +483,7 @@ build_cmake()
    #
    r_sdk_cflags "${sdk}" "${platform}"
    r_concat "${cflags}" "${RVAL}"
+   cflags="${RVAL}"
 
    # cmake has no CMAKE_CPP_FLAGS so we have to merge them into CMAKE_C_CFLAGS
 
@@ -574,13 +580,13 @@ build_cmake()
 
       lines="${RVAL}"
 
-      set -o noglob; IFS=$'\n'
+      shell_disable_glob; IFS=$'\n'
       for line in ${lines}
       do
          r_cmakeflags_add "${cmakeflags}" "${line}"
          cmakeflags="${RVAL}"
       done
-      IFS="${DEFAULT_IFS}" ; set +o noglob
+      IFS="${DEFAULT_IFS}" ; shell_enable_glob
    fi
 
    local maketarget
@@ -797,23 +803,48 @@ build_cmake()
    #
    # phases need to rerun cmake
    #
-   if [ ! -z "${OPTION_PHASE}" ]
+   # Also, to flip/flop between serial and parallel phases, we should remember
+   # this and then rerun cmake if we detect a change. We also want to blow
+   # away the cache then.
+   #
+   run_cmake='YES'
+
+   if [ "${MULLE_FLAG_MAGNUM_FORCE}" = 'YES' ] # -o "${OPTION_PHASE}" = 'Headers' ]
    then
-      run_cmake='YES'
+      remove_file_if_present "${kitchendir}/CMakeCache.txt"
    else
-      run_cmake="${OPTION_RERUN_CMAKE:-DEFAULT}"
+      #
+      # for singlephase only, figure out, if we can skip rerunning cmake,
+      #
+      if [ -z "${OPTION_PHASE}" ]
+      then
+         local oldphase
+
+         oldphase="`rexekutor egrep -v '^#' "${kitchendir}/.phase" 2> /dev/null `"
+         if [ -z "${oldphase}" ]
+         then
+            run_cmake="${OPTION_RERUN_CMAKE:-DEFAULT}"
+         fi
+
+         if [ "${run_cmake}" = 'DEFAULT' ]
+         then
+            if ! cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
+            then
+               run_cmake='NO'
+               log_fluff "cmake skipped, as no changes to cmake files have been \
+found in \"${absprojectdir#${MULLE_USER_PWD}/}\""
+            else
+               run_cmake='YES'
+            fi
+         fi
+      fi
    fi
 
-   if [ "${run_cmake}" = 'DEFAULT' ]
+   if [ -z "${OPTION_PHASE}" ]
    then
-      if ! cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
-      then
-         run_cmake='NO'
-         log_fluff "cmake skipped, as no changes to cmake files have been \
-found in \"${absprojectdir}\""
-      else
-         run_cmake='YES'
-      fi
+      remove_file_if_present "${kitchendir}/.phase"
+   else
+      redirect_exekutor "${kitchendir}/.phase" echo "${OPTION_PHASE}"
    fi
 
    local env_common
@@ -876,7 +907,6 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
          env | sort >&2
       fi
 
-      set -o pipefail # should be set already
       if [ "${run_cmake}" = 'YES' ]
       then
          if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
@@ -888,7 +918,25 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
          then
             build_fail "${logfile1}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
+
+         #
+         # This is for OPTION_PHASE=Headers, if there are no headers to install
+         # cmake doesn't create an entry for "install" in the ninja build
+         # file and ninja freaks out.
+         #
+         if [ "${OPTION_PHASE}" = 'Headers' -a "${maketarget}" = 'install' ]
+         then
+            if [ -e "build.ninja" -a -e "cmake_install.cmake" ]
+            then
+               if ! rexekutor egrep -q ' *cmake_install.cmake$' "build.ninja"
+               then
+                  log_verbose "No headers to install. Skipping ${MAKE}"
+                  return 0
+               fi
+            fi
+         fi
       fi
+
       if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
                "'${MAKE}'" "${MAKEFLAGS}" "${makeflags}" "${maketarget}" | ${grepper}

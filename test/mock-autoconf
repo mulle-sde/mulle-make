@@ -15,8 +15,12 @@ main()
    local filename
 
    envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z]'`_REDIRECT_FILE"
-   filename="${!envvar}"
-
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      filename="${(P)envvar}"
+   else
+      filename="${!envvar}"
+   fi
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""

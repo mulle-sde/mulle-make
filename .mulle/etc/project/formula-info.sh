@@ -9,5 +9,5 @@ LANGUAGE="bash"                # c,cpp, objc, bash ...
 
 DEPENDENCIES='${MULLE_NAT_TAP}mulle-bashfunctions'
 
-DEBIAN_DEPENDENCIES="mulle-bashfunctions (>= 3.1.0)"
+DEBIAN_DEPENDENCIES="mulle-bashfunctions (>= 4.0.0)"
 DEBIAN_RECOMMENDATIONS="build-essential"

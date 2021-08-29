@@ -79,21 +79,21 @@ r_convert_path_to_value()
 {
    log_entry "r_convert_path_to_value" "$@"
 
-   local path="$1"
+   local filepath="$1"
    local inherit="${2:-NO}"
 
    local output
    local component
 
    IFS=':'
-   set -o noglob
-   for component in ${path}
+   shell_disable_glob
+   for component in ${filepath}
    do
       r_concat "${output}" "${component}"
       output="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
-   set +o noglob
+   shell_enable_glob
 
    if [ "${inherit}" = 'YES' -a ! -z "${inherit}" ]
    then
@@ -377,7 +377,7 @@ EOF
    fi
 
    (
-      set -f  # prevent bash from expanding glob
+      shell_disable_glob  # prevent bash from expanding glob
 
       exekutor cd "${projectdir}" || exit 1
 
@@ -390,7 +390,6 @@ EOF
          env | sort >&2
       fi
 
-      set -o pipefail # should be set already
       # if it doesn't install, probably SKIP_INSTALL is set
       if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                                      "${env_common}" \
@@ -417,17 +416,17 @@ build_xcodebuild()
 
    schemes="${DEFINITION_SCHEMES}"
    IFS=$'\n'
-   set -o noglob
+   shell_disable_glob
    for scheme in $schemes
    do
       IFS="${DEFAULT_IFS}"
-      set +o noglob
+      shell_enable_glob
 
       log_fluff "Building scheme \"${scheme}\" of \"${project}\" ..."
       _build_xcodebuild "$@" "${scheme}" ""
    done
    IFS="${DEFAULT_IFS}"
-   set +o noglob
+   shell_enable_glob
 
    local target
    local targets
@@ -435,17 +434,17 @@ build_xcodebuild()
    targets="${DEFINITION_TARGETS}"
 
    IFS=$'\n'
-   set -o noglob
+   shell_disable_glob
    for target in $targets
    do
       IFS="${DEFAULT_IFS}"
-      set +o noglob
+      shell_enable_glob
 
       log_fluff "Building target \"${target}\" of \"${project}\" ..."
       _build_xcodebuild "$@" "" "${target}"
    done
    IFS="${DEFAULT_IFS}"
-   set +o noglob
+   shell_enable_glob
 
    if [ -z "${targets}" -a -z "${schemes}" ]
    then

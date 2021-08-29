@@ -302,7 +302,12 @@ r_print_definitions()
    do
       IFS="${DEFAULT_IFS}"
 
-      value="${!key}"
+      if [ ! -z "${ZSH_VERSION}" ]
+      then
+         value="${(P)key}"
+      else
+         value="${!key}"
+      fi
       r_concat "${s}" "${prefix}${key#DEFINITION_}${sep}${quote}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    done
@@ -316,7 +321,12 @@ r_print_definitions()
    do
       IFS="${DEFAULT_IFS}"
 
-      value="${!key}"
+      if [ ! -z "${ZSH_VERSION}" ]
+      then
+         value="${(P)key}"
+      else
+         value="${!key}"
+      fi
       r_concat "${s}" "${prefix}${key#DEFINITION_}${plussep}${quote}${pluspref}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    done
@@ -465,7 +475,12 @@ _make_define_option()
    local optkey
 
    optkey="DEFINITION_$key"
-   oldvalue="${!optkey}"
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      oldvalue="${(P)optkey}"
+   else
+      oldvalue="${!optkey}"
+   fi
    case "${option}" in
       'ifempty')
          if [ ! -z "${oldvalue}" ]
@@ -513,7 +528,7 @@ _make_define_option()
 
    printf -v "${optkey}" "%s" "${value}"
 
-   log_fluff "${optkey} defined as \"${!optkey}\""
+   log_fluff "${optkey} defined as '${value}'"
 }
 
 
@@ -639,10 +654,10 @@ read_defines_dir()
    local read_value
    local filename
 
-   shopt -s nullglob
+   shell_enable_nullglob
    for filename in "${directory}"/[A-Z_][A-Z0-9_]*
    do
-      shopt -u nullglob
+      shell_disable_nullglob
 
       r_basename "${filename}"
       key="${RVAL}"
@@ -678,7 +693,7 @@ read_defines_dir()
 
       "${callback}" "${key}" "${value}" "${option}"
    done
-   shopt -u nullglob
+   shell_disable_nullglob
 }
 
 
@@ -697,7 +712,7 @@ read_definition_dir()
    then
       if [ ! -z "${directory}" ]
       then
-         log_fluff "There is no \"${directory#${MULLE_USER_PWD}/}\" here ($PWD)"
+         log_fluff "There is no \"${directory#${MULLE_USER_PWD}/}\" here (${PWD#${MULLE_USER_PWD}/})"
       fi
       return
    fi
@@ -944,7 +959,12 @@ get_definition_dir()
    varkey="DEFINITION_${key}"
    if [ "${OPTION_OUTPUT_KEY}" = 'YES' ]
    then
-      value="${!varkey}"
+      if [ ! -z "${ZSH_VERSION}" ]
+      then
+         value="${(P)varkey}"
+      else
+         value="${!varkey}"
+      fi
       printf "%s\n" "${key}='${value}'"
    else
       eval echo "\$$varkey"

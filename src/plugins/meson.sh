@@ -402,8 +402,6 @@ build_meson()
          rmdir_safer "${kitchendir}"
       fi
 
-      set -o pipefail # should be set already
-
       if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                "${env_common}" \
                "${meson_env}" \

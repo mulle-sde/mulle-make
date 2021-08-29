@@ -80,7 +80,7 @@ main()
 {
    MULLE_MAKE_FLAGS="$@"
 
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
 
    #

@@ -42,16 +42,21 @@ emit_env()
    local key
    local value
 
-   set -f; IFS=':'
+   shell_disable_glob; IFS=':'
    for key in ${__MULLE_MAKE_ENV_ARGS}
    do
       if [ ! -z "${key}" ]
       then
-         value="${!key}"
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            value="${(P)key}"
+         else
+            value="${!key}"
+         fi
          echo "[${key}=${value}]"
       fi
    done
-   set +f ; IFS="${DEFAULTIFS}"
+   shell_enable_glob ; IFS="${DEFAULTIFS}"
 }
 
 
@@ -71,8 +76,12 @@ main()
       fail "not called by mulle-make (__MULLE_MAKE_ENV_ARGS is missing)"
 
    envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z]'`_REDIRECT_FILE"
-   filename="${!envvar}"
-
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      filename="${(P)envvar}"
+   else
+      filename="${!envvar}"
+   fi
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""

@@ -119,11 +119,12 @@ main()
 {
    MULLE_MAKE_FLAGS="$@"
 
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
    local directory
 
-   directory="`make_tmp_directory`" || exit 1
+   r_make_tmp_directory || exit 1
+   directory="${RVAL}"
    directory="${directory:-/tmp/build}"
 
    #

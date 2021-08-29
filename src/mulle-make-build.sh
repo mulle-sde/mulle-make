@@ -323,7 +323,8 @@ build_with_sdk_platform_configuration_preferences()
    #
    # remove symlinks
    #
-   srcdir="`canonicalize_path "${srcdir}"`"
+   r_canonicalize_path "${srcdir}"
+   srcdir="${RVAL}"
 
    local kitchendir
 
@@ -336,16 +337,19 @@ build_with_sdk_platform_configuration_preferences()
    mkdir_build_directories "${kitchendir}" "${logsdir}"
 
    # now known to exist, so we can canonicalize
-   kitchendir="`canonicalize_path "${kitchendir}"`"
-   logsdir="`canonicalize_path "${logsdir}"`"
+   r_canonicalize_path "${kitchendir}"
+   kitchendir="${RVAL}"
+   
+   r_canonicalize_path "${logsdir}"
+   logsdir="${RVAL}"
 
    local rval
    local preference
 
-   set -o noglob
+   shell_disable_glob
    for preference in ${preferences}
    do
-      set +o noglob
+      shell_enable_glob
       # pass local context w/o arguments
       __build_with_preference_if_possible
 
@@ -355,7 +359,7 @@ build_with_sdk_platform_configuration_preferences()
          return "${rval}"
       fi
    done
-   set +o noglob
+   shell_enable_glob
 
    return 127
 }

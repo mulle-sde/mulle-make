@@ -206,24 +206,31 @@ r_compiler_cppflags_value()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "ENV CPPFLAGS:   ${CPPFLAGS}"
-      log_trace2 "CPPFLAGS:       ${DEFINITION_CPPFLAGS}"
-      log_trace2 "OTHER_CPPFLAG:  ${DEFINITION_OTHER_CPPFLAGS}"
+      log_trace2 "ENV CPPFLAGS:       ${CPPFLAGS}"
+      log_trace2 "ENV OTHER_CPPFLAGS: ${OTHER_CPPFLAGS}"
+      log_trace2 "CPPFLAGS:           ${DEFINITION_CPPFLAGS}"
+      log_trace2 "OTHER_CPPFLAG:      ${DEFINITION_OTHER_CPPFLAGS}"
    fi
 
-   local cppflags
-   local definition
+   local result 
 
    if is_plus_key "DEFINITION_CPPFLAGS"
    then
       r_concat "${DEFINITION_CPPFLAGS}" "${CPPFLAGS}"
-      cppflags="${RVAL}"
+      result="${RVAL}"
    else
-      cppflags="${DEFINITION_CPPFLAGS:-${CPPFLAGS}}"
+      result="${DEFINITION_CPPFLAGS:-${CPPFLAGS}}"
    fi
 
-   r_concat "${result}" "${DEFINITION_OTHER_CPPFLAGS}"
-   cppflags="${RVAL}"
+   if is_plus_key "DEFINITION_OTHER_CPPFLAGS"
+   then
+      r_concat "${DEFINITION_OTHER_CPPFLAGS}" "${OTHER_CPPFLAGS}"
+      r_concat "${result}" "${RVAL}"
+      result="${RVAL}"
+   else
+      r_concat "${result}" "${DEFINITION_OTHER_CPPFLAGS:-${OTHER_CPPFLAGS}}"
+      result="${RVAL}"
+   fi
 
    case "${compiler%.*}" in
       c++|cc|gcc*|*clang*|"")
@@ -232,20 +239,22 @@ r_compiler_cppflags_value()
             log_trace2 "DEFINITION_GCC_PREPROCESSOR_DEFINITIONS:  ${DEFINITION_GCC_PREPROCESSOR_DEFINITIONS}"
          fi
 
+         local definition
+
          IFS=","
-         set -o noglob
+         shell_disable_glob
          for definition in ${DEFINITION_GCC_PREPROCESSOR_DEFINITIONS}
          do
             "${flag_definer}" "${i}"
-            r_concat "${cppflags}" "${RVAL}"
-            cppflags="${RVAL}"
+            r_concat "${result}" "${RVAL}"
+            result="${RVAL}"
          done
          IFS="${DEFAULT_IFS}"
-         set +o noglob
+         shell_enable_glob
       ;;
    esac
 
-   RVAL="${cppflags}"
+   RVAL="${result}"
 }
 
 
@@ -258,14 +267,12 @@ _r_compiler_cflags_value()
    local configuration="$2"
    local addoptflags="${3:-YES}"
 
-   local value
-   local result
-   local i
-
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "WARNING_CFLAGS:  ${DEFINITION_WARNING_CFLAGS}"
    fi
+
+   local result
 
    result="${DEFINITION_WARNING_CFLAGS}"
 
@@ -290,9 +297,10 @@ r_compiler_cflags_value()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "ENV CFLAGS:      ${CFLAGS}"
-      log_trace2 "CFLAGS:          ${DEFINITION_CFLAGS}"
-      log_trace2 "OTHER_CFLAGS:    ${DEFINITION_OTHER_CFLAGS}"
+      log_trace2 "ENV CFLAGS:       ${CFLAGS}"
+      log_trace2 "ENV OTHER_CFLAGS: ${OTHER_CFLAGS}"
+      log_trace2 "CFLAGS:           ${DEFINITION_CFLAGS}"
+      log_trace2 "OTHER_CFLAGS:     ${DEFINITION_OTHER_CFLAGS}"
    fi
 
    local result
@@ -306,8 +314,15 @@ r_compiler_cflags_value()
       result="${DEFINITION_CFLAGS:-${CFLAGS}}"
    fi
 
-   r_concat "${result}" "${DEFINITION_OTHER_CFLAGS}"
-   result="${RVAL}"
+   if is_plus_key "DEFINITION_OTHER_CFLAGS"
+   then
+      r_concat "${DEFINITION_OTHER_CFLAGS}" "${OTHER_CFLAGS}"
+      r_concat "${result}" "${RVAL}"
+      result="${RVAL}"
+   else
+      r_concat "${result}" "${DEFINITION_OTHER_CFLAGS:-${OTHER_CFLAGS}}"
+      result="${RVAL}"
+   fi
 
    _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
    r_concat "${result}" "${RVAL}"
@@ -325,9 +340,10 @@ r_compiler_cxxflags_value()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "ENV CXXFLAGS:    ${CXXFLAGS}"
-      log_trace2 "CXXFLAGS:        ${DEFINITION_CXXFLAGS}"
-      log_trace2 "OTHER_CXXFLAGS:  ${DEFINITION_OTHER_CXXFLAGS}"
+      log_trace2 "ENV CXXFLAGS:       ${CXXFLAGS}"
+      log_trace2 "ENV OTHER_CXXFLAGS: ${OTHER_CXXFLAGS}"
+      log_trace2 "CXXFLAGS:           ${DEFINITION_CXXFLAGS}"
+      log_trace2 "OTHER_CXXFLAGS:     ${DEFINITION_OTHER_CXXFLAGS}"
    fi
 
    local result
@@ -340,8 +356,16 @@ r_compiler_cxxflags_value()
    else
       result="${DEFINITION_CXXFLAGS:-${CXXFLAGS}}"
    fi
-   r_concat "${result}" "${DEFINITION_OTHER_CXXFLAGS}"
-   result="${RVAL}"
+
+   if is_plus_key "DEFINITION_OTHER_CXXFLAGS"
+   then
+      r_concat "${DEFINITION_OTHER_CXXFLAGS}" "${OTHER_CXXFLAGS}"
+      r_concat "${result}" "${RVAL}"
+      result="${RVAL}"
+   else
+      r_concat "${result}" "${DEFINITION_OTHER_CXXFLAGS:-${OTHER_CXXFLAGS}}"
+      result="${RVAL}"
+   fi
 
    _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
    r_concat "${result}" "${RVAL}"
@@ -358,9 +382,10 @@ r_compiler_ldflags_value()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "ENV LDFLAGS:     ${LDFLAGS}"
-      log_trace2 "LDFLAGS:         ${DEFINITION_LDFLAGS}"
-      log_trace2 "OTHER_LDFLAGS:   ${DEFINITION_OTHER_LDFLAGS}"
+      log_trace2 "ENV LDFLAGS:       ${LDFLAGS}"
+      log_trace2 "ENV OTHER_LDFLAGS: ${OTHER_LDFLAGS}"
+      log_trace2 "LDFLAGS:           ${DEFINITION_LDFLAGS}"
+      log_trace2 "OTHER_LDFLAGS:     ${DEFINITION_OTHER_LDFLAGS}"
    fi
 
    local result
@@ -374,8 +399,15 @@ r_compiler_ldflags_value()
       result="${DEFINITION_LDFLAGS:-${LDFLAGS}}"
    fi
 
-   r_concat "${result}" "${DEFINITION_OTHER_LDFLAGS}"
-   result="${RVAL}"
+   if is_plus_key "DEFINITION_OTHER_LDFLAGS"
+   then
+      r_concat "${DEFINITION_OTHER_LDFLAGS}" "${OTHER_LDFLAGS}"
+      r_concat "${result}" "${RVAL}"
+      result="${RVAL}"
+   else
+      r_concat "${result}" "${DEFINITION_OTHER_LDFLAGS:-${OTHER_LDFLAGS}}"
+      result="${RVAL}"
+   fi
 
    # doesn't work for me though...
    # https://stackoverflow.com/questions/11731229/dladdr-doesnt-return-the-function-name/11732893?r=SearchResults&s=3|31.5239#11732893
@@ -393,6 +425,8 @@ r_compiler_ldflags_value()
          esac
       ;;
    esac
+
+   RVAL="${result}"
 }
 
 

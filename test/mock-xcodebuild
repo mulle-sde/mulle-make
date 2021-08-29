@@ -20,7 +20,8 @@ emit_args()
    local subst
 
    prefix="`eval "echo \$MOCK_TEST_DIR"`"
-   prefix="`escaped_sed_pattern "${prefix}"`"
+   r_escaped_sed_pattern "${prefix}"
+   prefix="${RVAL}"
 
    while [ "$#" -ne 0 ]
    do
@@ -79,8 +80,12 @@ main()
    local filename
 
    envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z]'`_REDIRECT_FILE"
-   filename="${!envvar}"
-
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      filename="${(P)envvar}"
+   else
+      filename="${!envvar}"
+   fi
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""

@@ -40,23 +40,23 @@ find_msvc_executable()
    local name="${2:-compiler}"
    local searchpath="${3:-$PATH}"
 
-   local path
+   local filepath
    local compiler
 
    IFS=':'
-   set -o noglob
-   for path in ${searchpath}
+   shell_disable_glob
+   for filepath in ${searchpath}
    do
       IFS="${DEFAULT_IFS}"
-      set +o noglob
+      shell_enable_glob
 
-      case "${path}" in
+      case "${filepath}" in
          /usr/*|/bin)
             continue;
          ;;
 
          *)
-            executable="${path}/${exe}"
+            executable="${filepath}/${exe}"
             if [ -x "${executable}" ]
             then
                echo "MSVC ${name} found as ${C_RESET}${executable}" >&2
@@ -66,7 +66,7 @@ find_msvc_executable()
          ;;
       esac
    done
-   set +o noglob
+   shell_enable_glob
 
    IFS="${DEFAULT_IFS}"
 }
@@ -218,11 +218,11 @@ mingw_buildpath()
    local vspath
 
    IFS=':'
-   set -o noglob
+   shell_disable_glob
    for i in $PATH
    do
       IFS="${DEFAULT_IFS}"
-      set +o noglob
+      shell_enable_glob
 
       if [ -x "${i}/sh.exe" ]
       then
@@ -239,7 +239,7 @@ mingw_buildpath()
    done
 
    IFS="${DEFAULT_IFS}"
-   set +o noglob
+   shell_enable_glob
 
    echo "link.exe: `PATH="${buildpath}" /usr/bin/which link.exe`" >&2
    echo "Modified PATH: ${buildpath}" >&2

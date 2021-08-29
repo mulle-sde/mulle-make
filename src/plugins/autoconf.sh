@@ -117,9 +117,6 @@ build_autoconf()
 
    mkdir_if_missing "${kitchendir}"
 
-   # CMAKE_CPP_FLAGS does not exist in cmake
-   # so merge into CFLAGS and CXXFLAGS
-
    local logfile1
    local logfile2
 
@@ -167,8 +164,6 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
       then
          env | sort >&2
       fi
-
-      set -o pipefail # should be set already
 
       if [ -x "autogen.sh" ]
       then

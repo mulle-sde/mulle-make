@@ -110,7 +110,7 @@ main()
 {
    MULLE_MAKE_FLAGS="$@"
 
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
    if [ -z "`command -v "xcodebuild"`" ]
    then
@@ -120,8 +120,11 @@ main()
 
    local directory
 
-   directory="`make_tmp_directory`" || exit 1
+   r_make_tmp_directory || exit 1
+   directory="${RVAL}"
    directory="${directory:-/tmp/build}"
+
+
 
    #
    # Default is release

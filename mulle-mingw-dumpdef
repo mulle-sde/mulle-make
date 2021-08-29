@@ -65,28 +65,28 @@ find_library_in_directories()
    directories="$2"
 
    local directory
-   local path
+   local filepath
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
    IFS=$'\n'
-   set -o noglob
+   shell_disable_glob
    for directory in ${directories}
    do
       IFS="${DEFAULT_IFS}"
-      set +o noglob
+      shell_enable_glob
 
-      path="${directory}/${filename}"
+      filepath="${directory}/${filename}"
 
-      if [ -f "${path}" ]
+      if [ -f "${filepath}" ]
       then
-         printf "%s\n" "${path}"
+         printf "%s\n" "${filepath}"
          break
       fi
    done
 
    IFS="${DEFAULT_IFS}"
-   set +o noglob
+   shell_enable_glob
 }
 
 

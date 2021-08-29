@@ -100,6 +100,7 @@ build_configure()
    #
    r_sdk_cflags "${sdk}" "${platform}"
    r_concat "${cflags}" "${RVAL}"
+   cflags="${RVAL}"
 
 #
 # cppflags should not be duplicated into CFLAGS and CXXFLAGS for configure.
@@ -293,7 +294,6 @@ build_configure()
          env | sort >&2
       fi
 
-      set -o pipefail      # should be set already
       # use absolute paths for configure, safer (and easier to read IMO)
       if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                                           "${env_flags}" \

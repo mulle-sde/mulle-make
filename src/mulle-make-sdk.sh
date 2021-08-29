@@ -44,7 +44,7 @@ r_sdk_cflags()
       return
    fi
 
-   RVAL=0
+   RVAL=
    case "${sdk}" in
       android*)
          r_escaped_shell_string "${platform}"

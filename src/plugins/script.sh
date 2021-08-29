@@ -170,7 +170,6 @@ build_script()
          env | sort >&2
       fi
 
-      set -o pipefail # should be set already
        # use absolute paths for configure, safer (and easier to read IMO)
       if ! logging_tee_eval_exekutor \
                      "${logfile1}" "${teefile1}" \

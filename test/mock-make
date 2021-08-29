@@ -49,8 +49,10 @@ emit_defines()
    [ -z "${MULLE_TEST_DIR}" ] && internal_fail "MULLE_TEST_DIR is undefined"
    [ -z "${MULLE_TMP_DIR}" ] && internal_fail "MULLE_TMP_DIR is undefined"
 
-   escaped_test_path="`escaped_sed_pattern "${MULLE_TEST_DIR}"`"
-   escaped_tmp_path="`escaped_sed_pattern "${MULLE_TMP_DIR}"`"
+   r_escaped_sed_pattern "${MULLE_TEST_DIR}"
+   escaped_test_path="${RVAL}"
+   r_escaped_sed_pattern "${MULLE_TMP_DIR}"
+   escaped_tmp_path="${RVAL}"
    _emit_defines "$@"| sed -e "s/${escaped_test_path:-^}/\${MULLE_TEST_DIR}/g" -e "s/${escaped_tmp_path:-^}/\${MULLE_TMP_DIR}/g"
 }
 
@@ -64,8 +66,12 @@ main()
 
    # remove mock- prefix , convert to uppercase, append _REDIRECT_FILE
    envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr 'a-z' 'A-Z'`_REDIRECT_FILE"
-   filename="${!envvar}"
-
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      filename="${(P)envvar}"
+   else
+      filename="${!envvar}"
+   fi
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""

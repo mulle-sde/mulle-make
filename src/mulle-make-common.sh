@@ -138,12 +138,34 @@ r_use_ninja_instead_of_make()
       ;;
    esac
 
-   case "${DEFINITION_USE_NINJA:-YES}" in
+   local ninjaexe
+   local ninjaversion
+   local flag
+
+   flag="${DEFINITION_USE_NINJA:-YES}"
+   case "${flag}" in
       'YES')
-         if [ ! -z "`command -v ninja${extension}`" ]
+         ninjaexe="`command -v ninja${extension}`"
+         if [ ! -z "${ninjaexe}" ]
          then
-            RVAL="ninja${extension}"
-            return 0
+            ninjaversion="`"${ninjaexe}" --version`"
+            case "${ninjaversion}" in
+               0\.*|1\.[0]*|1\.10\.*)
+               # less than 1.11 has problems with cleandead
+               # https://github.com/ninja-build/ninja/pull/1996
+                  if [ "${DEFINITION_USE_NINJA}" = 'YES' ]
+                  then
+                     log_warning "Ninja is too old (< 1.11.0) to use"
+                  fi
+                  RVAL=
+                  return 1
+               ;;
+
+               *)
+                  RVAL="ninja${extension}"
+                  return 0
+               ;;
+            esac
          fi
 
          if [ "${DEFINITION_USE_NINJA}" = 'YES' ]
@@ -327,10 +349,10 @@ r_build_make_flags()
 
 r_convert_file_to_cflag()
 {
-   local path="$1"
+   local filepath="$1"
    local flag="$2"
 
-   r_escaped_shell_string "${path}"
+   r_escaped_shell_string "${filepath}"
    r_escaped_make_string "${RVAL}"
    RVAL="${flag}${RVAL}"
 }
@@ -338,7 +360,7 @@ r_convert_file_to_cflag()
 
 r_convert_path_to_cflags()
 {
-   local path="$1"
+   local filepath="$1"
    local flag="$2"
 
    local output
@@ -346,17 +368,17 @@ r_convert_path_to_cflags()
    RVAL=""
 
    IFS=':'
-   set -o noglob
-   for component in ${path}
+   shell_disable_glob
+   for component in ${filepath}
    do
-      set +o noglob
+      shell_enable_glob
 
       r_convert_file_to_cflag "${component}" "${flag}"
       r_concat "${output}" "${RVAL}"
       output="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
-   set +o noglob
+   shell_enable_glob
 }
 
 
@@ -537,14 +559,14 @@ r_build_log_name()
 add_path_if_exists()
 {
    local line="$1"
-   local path="$2"
+   local filepath="$2"
 
-   if [ -e "${path}" ]
+   if [ -e "${filepath}" ]
    then
-      colon_concat "${line}" "${path}"
-   else
-      printf "%s\n" "${line}"
+      r_colon_concat "${line}" "${filepath}"
+      line="${RVAL}"
    fi
+   printf "%s\n" "${line}"
 }
 
 
@@ -629,7 +651,8 @@ r_find_nearest_matching_pattern()
          return 0
       fi
 
-      new_depth="`path_depth "$i"`"
+      r_path_depth "$i"
+      new_depth="${RVAL}"
       if [ "${new_depth}" -lt "${depth}" ]
       then
          found="$i"

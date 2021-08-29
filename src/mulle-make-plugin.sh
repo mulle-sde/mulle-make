@@ -74,7 +74,7 @@ build_load_plugin()
    local plugindefine
    local pluginpath
 
-   if [ "`type -t "r_test_${preference}"`" = "function" ]
+   if shell_is_function "r_test_${preference}"
    then
       log_debug "Plugin \"${preference}\" already loaded"
       return 0
@@ -102,12 +102,12 @@ build_load_plugin()
       #
       if [ "${MULLE_FLAG_LOG_VERBOSE}"  = 'YES' ]
       then
-         if [ "`type -t "r_test_${preference}"`" != "function" ]
+         if ! shell_is_function "r_test_${preference}"
          then
             internal_fail "Build plugin \"${pluginpath}\" has no \"r_test_${preference}\" function"
          fi
 
-         if [ "`type -t "build_${preference}"`" != "function" ]
+         if ! shell_is_function "build_${preference}"
          then
             internal_fail "Build plugin \"${pluginpath}\" has no \"build_${preference}\" function"
          fi
@@ -130,10 +130,10 @@ r_build_load_plugins()
    local result 
 
    result=
-   IFS=':'; set -o noglob
+   IFS=':'; shell_disable_glob
    for preference in ${preferences}
    do
-      IFS="${DEFAULT_IFS}"; set +o noglob
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
 
       if ! build_load_plugin "${preference}"
       then
@@ -143,7 +143,7 @@ r_build_load_plugins()
       result="${RVAL}"
    done
 
-   IFS="${DEFAULT_IFS}"; set +o noglob
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
 
    RVAL="${result}"
 }

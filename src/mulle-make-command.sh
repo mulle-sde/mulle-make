@@ -146,7 +146,7 @@ r_verify_binary()
 
    [ -z "${toolname}" ] && internal_fail "toolname for \"${toolfamily}\" is empty"
 
-   local path
+   local filepath
 
    case "${toolname}" in
       /*)
@@ -154,18 +154,18 @@ r_verify_binary()
          then
             fail "\"${toolname}\" is not present as an executable"
          fi
-         path="${toolname}"
+         filepath="${toolname}"
       ;;
 
       *)
-         path="`which_binary "${toolname}"`"
+         filepath="`which_binary "${toolname}"`"
       ;;
    esac
 
-   if [ ! -z "${path}" ]
+   if [ ! -z "${filepath}" ]
    then
-      log_debug "${toolfamily:-${tooldefaultname}} is \"${path}\""
-      RVAL="${path}"
+      log_debug "${toolfamily:-${tooldefaultname}} is \"${filepath}\""
+      RVAL="${filepath}"
       return 0
    fi
 
