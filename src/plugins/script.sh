@@ -49,16 +49,23 @@ r_build_script_absolutepath()
    local filename
    local directory
    local option
-
+   local tmp
    r_dirname "${DEFINITION_BUILD_SCRIPT}"
    directory="${RVAL}"
 
+   # DEFINITION_PATH > OPTION_PATH > PATH
+   # (as OPTION_PATH is set by mulle-craft)
+   searchpath="${OPTION_PATH:-${PATH}}"
+   searchpath="${DEFINITION_PATH:-${searchpath}}"
+
    case "${DEFINITION_BUILD_SCRIPT}" in
       /*)
+         # clobber searchpath
          searchpath="${directory}"
       ;;
 
       */*)
+         # clobber searchpath
          r_filepath_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${directory}"
          searchpath="${RVAL}"
 
@@ -68,9 +75,9 @@ r_build_script_absolutepath()
       ;;
 
       *)
-         # ${DEPENDENCY_DIR}/bin ought to be in PATH already
+         # ${DEPENDENCY_DIR}/bin ought to be in PATH already (via --path)
          # also adhere to DEFINITION_PATH, but use "PATH" as default
-         r_colon_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${DEFINITION_PATH:-${PATH}}"
+         r_colon_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${searchpath}"
          searchpath="${RVAL}"
       ;;
    esac

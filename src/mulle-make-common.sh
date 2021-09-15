@@ -490,7 +490,18 @@ build_fail()
 
       if [ "$MULLE_TRACE" != "1848" ]
       then
-         log_info "Build log in ${C_RESET_BOLD}${logfile#${MULLE_USER_PWD}/}"
+         # stupid bozo hack
+         r_dirname "${logfile}" # remove file
+         r_dirname "${RVAL}"    # remove .logs
+         r_basename "${RVAL}"    # get project name
+         # even worse bozo hack
+         case "${RVAL}" in
+            Release|Debug)
+               RVAL=""
+            ;;
+         esac
+         log_info "See log with ${C_RESET_BOLD}mulle-sde log ${RVAL} \
+${C_INFO}(${logfile#${MULLE_USER_PWD}/}"
       fi
    fi
 

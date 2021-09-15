@@ -809,7 +809,7 @@ build_cmake()
    #
    run_cmake='YES'
 
-   if [ "${MULLE_FLAG_MAGNUM_FORCE}" = 'YES' ] # -o "${OPTION_PHASE}" = 'Headers' ]
+   if [ "${MULLE_FLAG_MAGNUM_FORCE}" = 'YES' -o "${OPTION_PHASE}" = 'Headers' ]
    then
       remove_file_if_present "${kitchendir}/CMakeCache.txt"
    else
@@ -937,6 +937,9 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
          fi
       fi
 
+      # MAKE returns 2 on error, and we get a develope stacktrace
+      # we try to get around this with a random number
+      MULLE_EXEKUTOR_STRACKTRACE_RVAL=77
       if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
                "'${MAKE}'" "${MAKEFLAGS}" "${makeflags}" "${maketarget}" | ${grepper}
