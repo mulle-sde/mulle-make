@@ -1,1 +1,1 @@
---prefix /tmp/foo
+--prefix=/tmp/foo

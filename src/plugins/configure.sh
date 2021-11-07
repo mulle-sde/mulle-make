@@ -137,12 +137,16 @@ build_configure()
       ;;
    esac
 
-   dstdir="${dstdir}"
-   if [ ! -z "${dstdir}" ]
+   if [ ! -z "${DEFINITION_PREFIX}" ]
    then
-      arguments="--prefix${MULLE_MAKE_CONFIGURE_SPACE:-=}'${dstdir}'"
+      arguments="--prefix${MULLE_MAKE_CONFIGURE_SPACE:-=}'${DEFINITION_PREFIX}'"
+   else
+      if [ ! -z "${dstdir}" ]
+      then
+         arguments="--prefix${MULLE_MAKE_CONFIGURE_SPACE:-=}'${dstdir}'"
+      fi
    fi
-
+   
    case "${DEFINITION_LIBRARY_STYLE}" in
       standalone)
          fail "configure does not support standalone builds"

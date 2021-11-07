@@ -50,6 +50,7 @@ r_build_script_absolutepath()
    local directory
    local option
    local tmp
+   
    r_dirname "${DEFINITION_BUILD_SCRIPT}"
    directory="${RVAL}"
 
