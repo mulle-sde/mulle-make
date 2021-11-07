@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 #
-#   Copyright (c) 2015 Nat! - Mulle kybernetiK
+#   Copyright (c) 2021 Nat! - Mulle kybernetiK
 #   All rights reserved.
 #
 #   Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_PLUGIN_CONFIGURE_SH="included"
+MULLE_MAKE_PLUGIN_MAKE_SH="included"
 
 
 #
@@ -37,9 +37,9 @@ MULLE_MAKE_PLUGIN_CONFIGURE_SH="included"
 # build stuff into dependencies
 #
 #
-build_configure()
+build_make()
 {
-   log_entry "build_configure" "$@"
+   log_entry "build_make" "$@"
 
    [ $# -ge 9 ] || internal_fail "api error"
 
@@ -49,15 +49,15 @@ build_configure()
    local platform="$4"
    local configuration="$5"
    local srcdir="$6"
-   local dstdir="$7"
+   local dstdir="$7" # unused
    local kitchendir="$8"
    local logsdir="$9"
 
    shift 9
 
-   local configure_flags
+   local make_flags
 
-   configure_flags="${DEFINITION_CONFIGUREFLAGS}"
+   make_flags="${DEFINITION_MAKEFLAGS}"
 
 #   create_dummy_dirs_against_warnings "${mapped}" "${suffix}"
 
@@ -103,7 +103,7 @@ build_configure()
    cflags="${RVAL}"
 
 #
-# cppflags should not be duplicated into CFLAGS and CXXFLAGS for configure.
+# cppflags should not be duplicated into CFLAGS and CXXFLAGS for makefile.
 # cmake has no CMAKE_CPP_FLAGS so we have to do it there
 
 #
@@ -140,22 +140,37 @@ build_configure()
    dstdir="${dstdir}"
    if [ ! -z "${dstdir}" ]
    then
-      arguments="--prefix${MULLE_MAKE_CONFIGURE_SPACE:-=}'${dstdir}'"
+      if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+      then
+         installflags="${installflags} -v"
+      fi
+
+      arguments="PREFIX='${dstdir}' DESTDIR='${dstdir}' INSTALLFLAGS='${installflags}'"
    fi
+
+   local libsuffix
+   local exesuffix
+
+   case "${MULLE_UNAME}" in
+      windows|mingw)
+         exesuffix=".exe"
+      ;;
+   esac
 
    case "${DEFINITION_LIBRARY_STYLE}" in
       standalone)
-         fail "configure does not support standalone builds"
-      ;;
-
-      static)
-         r_concat "${arguments}" --enable-static
-         arguments="${RVAL}"
+         fail "make does not support standalone builds"
       ;;
 
       dynamic)
-         r_concat "${arguments}" --enable-shared
-         arguments="${RVAL}"
+         libsuffix=.so  # hackage
+      ;;
+
+      static)
+         libsuffix=.a  # hackage
+
+         r_concat "${cppflags}" --static
+         cppflags="${RVAL}"
       ;;
    esac
 
@@ -218,7 +233,8 @@ build_configure()
    local make_flags
 
    r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"
-   make_flags="${RVAL}"
+   r_concat "${arguments}" "${RVAL}"
+   arguments="${RVAL}"
 
    local absprojectdir
    local projectdir
@@ -234,56 +250,62 @@ build_configure()
       log_trace2 "cppflags:        ${cppflags}"
       log_trace2 "cxxflags:        ${cxxflags}"
       log_trace2 "ldflags:         ${ldflags}"
-      log_trace2 "make_flags:      ${make_flags}"
       log_trace2 "projectfile:     ${projectfile}"
       log_trace2 "projectdir:      ${projectdir}"
       log_trace2 "absprojectdir:   ${absprojectdir}"
       log_trace2 "absbuilddir:     ${absbuilddir}"
-      log_trace2 "CONFIGUREFLAGS:  ${CONFIGUREFLAGS}"
-      log_trace2 "configure_flags: ${configure_flags}"
+      log_trace2 "MAKEFLAGS:       ${MAKEFLAGS}"
       log_trace2 "arguments:       ${arguments}"
    fi
 
    local logfile1
-   local logfile2
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "configure"
-   logfile1="${RVAL}"
    r_build_log_name "${logsdir}" "make"
-   logfile2="${RVAL}"
+   logfile1="${RVAL}"
 
    local teefile1
-   local teefile2
    local grepper
    local greplog
 
    teefile1="/dev/null"
-   teefile2="/dev/null"
    grepper="log_grep_warning_error"
    greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
       logfile1="/dev/null"
-      logfile2="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" and \"${logfile2#${MULLE_USER_PWD}/}\""
+      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
    then
       r_safe_tty
       teefile1="${RVAL}"
-      teefile2="${logfile1}"
       grepper="log_delete_all"
       greplog="NO"
    fi
 
-
    (
-      exekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
+      # make doesn't work in kitchendir
+      exekutor cd "${absprojectdir}" || fail "failed to enter ${absprojectdir}"
+
+      r_concat "${arguments}" "BUILD_DIR='${kitchendir}'"
+      arguments="${RVAL}"
+
+      if [ ! -z "${exesuffix}" ]
+      then
+         r_concat "${arguments}" "EXE_SUFFIX='${exesuffix}'"
+         arguments="${RVAL}"
+      fi
+
+      if [ ! -z "${libsuffix}" ]
+      then
+         r_concat "${arguments}" "LIB_SUFFIX='${libsuffix}'"
+         arguments="${RVAL}"
+      fi
 
       PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
@@ -292,43 +314,29 @@ build_configure()
          env | sort >&2
       fi
 
-      # use absolute paths for configure, safer (and easier to read IMO)
-      if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
-                                          "${env_flags}" \
-                                             "'${absprojectdir}/configure'" \
-                                                "${CONFIGUREFLAGS}" \
-                                                "${configure_flags}" \
-                                                "${arguments}" | ${grepper}
-      then
-         build_fail "${logfile1}" "configure" "${PIPESTATUS[ 0]}" "${greplog}"
-      fi
-
-      #
-      # mainly for glibc, where it needs to do make all before make install.
-      # could parameterize this as "DEFINITION_MAKE_STEPS=all,install" or so
-      #
+      # some need all install combo
       if [ "${maketarget}" = "install" ]
       then
-         if ! logging_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
-                  "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "all"  | ${grepper}
+         if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+                  "'${MAKE}'" "${MAKEFLAGS}" "${arguments}" "all"  | ${grepper}
          then
-            build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
+            build_fail "${logfile1}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
       fi
 
-      if ! logging_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
-               "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "${maketarget}"  | ${grepper}
+      if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+               "'${MAKE}'" "${MAKEFLAGS}" "${arguments}" "${maketarget}" | ${grepper}
       then
-         build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
+         build_fail "${logfile1}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
 
    ) || exit 1
 }
 
 
-r_test_configure()
+r_test_make()
 {
-   log_entry "r_test_configure" "$@"
+   log_entry "r_test_make" "$@"
 
    [ $# -eq 1 ] || internal_fail "api error"
 
@@ -337,11 +345,10 @@ r_test_configure()
    local projectfile
    local projectdir
 
-   RVAL=""
-
-   if ! r_find_nearest_matching_pattern "${srcdir}" "configure"
+   if ! r_find_nearest_matching_pattern "${srcdir}" "Makefile"
    then
-      log_fluff "There is no configure project in \"${srcdir}\""
+      log_fluff "There is no makefile project in \"${srcdir}\""
+      RVAL=""
       return 4
    fi
 
@@ -351,15 +358,9 @@ r_test_configure()
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      fail "${srcdir#${MULLE_USER_PWD}/}: configure does not support build phases
+      fail "${srcdir#${MULLE_USER_PWD}/}: Make does not support build phases
 ${C_INFO}This is probably a misconfiguration in your sourcetree. Suggest:
 ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
-   fi
-
-   if ! [ -x "${projectdir}/configure" ]
-   then
-      log_fluff "Configure script in \"${projectdir}\" is not executable"
-      return 1
    fi
 
    case "${MULLE_UNAME}" in
@@ -372,21 +373,21 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
       ;;
    esac
 
-   r_make_for_plugin "configure" "no-ninja"
+   r_make_for_plugin "make" "no-ninja"
    MAKE="${RVAL}"
 
    tools_environment_common
 
-   log_verbose "Found configure script \"${projectfile#${MULLE_USER_PWD}/}\""
+   log_verbose "Found makefile script \"${projectfile#${MULLE_USER_PWD}/}\""
 
    RVAL="${projectfile}"
    return 0
 }
 
 
-configure_plugin_initialize()
+make_plugin_initialize()
 {
-   log_entry "configure_plugin_initialize"
+   log_entry "make_plugin_initialize"
 
    if [ -z "${MULLE_STRING_SH}" ]
    then
@@ -402,6 +403,6 @@ configure_plugin_initialize()
    fi
 }
 
-configure_plugin_initialize
+make_plugin_initialize
 
 :

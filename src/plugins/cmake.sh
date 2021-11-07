@@ -540,7 +540,7 @@ build_cmake()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "PREFIX:        ${DEFINITION_PREFIX}"
+      log_trace2 "PREFIX:        ${dstdir}"
       log_trace2 "PHASE:         ${OPTION_PHASE}"
       log_trace2 "CMAKEFLAGS:    ${DEFINITION_CMAKEFLAGS}"
    fi
@@ -594,39 +594,25 @@ build_cmake()
    case "${cmd}" in
       build|project)
          maketarget=
-         if [ ! -z "${DEFINITION_PREFIX}" ]
-         then
-            r_convert_path_to_native "${DEFINITION_PREFIX}"
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
-            cmakeflags="${RVAL}"
-         fi
       ;;
 
       install)
-         [ -z "${dstdir}" ] && internal_fail "srcdir is empty"
+         [ -z "${dstdir}" ] && internal_fail "dstdir is empty"
          maketarget="install"
-         if [ ! -z "${DEFINITION_PREFIX}" ]
-         then
-            r_convert_path_to_native "${DEFINITION_PREFIX}"
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
-            cmakeflags="${RVAL}"
-         else
-            r_convert_path_to_native "${dstdir}"
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
-            cmakeflags="${RVAL}"
-         fi
       ;;
 
       *)
          maketarget="${cmd}"
-         if [ ! -z "${DEFINITION_PREFIX}" ]
-         then
-            r_convert_path_to_native "${DEFINITION_PREFIX}"
-            r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
-            cmakeflags="${RVAL}"
-         fi
       ;;
    esac
+
+   dstdir="${dstdir}"
+   if [ ! -z "${dstdir}" ]
+   then
+      r_convert_path_to_native "${dstdir}"
+      r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_INSTALL_PREFIX:PATH" "${RVAL}"
+      cmakeflags="${RVAL}"
+   fi
 
    local buildtype
 
@@ -824,6 +810,10 @@ build_cmake()
          if [ -z "${oldphase}" ]
          then
             run_cmake="${OPTION_RERUN_CMAKE:-DEFAULT}"
+         else
+            # if there was a previous phase the cache makes us fail
+            # with can not install or so...
+            remove_file_if_present "${kitchendir}/CMakeCache.txt"
          fi
 
          if [ "${run_cmake}" = 'DEFAULT' ]
@@ -937,9 +927,6 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
          fi
       fi
 
-      # MAKE returns 2 on error, and we get a develope stacktrace
-      # we try to get around this with a random number
-      MULLE_EXEKUTOR_STRACKTRACE_RVAL=77
       if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
                "'${MAKE}'" "${MAKEFLAGS}" "${makeflags}" "${maketarget}" | ${grepper}

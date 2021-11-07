@@ -167,7 +167,7 @@ Usage:
    specified during options, do not specify dst as well.
 
 Example:
-   mulle-sde install "${HOME}/src/mulle-buffer" /tmp/usr
+   ${MULLE_USAGE_NAME} install "${HOME}/src/mulle-buffer" /tmp/usr
 
 Options:
 EOF
@@ -286,6 +286,43 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${kitchendir#${PWD}/}\" ...
    )
 }
 
+# TODO: doesn't use _variables yet,
+#
+# local name
+# local kitchendir
+# local logsdir
+#
+# needs and sets srcdir
+#
+__determine_build_directories()
+{
+   name="${DEFINITION_PROJECT_NAME}"
+   if [ -z "${name}" ]
+   then
+      r_basename "${srcdir}"
+      name="${RVAL}"
+   fi
+
+   #
+   # remove symlinks
+   #
+   r_canonicalize_path "${srcdir}"
+   srcdir="${RVAL}"
+
+   kitchendir="${DEFINITION_BUILD_DIR:-${srcdir}/build}"
+
+   logsdir="${DEFINITION_LOG_DIR:-${kitchendir}/.log}"
+
+   mkdir_build_directories "${kitchendir}" "${logsdir}"
+
+   # now known to exist, so we can canonicalize
+   r_canonicalize_path "${kitchendir}"
+   kitchendir="${RVAL}"
+
+   r_canonicalize_path "${logsdir}"
+   logsdir="${RVAL}"
+}
+
 
 build_with_sdk_platform_configuration_preferences()
 {
@@ -312,36 +349,10 @@ build_with_sdk_platform_configuration_preferences()
    fi
 
    local name
-
-   name="${DEFINITION_PROJECT_NAME}"
-   if [ -z "${name}" ]
-   then
-      r_basename "${srcdir}"
-      name="${RVAL}"
-   fi
-
-   #
-   # remove symlinks
-   #
-   r_canonicalize_path "${srcdir}"
-   srcdir="${RVAL}"
-
    local kitchendir
-
-   kitchendir="${DEFINITION_BUILD_DIR:-${srcdir}/build}"
-
    local logsdir
 
-   logsdir="${DEFINITION_LOG_DIR:-${kitchendir}/.log}"
-
-   mkdir_build_directories "${kitchendir}" "${logsdir}"
-
-   # now known to exist, so we can canonicalize
-   r_canonicalize_path "${kitchendir}"
-   kitchendir="${RVAL}"
-   
-   r_canonicalize_path "${logsdir}"
-   logsdir="${RVAL}"
+   __determine_build_directories
 
    local rval
    local preference
@@ -385,6 +396,15 @@ r_mulle_make_env_flags()
 #   fi
 }
 
+clean()
+{
+   local srcdir="$1"
+
+   __determine_build_directories
+
+   rmdir_safer "${kitchendir}"
+}
+
 
 build()
 {
@@ -411,56 +431,6 @@ build()
 
       read_definition_dir "${definitiondir}"
    fi
-
-   if [ -z  "${DEFINITION_PLUGIN_PREFERENCES}" ]
-   then
-      DEFINITION_PLUGIN_PREFERENCES='cmake:meson:autoconf:configure'
-      case "${MULLE_UNAME}" in
-         darwin)
-            if [ "${DEFINITION_PREFER_XCODEBUILD}" = 'YES' ]
-            then
-               r_colon_concat "xcodebuild" "${DEFINITION_PLUGIN_PREFERENCES}"
-               DEFINITION_PLUGIN_PREFERENCES="${RVAL}"
-            else
-               r_colon_concat "${DEFINITION_PLUGIN_PREFERENCES}" "xcodebuild"
-               DEFINITION_PLUGIN_PREFERENCES="${RVAL}"
-            fi
-         ;;
-      esac
-   fi
-
-   #
-   # If we have a script, can we use it ?
-   # If yes, we only use the script and fail for every other plugin
-   #
-   if [ ! -z "${DEFINITION_BUILD_SCRIPT}" ]
-   then
-      if [ "${OPTION_ALLOW_SCRIPT}" != 'YES' ]
-      then
-         fail "No permission to run script \"${DEFINITION_BUILD_SCRIPT}\".
-${C_INFO}Use --allow-script option or enable scripts permanently with:
-${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
-      fi
-      DEFINITION_PLUGIN_PREFERENCES="script"
-      log_verbose "A script is defined, only considering a script build now"
-   else
-      log_fluff "No script defined"
-   fi
-
-
-   # used to receive values from build_load_plugins
-   local plugins
-
-   r_build_load_plugins "${DEFINITION_PLUGIN_PREFERENCES}" # can't be subshell !
-   plugins="${RVAL}"
-
-   if [ -z "${plugins}" ]
-   then
-      fail "Don't know how to build \"${srcdir}\".
-There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_PREFERENCES}`\""
-   fi
-
-   log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: ${plugins}"
 
    local sdk
 
@@ -512,6 +482,57 @@ There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_P
          fail "An empty configuration is not possible (use \"Release\")"
       ;;
    esac
+
+   if [ -z "${DEFINITION_PLUGIN_PREFERENCES}" ]
+   then
+      DEFINITION_PLUGIN_PREFERENCES='cmake:meson:autoconf:configure:make'
+      case "${MULLE_UNAME}" in
+         darwin)
+            if [ "${DEFINITION_PREFER_XCODEBUILD}" = 'YES' ]
+            then
+               r_colon_concat "xcodebuild" "${DEFINITION_PLUGIN_PREFERENCES}"
+               DEFINITION_PLUGIN_PREFERENCES="${RVAL}"
+            else
+               r_colon_concat "${DEFINITION_PLUGIN_PREFERENCES}" "xcodebuild"
+               DEFINITION_PLUGIN_PREFERENCES="${RVAL}"
+            fi
+         ;;
+      esac
+   fi
+
+   #
+   # If we have a script, can we use it ?
+   # If yes, we only use the script and fail for every other plugin
+   #
+   if [ ! -z "${DEFINITION_BUILD_SCRIPT}" ]
+   then
+      if [ "${OPTION_ALLOW_SCRIPT}" != 'YES' ]
+      then
+         fail "No permission to run script \"${DEFINITION_BUILD_SCRIPT}\".
+${C_INFO}Use --allow-script option or enable scripts permanently with:
+${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
+      fi
+      DEFINITION_PLUGIN_PREFERENCES="script"
+      log_verbose "A script is defined, only considering a script build now"
+   else
+      log_fluff "No script defined"
+   fi
+
+
+   # used to receive values from build_load_plugins
+   local plugins
+
+   r_build_load_plugins "${DEFINITION_PLUGIN_PREFERENCES}" # can't be subshell !
+   plugins="${RVAL}"
+
+   if [ -z "${plugins}" ]
+   then
+      fail "Don't know how to build \"${srcdir}\".
+There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_PREFERENCES}`\""
+   fi
+
+   log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: ${plugins}"
+
 
    build_with_sdk_platform_configuration_preferences "${cmd}" \
                                                      "${srcdir}" \
@@ -915,6 +936,19 @@ Maybe repair with:
       fail "Source directory \"${srcdir}\" is missing"
    fi
 
+   case "${cmd}" in
+      clean)
+         if read -r argument
+         then
+            log_error "Superflous argument \"${argument}\""
+            project_usage
+         fi
+
+         clean "${srcdir}" # not cleaning srcdir, dont't panic :)
+         return $?
+      ;;
+   esac
+
    case "${OPTION_INFO_DIR:-Default}" in
       'Default')
          OPTION_INFO_DIR="${srcdir}/.mulle/etc/craft/definition"
@@ -956,10 +990,7 @@ Maybe repair with:
          read -r dstdir
          if [ ! -z "${DEFINITION_PREFIX}" ]
          then
-            if [ -z "${dstdir}" ]
-            then
-               dstdir="${DEFINITION_PREFIX}"
-            fi
+            dstdir="${DEFINITION_PREFIX:-${dstdir}}"
          fi
 
          if [ -z "${dstdir}" ]
@@ -1007,4 +1038,13 @@ make_list_main()
 
    usage="list_usage"
    _make_build_main "list"
+}
+
+
+make_clean_main()
+{
+   log_entry "make_clean_main" "$@"
+
+   usage="clean_usage"
+   _make_build_main "clean"
 }

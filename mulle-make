@@ -257,6 +257,14 @@ _main()
    fi
 
    case "${cmd}" in
+      clean)
+         # shellcheck source=src/mulle-make-build.sh
+         . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
+
+         # possibly unconsumed argument
+         make_clean_main "${argument}"
+      ;;
+
       project|build|make)
          # shellcheck source=src/mulle-make-build.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"

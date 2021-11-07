@@ -49,7 +49,7 @@ Usage:
 Commands:
    get    :  get a specific value
    list   :  list defined values
-   remove :  remove a key from the definitions
+   unset  :  remove a key from the definitions
    set    :  set a specific value
    show   :  list all known builtin keys (excludes plugin specifics)
 
@@ -124,13 +124,13 @@ EOF
 }
 
 
-make_definition_remove_usage()
+make_definition_unset_usage()
 {
    [ $# -ne 0 ] && log_error "$1"
 
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} remove <key>
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} unset <key>
 
    Remove a build setting.
 
@@ -490,7 +490,7 @@ _make_define_option()
          fi
       ;;
 
-      'remove')
+      'unset'|'remove')
          if [ -z "${oldvalue}" ]
          then
             log_debug "${key} is already empty"
@@ -502,7 +502,7 @@ _make_define_option()
 
          if [ "${value}" = "${oldvalue}" ]
          then
-            log_debug "Remove did not remove anything"
+            log_debug "Unset did not do anything"
          fi
       ;;
 
@@ -674,9 +674,10 @@ read_defines_dir()
          continue
       fi
 
-      # case insensitive fs need this
-      r_uppercase "${key}"
-      key="${RVAL}"
+      # case insensitive fs need this (why ???), maybe for normalization ?
+      # unfortunately this conflicts with -DCMAKE_DISABLE_LIBRARY_BZip2=ON
+      # r_uppercase "${key}"
+      # key="${RVAL}"
 
       # multiple lines coalesced with space
       read_value="`egrep -v '^#' "${filename}" | tr '\n' ' '`"
@@ -721,6 +722,8 @@ read_definition_dir()
 
    directory="${directory}"
 
+   read_defines_dir "${directory}/set/unset"    "make_define_option" "unset"
+# old
    read_defines_dir "${directory}/set/remove"   "make_define_option" "remove"
    read_defines_dir "${directory}/set/clobber"  "make_define_option"
    read_defines_dir "${directory}/set/ifempty"  "make_define_option" "ifempty"
@@ -728,6 +731,8 @@ read_definition_dir()
    read_defines_dir "${directory}/set/append0"  "make_define_option" "append0"
    read_defines_dir "${directory}/set"          "make_define_option" "append"
 
+   read_defines_dir "${directory}/plus/unset"   "make_define_plusoption" "unset"
+# old
    read_defines_dir "${directory}/plus/remove"  "make_define_plusoption" "remove"
    read_defines_dir "${directory}/plus/clobber" "make_define_plusoption"
    read_defines_dir "${directory}/plus/ifempty" "make_define_plusoption" "ifempty"
@@ -764,9 +769,9 @@ remove_other_keyfiles_than()
 # Commands
 #
 
-remove_definition_dir()
+unset_definition_dir()
 {
-   log_entry "remove_definition_dir" "$@"
+   log_entry "unset_definition_dir" "$@"
 
    local directory="$1"
 
@@ -794,29 +799,31 @@ remove_definition_dir()
 
    if [ -z "${argument}" ]
    then
-      make_definition_remove_usage "Missing key"
+      make_definition_unset_usage "Missing key"
    fi
    key="${argument}"
 
    if read -r argument
    then
-      make_definition_remove_usage "Superflous argument \"${argument}\""
+      make_definition_unset_usage "Superflous argument \"${argument}\""
    fi
 
    # remove all possible old settings
    remove_other_keyfiles_than "" \
-                              "${directory}/set/${key}" \
-                              "${directory}/set/append/${key}" \
-                              "${directory}/set/append0/${key}" \
-                              "${directory}/set/ifempty/${key}"\
-                              "${directory}/set/clobber/${key}"\
-                              "${directory}/set/remove/${key}"  \
-                              "${directory}/plus/${key}"\
-                              "${directory}/plus/append/${key}"\
-                              "${directory}/plus/append0/${key}"\
-                              "${directory}/plus/ifempty/${key}"\
-                              "${directory}/plus/clobber/${key}"\
-                              "${directory}/plus/remove/${key}"
+                              "${directory}/set/${key}"          \
+                              "${directory}/set/append/${key}"   \
+                              "${directory}/set/append0/${key}"  \
+                              "${directory}/set/ifempty/${key}"  \
+                              "${directory}/set/clobber/${key}"  \
+                              "${directory}/set/remove/${key}"   \
+                              "${directory}/set/unset/${key}"    \
+                              "${directory}/plus/${key}"         \
+                              "${directory}/plus/append/${key}"  \
+                              "${directory}/plus/append0/${key}" \
+                              "${directory}/plus/ifempty/${key}" \
+                              "${directory}/plus/clobber/${key}" \
+                              "${directory}/plus/remove/${key}"  \
+                              "${directory}/plus/unset/${key}"
 
    rmdir_if_empty "${directory}/plus"
    rmdir_if_empty "${directory}/set"
@@ -844,7 +851,7 @@ set_definition_dir()
             OPTION_MODIFIER='plus'
          ;;
 
-         --append|--append0|--ifempty|--remove|--clobber)
+         --append|--append0|--ifempty|--remove|--unset|--clobber)
             OPTION_MODIFIER="${argument:2}"
          ;;
 
@@ -889,20 +896,21 @@ set_definition_dir()
    finaldirectory="${RVAL}"
 
    # remove all possible old settings
-   remove_other_keyfiles_than "${finaldirectory}/${key}" \
-                              "${directory}/set/${key}" \
-                              "${directory}/set/append/${key}" \
-                              "${directory}/set/append0/${key}" \
-                              "${directory}/set/ifempty/${key}"\
-                              "${directory}/set/clobber/${key}"\
-                              "${directory}/set/remove/${key}"  \
-                              "${directory}/plus/${key}"\
-                              "${directory}/plus/append/${key}"\
-                              "${directory}/plus/append0/${key}"\
-                              "${directory}/plus/ifempty/${key}"\
-                              "${directory}/plus/clobber/${key}"\
+   remove_other_keyfiles_than "${finaldirectory}/${key}"         \
+                              "${directory}/set/${key}"          \
+                              "${directory}/set/append/${key}"   \
+                              "${directory}/set/append0/${key}"  \
+                              "${directory}/set/ifempty/${key}"  \
+                              "${directory}/set/clobber/${key}"  \
+                              "${directory}/set/remove/${key}"   \
+                              "${directory}/set/unset/${key}"    \
+                              "${directory}/plus/${key}"         \
+                              "${directory}/plus/append/${key}"  \
+                              "${directory}/plus/append0/${key}" \
+                              "${directory}/plus/ifempty/${key}" \
+                              "${directory}/plus/clobber/${key}" \
+                              "${directory}/plus/unset/${key}"   \
                               "${directory}/plus/remove/${key}"
-
 
    mkdir_if_missing "${finaldirectory}"
    redirect_exekutor "${finaldirectory}/${key}" printf "%s\n" "${value}"
@@ -1094,8 +1102,8 @@ make_definition_main()
          set_definition_dir "${OPTION_DEFINITION_DIR}"
       ;;
 
-      remove)
-         remove_definition_dir "${OPTION_DEFINITION_DIR}"
+      remove|unset)
+         unset_definition_dir "${OPTION_DEFINITION_DIR}"
       ;;
 
       "")
