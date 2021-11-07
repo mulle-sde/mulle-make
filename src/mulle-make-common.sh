@@ -346,6 +346,7 @@ r_build_make_flags()
    local make_flags="$2"
 
    local make_verbose_flags
+   local make_terse_flags
    local cores
 
    cores="${OPTION_CORES}"
@@ -359,6 +360,10 @@ r_build_make_flags()
             r_makeflags_add "${RVAL}" "${OPTION_LOAD}"
             make_flags="${RVAL}"
          fi
+      ;;
+
+      *nmake*)
+         make_terse_flags="-s"
       ;;
 
       *make*)
@@ -377,8 +382,11 @@ r_build_make_flags()
    # because the logging is done into files (usually), we don't really want
    # non-verbose output usually
    #
-   if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_TERSE}" = 'YES' ]
    then
+      r_makeflags_add "${make_flags}" "${make_terse_flags}"
+      make_flags="${RVAL}"
+   else
       r_makeflags_add "${make_flags}" "${make_verbose_flags}"
       make_flags="${RVAL}"
    fi
