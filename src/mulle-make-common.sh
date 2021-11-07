@@ -723,6 +723,7 @@ r_find_nearest_matching_pattern()
 
       r_path_depth "$i"
       new_depth="${RVAL}"
+
       if [ "${new_depth}" -lt "${depth}" ]
       then
          found="$i"

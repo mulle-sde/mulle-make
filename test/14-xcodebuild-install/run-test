@@ -39,9 +39,6 @@ main()
 
    r_make_tmp_directory || exit 1
    directory="${RVAL}"
-   directory="${directory:-/tmp/build}"
-
-
 
    kitchendir="${directory}/build"
    dstdir="${directory}/root"
