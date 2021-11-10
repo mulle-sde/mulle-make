@@ -333,19 +333,41 @@ r_cmake_userdefined_definitions()
       r_escaped_shell_string "${value}"
 
       # change to cmake separator
-      case "${key}" in
-         *_PATH|*_FILES|*_DIRS)
-            cmakevalue="${value//:/;}"
-            log_debug "Change ${key} value \"${value}\" to \"${cmakevalue}\""
-            value="${cmakevalue}"
+      # on MINGW though, this will prohibit escaping so we have to do it manually
+      case "${value}" in 
+         *:*)
+            case "${key}" in
+               *_PATH|*_FILES|*_DIRS)
+                  case "${MULLE_UNAME}" in 
+                     mingw)
+                        local filepath 
+
+                        IFS=":"; shell_disable_glob
+                        for filepath in ${value}
+                        do
+                           IFS="${DEFAULT_IFS}"; shell_enable_glob
+   
+                           filepath="`cygpath -w "${filepath}" `"
+                           r_semicolon_concat "${cmakevalue}" "${filepath}"
+                           cmakevalue="${RVAL}"
+                        done
+                        IFS="${DEFAULT_IFS}"; shell_enable_glob
+                     ;;
+
+                     *)
+                        cmakevalue="${value//:/;}"
+                     ;;
+                  esac
+                  log_debug "Change ${key} value \"${value}\" to \"${cmakevalue}\""
+                  value="${cmakevalue}"
+               ;;
+            esac
          ;;
       esac
-
       r_cmakeflags_add_flag "${cmakeflags}" "${key#DEFINITION_}" "${value}"
       cmakeflags="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"; shell_enable_glob
-
 
    RVAL="${cmakeflags}"
 
