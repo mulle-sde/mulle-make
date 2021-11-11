@@ -339,19 +339,36 @@ r_cmake_userdefined_definitions()
             case "${key}" in
                *_PATH|*_FILES|*_DIRS)
                   case "${MULLE_UNAME}" in 
-                     mingw)
+                     mingw|windows)
                         local filepath 
+                        local translatepath
 
-                        IFS=":"; shell_disable_glob
-                        for filepath in ${value}
-                        do
+                        # on mingw we always expect cmake.exe
+                        # on wsl, we gotta check which it is
+                        if [ "${MULLE_UNAME}" = "mingw" ]
+                        then 
+                           translatepath ="cygpath"
+                        else 
+                           case "${CMAKE}" in 
+                              *.exe)
+                                 translatepath="wslpath"
+                              ;;
+                           esac
+                        fi
+
+                        if [ ! -z "${translatepath}" ]
+                        then
+                           IFS=":"; shell_disable_glob
+                           for filepath in ${value}
+                           do
+                              IFS="${DEFAULT_IFS}"; shell_enable_glob
+      
+                              filepath="`${translatepath} -w "${filepath}" `"
+                              r_semicolon_concat "${cmakevalue}" "${filepath}"
+                              cmakevalue="${RVAL}"
+                           done
                            IFS="${DEFAULT_IFS}"; shell_enable_glob
-   
-                           filepath="`cygpath -w "${filepath}" `"
-                           r_semicolon_concat "${cmakevalue}" "${filepath}"
-                           cmakevalue="${RVAL}"
-                        done
-                        IFS="${DEFAULT_IFS}"; shell_enable_glob
+                        fi
                      ;;
 
                      *)
