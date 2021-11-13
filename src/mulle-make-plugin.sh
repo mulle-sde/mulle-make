@@ -39,6 +39,7 @@ build_list_plugins()
 
    local pluginpath
    local pluginname
+
    IFS=$'\n'
    for pluginpath in `exekutor ls -1 "${MULLE_MAKE_LIBEXEC_DIR}/plugins/"*.sh`
    do

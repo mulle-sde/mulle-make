@@ -351,6 +351,8 @@ r_cmake_userdefined_definitions()
                         else 
                            case "${CMAKE}" in 
                               *.exe)
+                                 include_mulle_tool_library "platform" "wsl"
+
                                  translatepath="mulle_wslpath"
                               ;;
                            esac
@@ -999,10 +1001,7 @@ r_test_cmake()
 
    case "${MULLE_UNAME}" in
       mingw*)
-         if [ -z "${MULLE_MAKE_MINGW_SH}" ]
-         then
-            . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-mingw.sh" || exit 1
-         fi
+         include_mulle_tool_library "platform" "mingw"
          setup_mingw_buildenvironment
       ;;
    esac

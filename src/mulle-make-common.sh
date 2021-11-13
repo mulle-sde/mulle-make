@@ -79,17 +79,6 @@ log_grep_warning_error()
 }
 
 
-#
-# The configure plugin can't use nmake on mingw it must use mingw32-make
-# (still called mingw32-make on 64 bit)
-# The cmake plugin will use nmake though
-#
-mingw_bitness()
-{
-   uname | sed -e 's/MINGW\([0-9]*\)_.*/\1/'
-}
-
-
 tools_environment_common()
 {
    log_entry "tools_environment_common" "$@"
@@ -298,6 +287,7 @@ r_escaped_make_string()
    esac
 }
 
+
 r_makeflags_add()
 {
    local makeflags="$1"
@@ -403,30 +393,6 @@ r_build_make_flags()
 
 
 
-# fix for wslpath needing an existing file
-r_mulle_wslpath()
-{
-   if [ ! -e "$1" ]
-   then
-      r_dirname "$1"
-      r_mulle_wslpath "${RVAL}"
-      tmp="${RVAL}"
-
-      r_basename "$1"
-      RVAL="${tmp}\\${RVAL}"
-      return 
-   fi
-
-   RVAL="`wslpath -w "$1" `"
-}
-
-
-mulle_wslpath()
-{
-   shift
-   r_mulle_wslpath "$1"
-   printf "%s\n" "${RVAL}"
-}
 
 r_convert_file_to_tool_flag()
 {
@@ -436,6 +402,8 @@ r_convert_file_to_tool_flag()
 
    case "${mangler}" in 
       wslpath)
+         include_mulle_tool_library "platform" "wsl"
+
          r_mulle_wslpath "${filepath}"
          filepath="${RVAL}" # wslpath complains if not there, we don't care
       ;;

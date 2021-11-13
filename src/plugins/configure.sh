@@ -368,10 +368,7 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
 
    case "${MULLE_UNAME}" in
       mingw*)
-         if [ -z "${MULLE_MAKE_MINGW_SH}" ]
-         then
-            . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-mingw.sh" || exit 1
-         fi
+         include_mulle_tool_library "platform" "mingw"
          setup_mingw_buildenvironment
       ;;
    esac
