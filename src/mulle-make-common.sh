@@ -403,10 +403,54 @@ r_build_make_flags()
 
 
 
-r_convert_file_to_cflag()
+# fix for wslpath needing an existing file
+r_mulle_wslpath()
+{
+   if [ ! -e "$1" ]
+   then
+      r_dirname "$1"
+      r_mulle_wslpath "${RVAL}"
+      tmp="${RVAL}"
+
+      r_basename "$1"
+      RVAL="${tmp}\\${RVAL}"
+      return 
+   fi
+
+   RVAL="`wslpath -w "$1" `"
+}
+
+
+mulle_wslpath()
+{
+   shift
+   r_mulle_wslpath "$1"
+   printf "%s\n" "${RVAL}"
+}
+
+r_convert_file_to_tool_flag()
 {
    local filepath="$1"
    local flag="$2"
+   local mangler="$3"
+
+   case "${mangler}" in 
+      wslpath)
+         r_mulle_wslpath "${filepath}"
+         filepath="${RVAL}" # wslpath complains if not there, we don't care
+      ;;
+
+      cygpath)
+         filepath="`cygpath -w "${filepath}" `"
+      ;;
+
+      "")
+      ;;
+
+      *)
+         filepath="`${mangler} "${filepath}" `"
+      ;;
+   esac
 
    r_escaped_shell_string "${filepath}"
    r_escaped_make_string "${RVAL}"
@@ -414,10 +458,12 @@ r_convert_file_to_cflag()
 }
 
 
-r_convert_path_to_cflags()
+r_convert_path_to_tool_flags()
 {
    local filepath="$1"
    local flag="$2"
+   local mangler="$3"
+   local separator="${4:- }"
 
    local output
 
@@ -429,8 +475,8 @@ r_convert_path_to_cflags()
    do
       shell_enable_glob
 
-      r_convert_file_to_cflag "${component}" "${flag}"
-      r_concat "${output}" "${RVAL}"
+      r_convert_file_to_tool_flag "${component}" "${flag}" "${mangler}"
+      r_concat "${output}" "${RVAL}" "${separator}"
       output="${RVAL}"
    done
    IFS="${DEFAULT_IFS}"
@@ -451,7 +497,7 @@ r_sdkpath_tool_flags()
 
    if [ ! -z "${sdkpath}" ]
    then
-      r_convert_file_to_cflag "${sdkpath}" "-isysroot "
+      r_convert_file_to_tool_flag "${sdkpath}" "-isysroot "
       return 0
    fi 
 
@@ -466,21 +512,21 @@ r_headerpath_preprocessor_flags()
    local headersearchpaths
    local frameworksearchpaths
 
-   case "${DEFINITION_CC}" in
+   case "${DEFINITION_CC:-${CC}}" in
       *clang*|*gcc)
-         r_convert_path_to_cflags "${DEFINITION_INCLUDE_PATH}" "-isystem "
+         r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-isystem "
          headersearchpaths="${RVAL}"
       ;;
 
       *)
-         r_convert_path_to_cflags "${DEFINITION_INCLUDE_PATH}" "-I"
+         r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-I"
          headersearchpaths="${RVAL}"
       ;;
    esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         r_convert_path_to_cflags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
+         r_convert_path_to_tool_flags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac
@@ -500,12 +546,30 @@ r_librarypath_linker_flags()
    local librarysearchpaths
    local frameworksearchpaths
 
-   r_convert_path_to_cflags "${DEFINITION_LIB_PATH}" "-L"
-   librarysearchpaths="${RVAL}"
+   case "${MULLE_UNAME}" in
+      windows)
+         case "${LD:-ld.exe}" in 
+            *.exe)
+               r_convert_path_to_tool_flags	 "${DEFINITION_LIB_PATH}" "-LIBPATH:" "wslpath" 
+               librarysearchpaths="${RVAL}"
+            ;;
+
+            *)
+                r_convert_path_to_tool_flags	 "${DEFINITION_LIB_PATH}" "-L"
+                librarysearchpaths="${RVAL}"
+            ;;
+         esac
+      ;;
+
+      *)
+         r_convert_path_to_tool_flags	 "${DEFINITION_LIB_PATH}" "-L"
+         librarysearchpaths="${RVAL}"
+      ;;
+   esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         r_convert_path_to_cflags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
+         r_convert_path_to_tool_flags	 "${DEFINITION_FRAMEWORKS_PATH}" "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac

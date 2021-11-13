@@ -138,7 +138,7 @@ build_meson()
    cflags="${RVAL}"
    r_compiler_cxxflags_value "${DEFINITION_CXX:-${DEFINITION_CC}}" "${configuration}" 'NO'
    cxxflags="${RVAL}"
-   r_compiler_cppflags_value "${DEFINITION_INCLUDE_PATH}"
+   r_compiler_cppflags_value "${DEFINITION_CC}" "${DEFINITION_INCLUDE_PATH}"
    cppflags="${RVAL}"
    r_compiler_ldflags_value "${DEFINITION_CC}" "${configuration}"
    ldflags="${RVAL}"

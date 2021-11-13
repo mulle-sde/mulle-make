@@ -351,7 +351,7 @@ r_cmake_userdefined_definitions()
                         else 
                            case "${CMAKE}" in 
                               *.exe)
-                                 translatepath="wslpath"
+                                 translatepath="mulle_wslpath"
                               ;;
                            esac
                         fi
@@ -363,7 +363,8 @@ r_cmake_userdefined_definitions()
                            do
                               IFS="${DEFAULT_IFS}"; shell_enable_glob
       
-                              filepath="`${translatepath} -w "${filepath}" `"
+                              # wslpath complains if path is not there, stupid
+                              filepath="`${translatepath} -w "${filepath}"`"
                               r_semicolon_concat "${cmakevalue}" "${filepath}"
                               cmakevalue="${RVAL}"
                            done
