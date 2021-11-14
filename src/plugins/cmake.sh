@@ -347,7 +347,7 @@ r_cmake_userdefined_definitions()
                         # on wsl, we gotta check which it is
                         if [ "${MULLE_UNAME}" = "mingw" ]
                         then 
-                           translatepath ="cygpath"
+                           translatepath="cygpath"
                         else 
                            case "${CMAKE}" in 
                               *.exe)
