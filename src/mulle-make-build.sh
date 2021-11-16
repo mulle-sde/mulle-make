@@ -448,7 +448,7 @@ build()
          esac
       ;;
 
-      Debug|Release)
+      Debug|Release|Test)
          log_warning "SDK named like a standard configuration"
       ;;
 
@@ -465,7 +465,7 @@ build()
          platform="${MULLE_UNAME}"
       ;;
 
-      Debug|Release)
+      Debug|Release|Test)
          log_warning "Platform named like a standard configuration"
       ;;
    esac

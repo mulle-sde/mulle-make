@@ -258,7 +258,6 @@ r_compiler_cppflags_value()
 }
 
 
-
 _r_compiler_cflags_value()
 {
    log_entry "_r_compiler_cflags_value" "$@"
@@ -337,7 +336,6 @@ r_compiler_cxxflags_value()
    local configuration="$2"
    local addoptflags="$3"
 
-
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "ENV CXXFLAGS:       ${CXXFLAGS}"
@@ -379,7 +377,6 @@ r_compiler_ldflags_value()
    local compiler="$1"
    local configuration="$2"
 
-
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "ENV LDFLAGS:       ${LDFLAGS}"
@@ -412,7 +409,7 @@ r_compiler_ldflags_value()
    # doesn't work for me though...
    # https://stackoverflow.com/questions/11731229/dladdr-doesnt-return-the-function-name/11732893?r=SearchResults&s=3|31.5239#11732893
    case "${configuration}" in
-      'Debug')
+      'Debug'|'Test')
          case "${MULLE_UNAME}" in
             linux)
                case "${compiler%.*}" in

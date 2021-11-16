@@ -584,7 +584,7 @@ build_fail()
          r_basename "${RVAL}"    # get project name
          # even worse bozo hack
          case "${RVAL}" in
-            Release|Debug)
+            Release|Debug|Test)
                RVAL=""
             ;;
          esac
