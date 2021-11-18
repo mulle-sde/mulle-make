@@ -269,6 +269,8 @@ r_make_for_plugin()
 #
 r_escaped_make_string()
 {
+   log_entry "r_escaped_make_string" "$@"
+
    local dollar='$'
 
    RVAL="$*"
@@ -290,6 +292,8 @@ r_escaped_make_string()
 
 r_makeflags_add()
 {
+   log_entry "r_makeflags_add" "$@"
+
    local makeflags="$1"
    local value="$2"
 
@@ -392,10 +396,10 @@ r_build_make_flags()
 }
 
 
-
-
 r_convert_file_to_tool_flag()
 {
+   log_entry "r_convert_file_to_tool_flag" "$@"
+
    local filepath="$1"
    local flag="$2"
    local mangler="$3"
@@ -428,6 +432,8 @@ r_convert_file_to_tool_flag()
 
 r_convert_path_to_tool_flags()
 {
+   log_entry "r_convert_path_to_tool_flags" "$@"
+
    local filepath="$1"
    local flag="$2"
    local mangler="$3"
@@ -511,6 +517,8 @@ r_headerpath_preprocessor_flags()
 
 r_librarypath_linker_flags()
 {
+   log_entry "r_librarypath_linker_flags" "$@"
+
    local librarysearchpaths
    local frameworksearchpaths
 
@@ -518,26 +526,26 @@ r_librarypath_linker_flags()
       windows)
          case "${LD:-ld.exe}" in 
             *.exe)
-               r_convert_path_to_tool_flags	 "${DEFINITION_LIB_PATH}" "-LIBPATH:" "wslpath" 
+               r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-LIBPATH:" "wslpath" 
                librarysearchpaths="${RVAL}"
             ;;
 
             *)
-                r_convert_path_to_tool_flags	 "${DEFINITION_LIB_PATH}" "-L"
-                librarysearchpaths="${RVAL}"
+               r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-L"
+               librarysearchpaths="${RVAL}"
             ;;
          esac
       ;;
 
       *)
-         r_convert_path_to_tool_flags	 "${DEFINITION_LIB_PATH}" "-L"
+         r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-L"
          librarysearchpaths="${RVAL}"
       ;;
    esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         r_convert_path_to_tool_flags	 "${DEFINITION_FRAMEWORKS_PATH}" "-F"
+         r_convert_path_to_tool_flags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac

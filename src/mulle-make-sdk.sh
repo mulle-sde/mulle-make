@@ -36,15 +36,17 @@ MULLE_MAKE_SDK_SH="included"
 #
 r_sdk_cflags()
 {
+   log_entry "r_sdk_cflags" "$@"
+
    local sdk="$1"
    local platform="$2"
 
+   RVAL=
    if [ "${DEFINITION_DETERMINE_SDK}" = 'NO' ]
    then
       return
    fi
 
-   RVAL=
    case "${sdk}" in
       android*)
          r_escaped_shell_string "${platform}"
