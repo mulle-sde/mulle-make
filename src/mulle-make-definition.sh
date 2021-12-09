@@ -54,7 +54,8 @@ Commands:
    show   :  list all known builtin keys (excludes plugin specifics)
 
 Options:
-   --definition-dir <path>  : definitions to edit (.mulle/etc/craft/definition)
+   --definition-dir <path>      : definitions to edit (.mulle/etc/craft/definition)
+   --aux-definition-dir <path>  : auxilary definitions to read
 EOF
    exit 1
 }
@@ -922,6 +923,7 @@ get_definition_dir()
    log_entry "get_definition_dir" "$@"
 
    local directory="$1"
+   local aux_directory="$2"
 
    local argument
    local OPTION_OUTPUT_KEY='NO'
@@ -961,6 +963,10 @@ get_definition_dir()
    fi
 
    read_definition_dir "${directory}"
+   if [ ! -z "${aux_directory}" ]
+   then
+      read_definition_dir "${aux_directory}"
+   fi
 
    local varkey
 
@@ -991,6 +997,7 @@ list_definition_dir()
    log_entry "list_definition_dir" "$@"
 
    local directory="$1"
+   local aux_directory="$2"
 
    local argument
 
@@ -1017,6 +1024,10 @@ list_definition_dir()
    fi
 
    read_definition_dir "${directory}"
+   if [ ! -z "${aux_directory}" ]
+   then
+      read_definition_dir "${aux_directory}"
+   fi
 
    local lf="
 "
@@ -1040,6 +1051,7 @@ make_definition_main()
 
    local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
    local OPTION_DEFINITION_DIR=".mulle/etc/craft/definition"
+   local OPTION_AUX_DEFINITION_DIR=""
 
    local argument
 
@@ -1063,6 +1075,11 @@ make_definition_main()
          #
          --definition-dir)
             read -r OPTION_DEFINITION_DIR ||
+               make_definition_usage "missing argument to \"${argument}\""
+         ;;
+
+         --aux-definition-dir)
+            read -r OPTION_AUX_DEFINITION_DIR ||
                make_definition_usage "missing argument to \"${argument}\""
          ;;
 
@@ -1091,7 +1108,7 @@ make_definition_main()
             return 4
          fi
 
-         ${cmd}_definition_dir "${OPTION_DEFINITION_DIR}"
+         ${cmd}_definition_dir "${OPTION_DEFINITION_DIR}" "${OPTION_AUX_DEFINITION_DIR}"
       ;;
 
       show|keys)

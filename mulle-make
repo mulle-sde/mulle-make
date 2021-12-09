@@ -143,17 +143,14 @@ usage()
 Usage:
    ${MULLE_USAGE_NAME} [flags] [command] [options]
 
-   Build a project using a buildtool like cmake or configure. At its simplest,
-   this is a shortcut for: \`mkdir build; cd build; cmake .. ; make; cd ..\`.
+   Build a project using a buildtool like cmake or configure. mulle-make will 
+   try to guess what kind of build system to use and how to invoke it. At its 
+   simplest, \`mulle-make\` without arguments is a shortcut for 
+   \`mkdir build; cd build; cmake .. ; make; cd ..\`.
 
-   Customize your build with \`make -D\` definitions like for example
+   Customize your build with \`-D\` definitions like 
    "-DFOO=1 -DOTHER_CPPFLAGS=-fPIC". Keep a permanent set of these definitions
-   around  with the \'definition\' command.
-
-   mulle-make will try to guess what kind of build system to use and how to 
-   invoke it. But there is no guarantee that it will work. As mulle-make can
-   run outside of a mulle-env environment, you can also pass in CFLAGS and
-   other environment variables.
+   around with the \'definition\' command.
 
    See \`mulle-make project -h\` for more help.
 
@@ -181,8 +178,9 @@ EOF
 Options are command specific. Use ${MULLE_USAGE_NAME} <command> -h for help.
 
 Environment:
-   mulle-make ignores environment variables. They may affect the buildtool
-   though.
+   mulle-make itself ignores environment variables. CFLAGS and other 
+   environment variables are passed through to the actual build system. 
+   So \`CFLAGS=-O0 -g mulle-make\` will work.
 
 EOF
 

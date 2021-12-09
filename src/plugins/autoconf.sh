@@ -165,17 +165,29 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
          env | sort >&2
       fi
 
+      local bootstrapper
+
       if [ -x "autogen.sh" ]
       then
-         r_build_log_name "${logsdir}" "autogen.sh"
+         bootstrapper="autogen.sh"
+      else
+         if [ -x "bootstrap" ]
+         then
+            bootstrapper="bootstrap"
+         fi
+      fi
+
+      if [ ! -z "${bootstrapper}" ]
+      then
+         r_build_log_name "${logsdir}" "${bootstrapper}"
          logfile1="${RVAL}"
 
          if ! NOCONFIGURE=1 logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                                                       "${env_common}" \
-                                                      "./autogen.sh" | ${grepper}
+                                                      "./${bootstrapper}" | ${grepper}
          then
             autoconf_set_needs_rerun "${projectfile}"
-            build_fail "${logfile1}" "autogen.sh" "${PIPESTATUS[ 0]}" "${greplog}"
+            build_fail "${logfile1}" "${bootstrapper}" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
       else
          if ! [ -f "aclocal4.am" ]

@@ -38,23 +38,24 @@ _emit_common_options()
    if [ "${marks}" = "common-prefix" ]
    then
       cat <<EOF
-   --prefix <prefix>          : prefix to use for build products e.g. /usr/local
+   --prefix <prefix>           : prefix to use for build products e.g. /usr/local
 EOF
    fi
 
       cat <<EOF
-   -D<key>=<value>            : set the definition named key to value
-   -D<key>+=<value>           : append a += definition for the buildtool
-   --build-dir <dir>          : specify build directory
-   --debug                    : build with configuration "Debug"
-   --include-path <path>      : specify header search PATH, separated by :
-   --definition-dir <path>    : specify definition directory
-   --library-style <type>     : produced type : static,dynamic,standalone
-   --library-path <path>      : specify library search PATH, separated by :
-   --no-ninja                 : prefer make over ninja
-   --release                  : build with configuration "Release" (Default)
-   --mulle-test               : build for mulle-test
-   --verbose-make             : verbose make output
+   -D<key>=<value>             : set the definition named key to value
+   -D<key>+=<value>            : append a += definition for the buildtool
+   --build-dir <dir>           : specify build directory
+   --debug                     : build with configuration "Debug"
+   --include-path <path>       : specify header search PATH, separated by :
+   --definition-dir <path>     : specify definition directory
+   --aux-definition-dir <path> : specify auxiliar definition directory
+   --dynamic                   : prefer dynamic library output
+   --library-path <path>       : specify library search PATH, separated by :
+   --no-ninja                  : prefer make over ninja
+   --release                   : build with configuration "Release" (Default)
+   --mulle-test                : build for mulle-test
+   --verbose-make              : verbose make output
 EOF
    case "${MULLE_UNAME}" in
       mingw*)
@@ -62,14 +63,14 @@ EOF
 
       darwin)
          cat <<EOF
-   --frameworks-path <path>   : specify Frameworks search PATH, separated by :
-   -j <cores>                 : number of cores parameter for make (${MULLE_CORES})
+   --frameworks-path <path>    : specify Frameworks search PATH, separated by :
+   -j <cores>                  : number of cores parameter for make (${MULLE_CORES})
 EOF
       ;;
 
       *)
          cat <<EOF
-   -j <cores>                 : number of cores parameter for make (${MULLE_CORES})
+   -j <cores>                  : number of cores parameter for make (${MULLE_CORES})
 EOF
       ;;
    esac
@@ -92,6 +93,7 @@ EOF
    --configuration <name>     : configuration to build like Debug or Release
    --clean                    : always clean before building
    --ifempty <key>[+]=<value> : like -D, but only if no previous value exists
+   --library-style <type>     : library format dynamic,standalone,(static)
    --log-dir <dir>            : specify log directory
    --no-determine-sdk         : don't try to figure out the default SDK
    --phase <name>             : run make phase (for parallel builds)
@@ -138,6 +140,9 @@ Usage:
    expansion. You generally do not interact with ${MULLE_USAGE_NAME} through
    environment variables (though there are four notable exceptions) but 
    though these definition directories.
+
+   You can specify a preference for building dynamic or static libraries,
+   but it may only work with some cmake and autoconf projects.
 
 Options:
 EOF
@@ -309,11 +314,49 @@ __determine_build_directories()
    r_canonicalize_path "${srcdir}"
    srcdir="${RVAL}"
 
-   kitchendir="${DEFINITION_BUILD_DIR:-${srcdir}/build}"
+   # sometimes there is already a "build" dir there, which we don't want
+   # to destroy, so if there is a build but no build/.mulle-make,
+   # mulle-make will use ... a random directory.
+
+   local markerfile
+
+   markerfile="${srcdir}/.mulle-make-build-dir"
+
+   kitchendir="${DEFINITION_BUILD_DIR}"
+   if [ -z "${kitchendir}" ]
+   then
+      kitchendir="`egrep -v '^#' "${markerfile}" 2> /dev/null`"
+      if [ -z "${kitchendir}" ]
+      then
+         if [ ! -d "${srcdir}/build" ]
+         then
+            kitchendir="${srcdir}/build"
+         else
+            while :
+            do
+               local uuid
+               local len=4 # turbo pedantic
+
+               uuid="`uuidgen`" || internal_fail "uuidgen failed"
+               kitchendir="${srcdir}/build-${uuid:0:${len}}"
+               if [ ! -d "${kitchendir}" ]
+               then
+                  log_info "Use build directory ${C_RESET_BOLD}${kitchendir#${MULLE_USER_PWD}/}"
+                  break
+               fi
+               len=$(( len + 1 ))
+            done
+         fi
+      fi
+   fi
 
    logsdir="${DEFINITION_LOG_DIR:-${kitchendir}/.log}"
 
    mkdir_build_directories "${kitchendir}" "${logsdir}"
+
+   redirect_exekutor "${markerfile}" \
+      echo "# memorizes build directory mulle-make used
+${kitchendir}"
 
    # now known to exist, so we can canonicalize
    r_canonicalize_path "${kitchendir}"
@@ -414,6 +457,7 @@ build()
    local srcdir="$2"
    local dstdir="$3"
    local definitiondir="$4"
+   local aux_definitiondir="$5"
 
    #
    # need these three defined before read_info_dir
@@ -430,6 +474,14 @@ build()
       MULLE_MAKE_DEFINITION_DIR="${RVAL}"
 
       read_definition_dir "${definitiondir}"
+   fi
+
+   if [ ! -z "${aux_definitiondir}" ]
+   then
+      r_simplified_absolutepath "${aux_definitiondir}"
+      MULLE_MAKE_AUX_DEFINITION_DIR="${RVAL}"
+
+      read_definition_dir "${aux_definitiondir}"
    fi
 
    local sdk
@@ -616,6 +668,7 @@ _make_build_main()
    local DEFINITION_PREFIX
 
    local OPTION_INFO_DIR
+   local OPTION_AUX_INFO_DIR
    local OPTION_ALLOW_SCRIPT
    local OPTION_CORES
    local OPTION_LOAD
@@ -730,6 +783,10 @@ _make_build_main()
             read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
          ;;
 
+         --aux-definition-dir)
+            read -r OPTION_AUX_INFO_DIR || fail "missing argument to \"${argument}\""
+         ;;
+
          --serial|--no-parallel)
             OPTION_CORES="1"
          ;;
@@ -752,14 +809,21 @@ _make_build_main()
             DEFINITION_CLEAN_BEFORE_BUILD='NO'
          ;;
 
-         --preferred-library-style)
+         --static|--dynamic|--standalone)
+            DEFINITION_PREFERRED_LIBRARY_STYLE="${argument:2}"
+         ;;
+
+         --shared)
+            DEFINITION_PREFERRED_LIBRARY_STYLE="dynamic"
+         ;;
+
+         --preferred-library-style|--library-style)
             read -r DEFINITION_PREFERRED_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
          ;;
 
          --library-style)
             read -r DEFINITION_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
          ;;
-
 
          --log-dir)
             read -r DEFINITION_LOG_DIR || fail "missing argument to \"${argument}\""
@@ -979,7 +1043,8 @@ Maybe repair with:
          build "build" \
                "${srcdir}" \
                "" \
-               "${OPTION_INFO_DIR}"
+               "${OPTION_INFO_DIR}" \
+               "${OPTION_AUX_INFO_DIR}"
       ;;
 
       install)
@@ -1008,7 +1073,8 @@ Maybe repair with:
          build "install" \
                "${srcdir}" \
                "${dstdir}" \
-               "${OPTION_INFO_DIR}"
+               "${OPTION_INFO_DIR}" \
+               "${OPTION_AUX_INFO_DIR}"
       ;;
    esac
 }

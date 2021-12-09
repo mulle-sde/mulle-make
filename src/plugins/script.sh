@@ -67,8 +67,24 @@ r_build_script_absolutepath()
 
       */*)
          # clobber searchpath
-         r_filepath_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${directory}"
-         searchpath="${RVAL}"
+         searchpath=
+
+         # prefer aux
+         if [ ! -z "${MULLE_MAKE_AUX_DEFINITION_DIR}" ]
+         then
+            r_filepath_concat "${MULLE_MAKE_AUX_DEFINITION_DIR}/bin" "${directory}"
+            r_colon_concat "${searchpath}" "${RVAL}"
+            searchpath="${RVAL}"
+         fi
+
+         if [ ! -z "${MULLE_MAKE_DEFINITION_DIR}" ]
+         then
+            r_filepath_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${directory}"
+            r_colon_concat "${searchpath}" "${RVAL}"
+            searchpath="${RVAL}"
+         fi
+
+         [ -z "${DEPENDENCY_DIR}" ] && internal_fail "DEPENDENCY_DIR not set"
 
          r_filepath_concat "${DEPENDENCY_DIR}/bin" "${directory}"
          r_colon_concat "${searchpath}" "${RVAL}"
