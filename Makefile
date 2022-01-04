@@ -6,7 +6,7 @@ src/mulle-make-common.sh \
 src/mulle-make-compiler.sh \
 src/mulle-make-definition.sh \
 src/mulle-make-list.sh \
-src/mulle-make-mingw.sh \
+src/mulle-platform-mingw.sh \
 src/mulle-make-plugin.sh \
 src/plugins/autoconf.sh \
 src/plugins/cmake.sh \

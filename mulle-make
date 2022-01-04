@@ -32,74 +32,73 @@
 [ "${TRACE}" = 'YES' -o "${MULLE_MAKE_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
-####
-#
-# Prelude to be placed at top of each script. Rerun this script either in
-# bash or zsh, if not already running in either (which can happen!)
-# Allows script to run on systems that either have bash (linux) or
-# zsh (macOS) only by default.
+MULLE_EXECUTABLE_VERSION='1.0.0'
+##########################################################################
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+###########################################################################
+# #
+# # PRELUDE - Standard startup code for loading mulle-bashfunctions
+# #
+###
 
+#
+# Figure out MULLE_BASHFUNCTIONS_LIBEXEC_DIR on this machine if needed.
+#
+if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+then
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+   export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+fi
+
+#
+# The booter reruns the executable either with bash or zsh, whatever the
+# system provides. On the second run --no-auto-shell will be set first.
+#
 if [ "$1" != --no-auto-shell ]
 then
-   if [ -z "${BASH_VERSION}" -a -z "${ZSH_VERSION}" ]
-   then
-      exe_shell="`command -v "bash" `"
-      exe_shell="${exe_shell:-`command -v "zsh" `}"
-
-      script="$0"
-
-      #
-      # Quote incoming arguments for shell expansion
-      #
-      args=""
-      for arg in "$@"
-      do
-         # True bourne sh doesn't know ${a//b/c} and <<<
-         case "${arg}" in
-            *\'*)
-               # Use cat instead of echo to avoid possible echo -n
-               # problems. Escape single quotes in string.
-               arg="`cat <<EOF | sed -e s/\'/\'\\\"\'\\\"\'/g
-${arg}
-EOF
-`"
-            ;;
-         esac
-         if [ -z "${args}" ]
-         then
-            args="'${arg}'"
-         else
-            args="${args} '${arg}'"
-         fi
-      done
-
-      #
-      # bash/zsh will use arg after -c <arg> as $0, convenient!
-      #
-
-      exec "${exe_shell:-bash}" -c ". ${script} --no-auto-shell ${args}" "${script}"
-   fi
-   if [ ! -z "${BASH_VERSION}" ]
-   then
-      set +o posix
-   fi
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
 else
    shift    # get rid of --no-auto-shell
 fi
 
 
 #
-# Main script to follow, runs now either in zsh or bash
+# Include mulle-bashfunctions.sh         : default functions
+#         mulle-bashfunctions-none.sh    : almost no functions
+#         mulle-bashfunctions-minimal.sh : few functions for basic scripts
+#         mulle-bashfunctions-all.sh     : everything, even obscure functions
 #
-####
+# Do this first to get aliases
+#
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 
-MULLE_EXECUTABLE_VERSION=0.16.0
+###
+# # Now we are in bash or zsh with mulle-bashfunctions loaded
+# #
+###########################################################################
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+###########################################################################
+
+MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
 
 #
-# This is the main user interface to mulle-make
+# Determine location of own libexec directory. Which is `src` in development
+# and ../libexec when deployed. MULLE_EXECUTABLE needs to be defined for this.
+#
+
+if [ -z "${MULLE_MAKE_LIBEXEC_DIR}" ]
+then
+   r_get_libexec_dir "${MULLE_EXECUTABLE}" "mulle-make" "mulle-make-build.sh"
+   MULLE_MAKE_LIBEXEC_DIR="${RVAL}"
+fi
+
+
+
+#
+# This is the make::main user interface to mulle-make
 # sorta like git
 #
-print_commands()
+make::print_commands()
 {
    local  show_all="${1:-NO}"
 
@@ -124,7 +123,7 @@ print_commands()
 }
 
 
-print_flags()
+make::print_flags()
 {
    cat <<EOF
    -f            : force operation
@@ -135,7 +134,7 @@ EOF
 }
 
 
-usage()
+make::usage()
 {
    local verbose="${1:-NO}"
 
@@ -157,14 +156,14 @@ Usage:
 Flags:
 EOF
 
-   print_flags | LC_ALL=C sort
+   make::print_flags | LC_ALL=C sort
 
    cat <<EOF
 
 Commands:
 EOF
 
-   print_commands "${verbose}"
+   make::print_commands "${verbose}"
 
    if [ "${verbose}" = 'NO' ]
    then
@@ -188,7 +187,7 @@ EOF
 }
 
 
-_main()
+make::_main()
 {
    local MULLE_FLAG_MAGNUM_FORCE='NO'
    local MULLE_FLAG_IGNORE_GRAVEYARD='NO'
@@ -226,7 +225,7 @@ _main()
          ;;
 
          -h*|--help|help)
-            usage "${MULLE_TRACE}"
+            make::usage "${MULLE_TRACE}"
          ;;
 
          --version)
@@ -260,7 +259,7 @@ _main()
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
          # possibly unconsumed argument
-         make_clean_main "${argument}"
+         make::build::clean_main "${argument}"
       ;;
 
       project|build|make)
@@ -268,35 +267,35 @@ _main()
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
          # possibly unconsumed argument
-         make_build_main "${argument}"
+         make::build::build_main "${argument}"
       ;;
 
       definition)
          # shellcheck source=src/mulle-make-definition.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh"
 
-         make_definition_main
+         make::definition::main
       ;;
 
       install|craft)
          # shellcheck source=src/mulle-make-build.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
-         make_install_main
+         make::build::install_main
       ;;
 
       list)
          # shellcheck source=src/mulle-make-build.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
-         make_list_main
+         make::build::list_main
       ;;
 
       show)
          # shellcheck source=src/mulle-make-show.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-show.sh"
 
-         make_show_main
+         make::show::main
       ;;
 
       libexec-dir|library-path)
@@ -316,13 +315,13 @@ _main()
          # shellcheck source=src/mulle-make-build.sh
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
-         make_build_main "${cmd}"
+         make::build::build_main "${cmd}"
       ;;
    esac
 }
 
 
-print_arguments()
+make::print_arguments()
 {
    while [ $# -ne 0 ]
    do
@@ -332,7 +331,7 @@ print_arguments()
 }
 
 
-main()
+make::main()
 {
    local args
 
@@ -353,95 +352,11 @@ main()
 
       args="`cat "${filename}" `"
    else
-      args="`print_arguments "$@" `"
+      args="`make::print_arguments "$@" `"
    fi
 
-   _main <<< "${args}"
+   make::_main <<< "${args}"
 }
 
 
-########
-###
-### INIT
-###
-_fatal()
-{
-   echo "$0 fatal error: $*" >&2
-   exit 1
-}
-
-_init()
-{
-   #
-   # leading backslash ? looks like we're getting called from
-   # mingw via a .BAT or so
-   #
-   case "$PATH" in
-      '\\'*)
-         PATH="${PATH//\\/\/}"
-      ;;
-   esac
-
-   if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
-   then
-      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir 2> /dev/null`"
-      if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
-      then
-         if [ -z "`command -v "${executablepath}"`" ]
-         then
-            echo "Fatal Error: Could not find mulle-bashfunctions-env in \
-PATH ($PATH) - mulle-bashfunctions not installed ?" >&2
-         else
-            _fatal "Could not find libexec of mulle-bashfunctions-env"
-         fi
-         exit 1
-      fi
-   fi
-
-      # shellcheck source=../mulle-bashfunctions/src/mulle-string.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
-
-   if [ -z "${MULLE_MAKE_LIBEXEC_DIR}" ]
-   then
-      r_get_libexec_dir "${MULLE_EXECUTABLE}" "mulle-make" "mulle-make-build.sh"
-      MULLE_MAKE_LIBEXEC_DIR="${RVAL}"
-   fi
-
-   #
-   # commands with minimal trap setup
-   #
-   if [ $# -eq 1 ]
-   then
-      case "${1}" in
-         libexec-dir|library-path)
-            printf "%s\n" "${MULLE_MAKE_LIBEXEC_DIR}"
-            exit 0
-         ;;
-
-         version)
-            printf "%s\n" "${MULLE_EXECUTABLE_VERSION}"
-            exit 0
-         ;;
-      esac
-   fi
-
-   #  set -e # more pain then gain in the end
-   #  set -u # doesn't work with my style
-
-   shell_enable_pipefail
-   shell_enable_extglob
-
-   call_main "${MULLE_MAKE_FLAGS}" "$@"
-}
-
-###
-### INIT
-###
-########
-
-
-MULLE_EXECUTABLE="${MULLE_EXECUTABLE:-${BASH_SOURCE[0]:-${(%):-%x}}}"
-
-_init "$@" # needs params
-
-
+call_with_flags "make::main" "${MULLE_MAKE_FLAGS}" "$@"

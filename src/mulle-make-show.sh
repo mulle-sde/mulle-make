@@ -30,7 +30,7 @@
 #
 MULLE_MAKE_SHOW_SH="included"
 
-show_usage()
+make::show::usage()
 {
    cat <<EOF >&2
 Usage:
@@ -43,9 +43,9 @@ EOF
 }
 
 
-make_show_main()
+make::show::main()
 {
-   log_entry "make_show_main" "$@"
+   log_entry "make::show::main" "$@"
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
@@ -55,5 +55,5 @@ make_show_main()
    fi
 
    log_info "Supported Buildtools"
-   build_list_plugins
+   make::plugin::main
 }

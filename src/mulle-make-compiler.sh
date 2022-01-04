@@ -85,9 +85,9 @@ MULLE_MAKE_COMPILER_SH="included"
 # assume default is release and the flags
 # are set for that
 #
-_r_compiler_configuration_options()
+make::compiler::r_configuration_options()
 {
-   log_entry "_r_compiler_configuration_options" "$@"
+   log_entry "make::compiler::r_configuration_options" "$@"
 
    local name="$1"
    local configuration="$2"
@@ -116,7 +116,7 @@ _r_compiler_configuration_options()
 #
 # this should be part of mulle-platform
 #
-r_darwin_sdkpath_for_sdk()
+make::compiler::r_darwin_sdkpath_for_sdk()
 {
    local sdk="$1"
 
@@ -159,9 +159,9 @@ r_darwin_sdkpath_for_sdk()
 
 
 # compiler is re
-r_compiler_get_sdkpath()
+make::compiler::r_get_sdkpath()
 {
-   log_entry "r_compiler_get_sdkpath" "$@"
+   log_entry "make::compiler::r_get_sdkpath" "$@"
 
    local sdk="$1"
 
@@ -176,7 +176,7 @@ r_compiler_get_sdkpath()
 
    case "${MULLE_UNAME}" in
       darwin)
-         r_darwin_sdkpath_for_sdk "${sdk}"
+         make::compiler::r_darwin_sdkpath_for_sdk "${sdk}"
       ;;
    esac
 
@@ -184,7 +184,7 @@ r_compiler_get_sdkpath()
 }
 
 
-r_default_flag_definer()
+make::compiler::r_default_flag_definer()
 {
    RVAL="-D$*"
 }
@@ -198,11 +198,11 @@ r_default_flag_definer()
 #
 # The -I/-isystem generation s done somewhere else
 #
-r_compiler_cppflags_value()
+make::compiler::r_cppflags_value()
 {
-   log_entry "r_compiler_cppflags_value" "$@"
+   log_entry "make::compiler::r_cppflags_value" "$@"
 
-   local flag_definer="${1:-r_default_flag_definer}"
+   local flag_definer="${1:-make::compiler::r_default_flag_definer}"
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
@@ -214,7 +214,7 @@ r_compiler_cppflags_value()
 
    local result 
 
-   if is_plus_key "DEFINITION_CPPFLAGS"
+   if make::definition::is_plus_key "DEFINITION_CPPFLAGS"
    then
       r_concat "${DEFINITION_CPPFLAGS}" "${CPPFLAGS}"
       result="${RVAL}"
@@ -222,7 +222,7 @@ r_compiler_cppflags_value()
       result="${DEFINITION_CPPFLAGS:-${CPPFLAGS}}"
    fi
 
-   if is_plus_key "DEFINITION_OTHER_CPPFLAGS"
+   if make::definition::is_plus_key "DEFINITION_OTHER_CPPFLAGS"
    then
       r_concat "${DEFINITION_OTHER_CPPFLAGS}" "${OTHER_CPPFLAGS}"
       r_concat "${result}" "${RVAL}"
@@ -258,9 +258,9 @@ r_compiler_cppflags_value()
 }
 
 
-_r_compiler_cflags_value()
+make::compiler::_r_cflags_value()
 {
-   log_entry "_r_compiler_cflags_value" "$@"
+   log_entry "make::compiler::_r_cflags_value" "$@"
 
    local compiler="$1"
    local configuration="$2"
@@ -277,7 +277,7 @@ _r_compiler_cflags_value()
 
    if [ "${addoptflags}" = 'YES' ]
    then
-      _r_compiler_configuration_options "${compiler}" "${configuration}"
+      make::compiler::r_configuration_options "${compiler}" "${configuration}"
       r_concat "${result}" "${RVAL}"
       result="${RVAL}"
    fi
@@ -286,9 +286,9 @@ _r_compiler_cflags_value()
 }
 
 
-r_compiler_cflags_value()
+make::compiler::r_cflags_value()
 {
-   log_entry "r_compiler_cflags_value" "$@"
+   log_entry "make::compiler::r_cflags_value" "$@"
 
    local compiler="$1"
    local configuration="$2"
@@ -305,7 +305,7 @@ r_compiler_cflags_value()
    local result
 
    # DEFINITION_LDFLAGS overrides LDFLAGS except it its += defined
-   if is_plus_key "DEFINITION_CFLAGS"
+   if make::definition::is_plus_key "DEFINITION_CFLAGS"
    then
       r_concat "${DEFINITION_CFLAGS}" "${CFLAGS}"
       result="${RVAL}"
@@ -313,7 +313,7 @@ r_compiler_cflags_value()
       result="${DEFINITION_CFLAGS:-${CFLAGS}}"
    fi
 
-   if is_plus_key "DEFINITION_OTHER_CFLAGS"
+   if make::definition::is_plus_key "DEFINITION_OTHER_CFLAGS"
    then
       r_concat "${DEFINITION_OTHER_CFLAGS}" "${OTHER_CFLAGS}"
       r_concat "${result}" "${RVAL}"
@@ -323,14 +323,14 @@ r_compiler_cflags_value()
       result="${RVAL}"
    fi
 
-   _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
+   make::compiler::_r_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
    r_concat "${result}" "${RVAL}"
 }
 
 
-r_compiler_cxxflags_value()
+make::compiler::r_cxxflags_value()
 {
-   log_entry "r_compiler_cxxflags_value" "$@"
+   log_entry "make::compiler::r_cxxflags_value" "$@"
 
    local compiler="$1"
    local configuration="$2"
@@ -347,7 +347,7 @@ r_compiler_cxxflags_value()
    local result
 
    # DEFINITION_CXXFLAGS overrides CXXFLAGS except it its += defined
-   if is_plus_key "DEFINITION_CXXFLAGS"
+   if make::definition::is_plus_key "DEFINITION_CXXFLAGS"
    then
       r_concat "${DEFINITION_CXXFLAGS}" "${CXXFLAGS}"
       result="${RVAL}"
@@ -355,7 +355,7 @@ r_compiler_cxxflags_value()
       result="${DEFINITION_CXXFLAGS:-${CXXFLAGS}}"
    fi
 
-   if is_plus_key "DEFINITION_OTHER_CXXFLAGS"
+   if make::definition::is_plus_key "DEFINITION_OTHER_CXXFLAGS"
    then
       r_concat "${DEFINITION_OTHER_CXXFLAGS}" "${OTHER_CXXFLAGS}"
       r_concat "${result}" "${RVAL}"
@@ -365,14 +365,14 @@ r_compiler_cxxflags_value()
       result="${RVAL}"
    fi
 
-   _r_compiler_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
+   make::compiler::_r_cflags_value "${compiler}" "${configuration}" "${addoptflags}"
    r_concat "${result}" "${RVAL}"
 }
 
 
-r_compiler_ldflags_value()
+make::compiler::r_ldflags_value()
 {
-   log_entry "r_compiler_ldflags_value" "$@"
+   log_entry "make::compiler::r_ldflags_value" "$@"
 
    local compiler="$1"
    local configuration="$2"
@@ -388,7 +388,7 @@ r_compiler_ldflags_value()
    local result
 
    # DEFINITION_LDFLAGS overrides LDFLAGS except it its += defined
-   if is_plus_key "DEFINITION_LDFLAGS"
+   if make::definition::is_plus_key "DEFINITION_LDFLAGS"
    then
       r_concat "${DEFINITION_LDFLAGS}" "${LDFLAGS}"
       result="${RVAL}"
@@ -396,7 +396,7 @@ r_compiler_ldflags_value()
       result="${DEFINITION_LDFLAGS:-${LDFLAGS}}"
    fi
 
-   if is_plus_key "DEFINITION_OTHER_LDFLAGS"
+   if make::definition::is_plus_key "DEFINITION_OTHER_LDFLAGS"
    then
       r_concat "${DEFINITION_OTHER_LDFLAGS}" "${OTHER_LDFLAGS}"
       r_concat "${result}" "${RVAL}"
@@ -427,9 +427,9 @@ r_compiler_ldflags_value()
 }
 
 
-r_compiler_cmakeflags_values()
+make::compiler::r_cmakeflags_values()
 {
-   log_entry "r_compiler_cmakeflags_values" "$@"
+   log_entry "make::compiler::r_cmakeflags_values" "$@"
 
    local compiler="$1"
    local configuration="$2"

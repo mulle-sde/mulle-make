@@ -37,9 +37,9 @@ MULLE_MAKE_PLUGIN_CONFIGURE_SH="included"
 # build stuff into dependencies
 #
 #
-build_configure()
+make::plugin::configure::build()
 {
-   log_entry "build_configure" "$@"
+   log_entry "make::plugin::configure::build" "$@"
 
    [ $# -ge 9 ] || internal_fail "api error"
 
@@ -68,37 +68,37 @@ build_configure()
    local cppflags
    local ldflags
 
-   r_compiler_cflags_value "${DEFINITION_CC}" "${configuration}"
+   make::compiler::r_cflags_value "${DEFINITION_CC}" "${configuration}"
    cflags="${RVAL}"
-   r_compiler_cxxflags_value "${DEFINITION_CXX:-${DEFINITION_CC}}" "${configuration}"
+   make::compiler::r_cxxflags_value "${DEFINITION_CXX:-${DEFINITION_CC}}" "${configuration}"
    cxxflags="${RVAL}"
-   r_compiler_cppflags_value "${DEFINITION_CC}" "${configuration}"
+   make::compiler::r_cppflags_value "${DEFINITION_CC}" "${configuration}"
    cppflags="${RVAL}"
-   r_compiler_ldflags_value "${DEFINITION_CC}" "${configuration}"
+   make::compiler::r_ldflags_value "${DEFINITION_CC}" "${configuration}"
    ldflags="${RVAL}"
 
    # hackish! changes cflags and friends to possibly add dependency dir ?
    local sdkflags
 
-   r_sdkpath_tool_flags "${sdk}"
+   make::common::r_sdkpath_tool_flags "${sdk}"
    sdkflags="${RVAL}"
    r_concat "${cppflags}" "${sdkflags}"
    cppflags="${RVAL}"
    r_concat "${ldflags}" "${sdkflags}"
    ldflags="${RVAL}"
 
-   r_headerpath_preprocessor_flags
+   make::common::r_headerpath_preprocessor_flags
    r_concat "${cppflags}" "${RVAL}"
    cppflags="${RVAL}"
 
-   r_librarypath_linker_flags
+   make::common::r_librarypath_linker_flags
    r_concat "${ldflags}" "${RVAL}"
    ldflags="${RVAL}"
 
    #
    # basically adds some flags for android based on chosen SDK
    #
-   r_sdk_cflags "${sdk}" "${platform}"
+   make::sdk::r_cflags "${sdk}" "${platform}"
    r_concat "${cflags}" "${RVAL}"
    cflags="${RVAL}"
 
@@ -166,7 +166,7 @@ build_configure()
    local env_flags
    local passed_keys
 
-   r_mulle_make_env_flags
+   make::build::r_env_flags
    env_flags="${RVAL}"
 
    passed_keys=
@@ -221,7 +221,7 @@ build_configure()
 
    local make_flags
 
-   r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"
+   make::common::r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"
    make_flags="${RVAL}"
 
    local absprojectdir
@@ -253,9 +253,9 @@ build_configure()
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "configure"
+   make::common::r_build_log_name "${logsdir}" "configure"
    logfile1="${RVAL}"
-   r_build_log_name "${logsdir}" "make"
+   make::common::r_build_log_name "${logsdir}" "make"
    logfile2="${RVAL}"
 
    local teefile1
@@ -265,7 +265,7 @@ build_configure()
 
    teefile1="/dev/null"
    teefile2="/dev/null"
-   grepper="log_grep_warning_error"
+   grepper="make::common::log_grep_warning_error"
    greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
@@ -278,10 +278,10 @@ build_configure()
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
    then
-      r_safe_tty
+      make::common::r_safe_tty
       teefile1="${RVAL}"
       teefile2="${logfile1}"
-      grepper="log_delete_all"
+      grepper="make::common::log_delete_all"
       greplog="NO"
    fi
 
@@ -304,7 +304,7 @@ build_configure()
                                                 "${configure_flags}" \
                                                 "${arguments}" | ${grepper}
       then
-         build_fail "${logfile1}" "configure" "${PIPESTATUS[ 0]}" "${greplog}"
+         make::common::build_fail "${logfile1}" "configure" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
 
       #
@@ -316,23 +316,23 @@ build_configure()
          if ! logging_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
                   "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "all"  | ${grepper}
          then
-            build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
+            make::common::build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
       fi
 
       if ! logging_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
                "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "${maketarget}"  | ${grepper}
       then
-         build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
+         make::common::build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
 
    ) || exit 1
 }
 
 
-r_test_configure()
+make::plugin::configure::r_test()
 {
-   log_entry "r_test_configure" "$@"
+   log_entry "make::plugin::configure::r_test" "$@"
 
    [ $# -eq 1 ] || internal_fail "api error"
 
@@ -343,7 +343,7 @@ r_test_configure()
 
    RVAL=""
 
-   if ! r_find_nearest_matching_pattern "${srcdir}" "configure"
+   if ! make::common::r_find_nearest_matching_pattern "${srcdir}" "configure"
    then
       log_fluff "There is no configure project in \"${srcdir}\""
       return 4
@@ -368,15 +368,15 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
 
    case "${MULLE_UNAME}" in
       mingw*)
-         include_mulle_tool_library "platform" "mingw"
-         setup_mingw_buildenvironment
+         include "platform::mingw"
+         platform::mingw::setup_buildenvironment
       ;;
    esac
 
-   r_make_for_plugin "configure" "no-ninja"
+   make::common::r_make_for_plugin "configure" "no-ninja"
    MAKE="${RVAL}"
 
-   tools_environment_common
+   make::common::tools_environment
 
    log_verbose "Found configure script \"${projectfile#${MULLE_USER_PWD}/}\""
 
@@ -385,9 +385,9 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
 }
 
 
-configure_plugin_initialize()
+make::plugin::configure::initialize()
 {
-   log_entry "configure_plugin_initialize"
+   log_entry "make::plugin::configure::initialize"
 
    if [ -z "${MULLE_STRING_SH}" ]
    then
@@ -403,6 +403,6 @@ configure_plugin_initialize()
    fi
 }
 
-configure_plugin_initialize
+make::plugin::configure::initialize
 
 :

@@ -31,41 +31,41 @@
 MULLE_MAKE_PLUGIN_AUTOCONF_SH="included"
 
 
-r_find_autoconf()
+make::plugin::autoconf::r_find_autoconf()
 {
    local toolname
 
    toolname="${DEFINITION_AUTOCONF:-${AUTOCONF:-autoconf}}"
-   r_verify_binary "${toolname}" "autoconf" "autoconf"
+   make::command::r_verify_binary "${toolname}" "autoconf" "autoconf"
 }
 
 
-r_find_autoreconf()
+make::plugin::autoconf::r_find_autoreconf()
 {
    local toolname
 
    toolname="${DEFINITION_AUTORECONF:-${AUTORECONF:-autoreconf}}"
-   r_verify_binary "${toolname}" "autoreconf" "autoreconf"
+   make::command::r_verify_binary "${toolname}" "autoreconf" "autoreconf"
 }
 
 
-tools_environment_autoconf()
+make::plugin::autoconf::tools_environment()
 {
-   tools_environment_common
+   make::common::tools_environment
 
-   r_find_autoconf
+   make::plugin::autoconf::r_find_autoconf
    AUTOCONF="${RVAL}"
-   r_find_autoreconf
+   make::plugin::autoconf::r_find_autoreconf
    AUTORECONF="${RVAL}"
 
-   r_make_for_plugin "autoconf" "no-ninja"
+   make::common::r_make_for_plugin "autoconf" "no-ninja"
    MAKE="${RVAL}"
 }
 
 
-autoconf_set_needs_rerun()
+make::plugin::autoconf::set_needs_rerun()
 {
-   log_entry "autoconf_set_needs_rerun" "$@"
+   log_entry "make::plugin::autoconf::set_needs_rerun" "$@"
 
    local projectfile="$1"
 
@@ -81,9 +81,9 @@ autoconf_set_needs_rerun()
 }
 
 
-build_autoconf()
+make::plugin::autoconf::build()
 {
-   log_entry "build_autoconf" "$@"
+   log_entry "make::plugin::autoconf::build" "$@"
 
    [ $# -ge 9 ] || internal_fail "api error"
 
@@ -106,7 +106,7 @@ build_autoconf()
 
    local env_common
 
-   r_mulle_make_env_flags
+   make::build::r_env_flags
    env_common="${RVAL}"
 
    local autoconf_flags
@@ -122,9 +122,9 @@ build_autoconf()
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "autoreconf"
+   make::common::r_build_log_name "${logsdir}" "autoreconf"
    logfile1="${RVAL}"
-   r_build_log_name "${logsdir}" "autoconf"
+   make::common::r_build_log_name "${logsdir}" "autoconf"
    logfile2="${RVAL}"
 
    local teefile1
@@ -134,7 +134,7 @@ build_autoconf()
 
    teefile1="/dev/null"
    teefile2="/dev/null"
-   grepper="log_grep_warning_error"
+   grepper="make::common::log_grep_warning_error"
    greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
@@ -148,10 +148,10 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
    then
-      r_safe_tty
+      make::common::r_safe_tty
       teefile1="${RVAL}"
       teefile2="${teefile1}"
-      grepper="log_delete_all"
+      grepper="make::common::log_delete_all"
       greplog='NO'
    fi
 
@@ -179,15 +179,15 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
 
       if [ ! -z "${bootstrapper}" ]
       then
-         r_build_log_name "${logsdir}" "${bootstrapper}"
+         make::common::r_build_log_name "${logsdir}" "${bootstrapper}"
          logfile1="${RVAL}"
 
          if ! NOCONFIGURE=1 logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                                                       "${env_common}" \
                                                       "./${bootstrapper}" | ${grepper}
          then
-            autoconf_set_needs_rerun "${projectfile}"
-            build_fail "${logfile1}" "${bootstrapper}" "${PIPESTATUS[ 0]}" "${greplog}"
+            make::plugin::autoconf::set_needs_rerun "${projectfile}"
+            make::common::build_fail "${logfile1}" "${bootstrapper}" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
       else
          if ! [ -f "aclocal4.am" ]
@@ -198,8 +198,8 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
                                            "${AUTORECONF}" \
                                            "${autoreconf_flags}" | ${grepper}
             then
-               autoconf_set_needs_rerun "${projectfile}"
-               build_fail "${logfile1}" "autoreconf" "${PIPESTATUS[ 0]}" "${greplog}"
+               make::plugin::autoconf::set_needs_rerun "${projectfile}"
+               make::common::build_fail "${logfile1}" "autoreconf" "${PIPESTATUS[ 0]}" "${greplog}"
             fi
          fi
 
@@ -208,8 +208,8 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
                                         "${AUTOCONF}" \
                                         "${autoconf_flags}" | ${grepper}
          then
-            autoconf_set_needs_rerun "${projectfile}"
-            build_fail "${logfile2}" "autoconf" "${PIPESTATUS[ 0]}" "${greplog}"
+            make::plugin::autoconf::set_needs_rerun "${projectfile}"
+            make::common::build_fail "${logfile2}" "autoconf" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
       fi
    ) || exit 1
@@ -220,20 +220,20 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
    local PROJECTFILE
    local TOOLNAME=configure
 
-   if ! r_test_configure "${srcdir}"
+   if ! make::plugin::configure::r_test "${srcdir}"
    then
       fail "Could not run configure for \"${srcdir}"\"
    fi
    PROJECTFILE="${RVAL}"
 
    [ -z "${PROJECTFILE}" ] \
-   && internal_fail "r_test_configure did not set PROJECTFILE"
+   && internal_fail "make::plugin::configure::r_test did not set PROJECTFILE"
          #statements
 
    log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a reconf of \
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${kitchendir}\" ..."
 
-   if ! build_configure "${cmd}" \
+   if ! make::plugin::configure::build "${cmd}" \
                         "${PROJECTFILE}"  \
                         "${sdk}" \
                         "${platform}" \
@@ -243,14 +243,14 @@ ${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${kitchendir}\" ..."
                         "${kitchendir}" \
                         "${logsdir}"
    then
-      internal_fail "build_configure should exit on failure and not return"
+      internal_fail "make::plugin::configure::build should exit on failure and not return"
    fi
 }
 
 
-r_test_autoconf()
+make::plugin::autoconf::r_test()
 {
-   log_entry "r_test_autoconf" "$@"
+   log_entry "make::plugin::autoconf::r_test" "$@"
 
    [ $# -eq 1 ] || internal_fail "api error"
 
@@ -260,9 +260,9 @@ r_test_autoconf()
    local projectdir
 
    RVAL=""
-   if ! r_find_nearest_matching_pattern "${srcdir}" "configure.ac"
+   if ! make::common::r_find_nearest_matching_pattern "${srcdir}" "configure.ac"
    then
-      if ! r_find_nearest_matching_pattern "${srcdir}" "configure.in"
+      if ! make::common::r_find_nearest_matching_pattern "${srcdir}" "configure.in"
       then
          log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no autoconf \
 project found."
@@ -302,7 +302,7 @@ once, skip to configure..."
       fi
    fi
 
-   tools_environment_autoconf
+   make::plugin::autoconf::tools_environment
 
    if [ -z "${AUTOCONF}" ]
    then
@@ -331,16 +331,16 @@ found, will continue though"
 }
 
 
-autoconf_plugin_initialize()
+make::plugin::autoconf::initialize()
 {
-   log_entry "autoconf_plugin_initialize"
+   log_entry "make::plugin::autoconf::initialize"
 
-   if ! build_load_plugin "configure"
+   if ! make::plugin::load "configure"
    then
       fail "Could not load required plugin \"configure\""
    fi
 }
 
-autoconf_plugin_initialize
+make::plugin::autoconf::initialize
 
 :

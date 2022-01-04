@@ -31,9 +31,9 @@
 MULLE_MAKE_PLUGIN_SH="included"
 
 
-build_list_plugins()
+make::plugin::main()
 {
-   log_entry "build_list_plugins"
+   log_entry "make::plugin::main"
 
    log_fluff "Listing build plugins..."
 
@@ -67,7 +67,7 @@ build_list_plugins()
 }
 
 
-build_load_plugin()
+make::plugin::load()
 {
    local preference="$1"
 
@@ -75,7 +75,7 @@ build_load_plugin()
    local plugindefine
    local pluginpath
 
-   if shell_is_function "r_test_${preference}"
+   if shell_is_function "make::plugin::${preference}::r_test"
    then
       log_debug "Plugin \"${preference}\" already loaded"
       return 0
@@ -98,19 +98,24 @@ build_load_plugin()
 
       . "${pluginpath}" > /dev/null 2>&1
 
+
       #
       # too costly normally
       #
       if [ "${MULLE_FLAG_LOG_VERBOSE}"  = 'YES' ]
       then
-         if ! shell_is_function "r_test_${preference}"
+         local functionname
+
+         functionname="make::plugin::${preference}::r_test"
+         if ! shell_is_function "${functionname}"
          then
-            internal_fail "Build plugin \"${pluginpath}\" has no \"r_test_${preference}\" function"
+            internal_fail "Build plugin \"${pluginpath}\" has no \"${functionname}\" function"
          fi
 
-         if ! shell_is_function "build_${preference}"
+         functionname="make::plugin::${preference}::build"
+         if ! shell_is_function "${functionname}"
          then
-            internal_fail "Build plugin \"${pluginpath}\" has no \"build_${preference}\" function"
+            internal_fail "Build plugin \"${pluginpath}\" has no \"${functionname}\" function"
          fi
       fi
 
@@ -121,9 +126,9 @@ build_load_plugin()
 }
 
 
-r_build_load_plugins()
+make::plugin::r_loads()
 {
-   log_entry "r_build_load_plugins" "$@"
+   log_entry "make::plugin::r_loads" "$@"
 
    local preferences="$1"
 
@@ -131,20 +136,15 @@ r_build_load_plugins()
    local result 
 
    result=
-   IFS=':'; shell_disable_glob
-   for preference in ${preferences}
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
-      if ! build_load_plugin "${preference}"
+   .foreachpath preference in ${preferences}
+   .do
+      if ! make::plugin::load "${preference}"
       then
-         continue
+         .continue
       fi
       r_add_line "${result}" "${preference}"
       result="${RVAL}"
-   done
-
-   IFS="${DEFAULT_IFS}"; shell_enable_glob
+   .done
 
    RVAL="${result}"
 }

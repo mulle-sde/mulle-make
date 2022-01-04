@@ -36,36 +36,36 @@ MULLE_MAKE_PLUGIN_MESON_SH="included"
 # Meson can work with several backends.
 # Let's do only ninja at first and add xcodebuild or vs later.
 #
-r_platform_meson_backend()
+make::plugin::meson::r_platform_backend()
 {
    local toolname
 
    toolname="${DEFINITION_NINJA:-${NINJA:-ninja}}"
-   r_verify_binary "${toolname}" "ninja" "ninja"
+   make::command::r_verify_binary "${toolname}" "ninja" "ninja"
 }
 
 
-r_find_meson()
+make::plugin::meson::r_find_meson()
 {
    local toolname
 
    toolname="${DEFINITION_MESON:-${MESON:-meson}}"
-   r_verify_binary "${toolname}" "meson" "meson"
+   make::command::r_verify_binary "${toolname}" "meson" "meson"
 }
 
 
-tools_environment_meson()
+make::plugin::meson::tools_environment()
 {
-   log_entry "tools_environment_meson" "$@"
+   log_entry "make::plugin::meson::tools_environment" "$@"
 
-   r_find_meson
+   make::plugin::meson::r_find_meson
    MESON="${RVAL}"
 
-   tools_environment_common
+   make::common::tools_environment
 
    local backend
 
-   r_platform_meson_backend
+   make::plugin::meson::r_platform_backend
    NINJA="${RVAL}"
 
    r_basename "${RVAL}"
@@ -75,14 +75,14 @@ tools_environment_meson()
 }
 
 
-r_meson_sdk_parameter()
+make::plugin::meson::r_sdk_parameter()
 {
    local sdk="$1"
 
    RVAL=""
    case "${MULLE_UNAME}" in
       "darwin")
-         r_compiler_get_sdkpath "${sdk}"
+         make::compiler::r_get_sdkpath "${sdk}"
          if [ ! -z "${RVAL}" ]
          then
             log_fluff "Set meson sdk to \"${RVAL}\""
@@ -99,9 +99,9 @@ r_meson_sdk_parameter()
 # build stuff into dependencies
 # TODO: cache commandline in a file $ and emit instead of rebuilding it every time
 #
-build_meson()
+make::plugin::meson::build()
 {
-   log_entry "build_meson" "$@"
+   log_entry "make::plugin::meson::build" "$@"
 
    [ $# -ge 9 ] || internal_fail "api error"
 
@@ -134,36 +134,36 @@ build_meson()
    local cppflags
    local ldflags
 
-   r_compiler_cflags_value "${DEFINITION_CC}" "${configuration}" 'NO'
+   make::compiler::r_cflags_value "${DEFINITION_CC}" "${configuration}" 'NO'
    cflags="${RVAL}"
-   r_compiler_cxxflags_value "${DEFINITION_CXX:-${DEFINITION_CC}}" "${configuration}" 'NO'
+   make::compiler::r_cxxflags_value "${DEFINITION_CXX:-${DEFINITION_CC}}" "${configuration}" 'NO'
    cxxflags="${RVAL}"
-   r_compiler_cppflags_value "${DEFINITION_CC}" "${DEFINITION_INCLUDE_PATH}"
+   make::compiler::r_cppflags_value "${DEFINITION_CC}" "${DEFINITION_INCLUDE_PATH}"
    cppflags="${RVAL}"
-   r_compiler_ldflags_value "${DEFINITION_CC}" "${configuration}"
+   make::compiler::r_ldflags_value "${DEFINITION_CC}" "${configuration}"
    ldflags="${RVAL}"
 
    local sdkflags
 
-   r_sdkpath_tool_flags "${sdk}"
+   make::common::r_sdkpath_tool_flags "${sdk}"
    sdkflags="${RVAL}"
    r_concat "${cppflags}" "${sdkflags}"
    cppflags="${RVAL}"
    r_concat "${ldflags}" "${sdkflags}"
    ldflags="${RVAL}"
 
-   r_headerpath_preprocessor_flags
+   make::common::r_headerpath_preprocessor_flags
    r_concat "${cppflags}" "${RVAL}"
    cppflags="${RVAL}"
 
-   r_librarypath_linker_flags
+   make::common::r_librarypath_linker_flags
    r_concat "${ldflags}" "${RVAL}"
    ldflags="${RVAL}"
 
    #
    # basically adds some flags for android based on chosen SDK
    #
-   r_sdk_cflags "${sdk}" "${platform}"
+   make::sdk::r_cflags "${sdk}" "${platform}"
    r_concat "${cflags}" "${RVAL}"
 
    #
@@ -194,7 +194,7 @@ build_meson()
    r_simplified_absolutepath "${kitchendir}"
    absbuilddir="${RVAL}"
 
-   r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
+   make::common::r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
    rel_project_dir="${RVAL}"
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
@@ -273,7 +273,7 @@ build_meson()
 
    local sdkparameter
 
-   r_meson_sdk_parameter "${sdk}"
+   make::plugin::meson::r_sdk_parameter "${sdk}"
    sdkparameter="${RVAL}"
 
    if [ ! -z "${sdkparameter}" ]
@@ -333,7 +333,7 @@ build_meson()
 
    local other_buildsettings
 
-   other_buildsettings="`emit_userdefined_definitions "-D " "=" "=" "" "'"`"
+   other_buildsettings="`make::definition::emit_userdefined "-D " "=" "=" "" "'"`"
    if [ ! -z "${other_buildsettings}" ]
    then
       r_concat "${meson_flags}" "${other_buildsettings}"
@@ -342,7 +342,7 @@ build_meson()
 
    local env_common
 
-   r_mulle_make_env_flags
+   make::build::r_env_flags
    env_common="${RVAL}"
 
    local logfile1
@@ -350,9 +350,9 @@ build_meson()
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "meson"
+   make::common::r_build_log_name "${logsdir}" "meson"
    logfile1="${RVAL}"
-   r_build_log_name "${logsdir}" "ninja"
+   make::common::r_build_log_name "${logsdir}" "ninja"
    logfile2="${RVAL}"
 
    local teefile1
@@ -362,7 +362,7 @@ build_meson()
 
    teefile1="/dev/null"
    teefile2="/dev/null"
-   grepper="log_grep_warning_error"
+   grepper="make::common::log_grep_warning_error"
    greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
@@ -375,10 +375,10 @@ build_meson()
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
    then
-      r_safe_tty
+      make::common::r_safe_tty
       teefile1="${RVAL}"
       teefile2="${teefile1}"
-      grepper="log_delete_all"
+      grepper="make::common::log_delete_all"
       greplog='NO'
    fi
 
@@ -409,7 +409,7 @@ build_meson()
                             "${meson_flags}" \
                             "'${kitchendir}'" | ${grepper}
       then
-         build_fail "${logfile1}" "meson" "${PIPESTATUS[ 0]}" "${greplog}"
+         make::common::build_fail "${logfile1}" "meson" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
 
       exekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
@@ -418,15 +418,15 @@ build_meson()
                "${env_common}" \
                "'${NINJA}'" "${ninja_flags}" ${maketarget} | ${grepper}
       then
-         build_fail "${logfile2}" "ninja" "${PIPESTATUS[ 0]}" "${greplog}"
+         make::common::build_fail "${logfile2}" "ninja" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
    ) || exit 1
 }
 
 
-r_test_meson()
+make::plugin::meson::r_test()
 {
-   log_entry "test_meson" "$@"
+   log_entry "make::plugin::meson::r_test" "$@"
 
    [ $# -eq 1 ] || internal_fail "api error"
 
@@ -436,7 +436,7 @@ r_test_meson()
    local projectdir
 
    RVAL=""
-   if ! r_find_nearest_matching_pattern "${srcdir}" "meson.build"
+   if ! make::common::r_find_nearest_matching_pattern "${srcdir}" "meson.build"
    then
       log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no meson.build file found"
       return 1
@@ -448,7 +448,7 @@ r_test_meson()
       fail "${srcdir#${MULLE_USER_PWD}/}: meson does not support build phases"
    fi
 
-   tools_environment_meson
+   make::plugin::meson::tools_environment
 
    if [ -z "${MESON}" ]
    then
@@ -470,9 +470,9 @@ ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
 }
 
 
-meson_plugin_initialize()
+make::plugin::meson::initialize()
 {
-   log_entry "meson_plugin_initialize"
+   log_entry "make::plugin::meson::initialize"
 
    if [ -z "${MULLE_STRING_SH}" ]
    then
@@ -488,7 +488,7 @@ meson_plugin_initialize()
    fi
 }
 
-meson_plugin_initialize
+make::plugin::meson::initialize
 
 :
 

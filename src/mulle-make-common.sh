@@ -31,14 +31,14 @@
 MULLE_MAKE_COMMON_SH="included"
 
 
-log_delete_all()
+make::common::log_delete_all()
 {
    sed d
    : # ensure true for pipe
 }
 
 
-log_grep_warning_error()
+make::common::log_grep_warning_error()
 {
    #
    # error/warning grepper
@@ -79,9 +79,9 @@ log_grep_warning_error()
 }
 
 
-tools_environment_common()
+make::common::tools_environment()
 {
-   log_entry "tools_environment_common" "$@"
+   log_entry "make::common::tools_environment" "$@"
 
    # no problem if those are empty
    if [ -z "${CC}" ]
@@ -96,9 +96,9 @@ tools_environment_common()
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
-      r_verify_binary "tr" "tr" "tr"
+      make::command::r_verify_binary "tr" "tr" "tr"
       TR="${RVAL}"
-      r_verify_binary "sed" "sed" "sed"
+      make::command::r_verify_binary "sed" "sed" "sed"
       SED="${RVAL}"
       [ -z "${TR}" ]   && fail "can't locate tr"
       [ -z "${SED}" ]  && fail "can't locate sed"
@@ -112,9 +112,9 @@ tools_environment_common()
 #
 # no ninja here
 #
-r_platform_make()
+make::common::r_platform_make()
 {
-   log_entry "r_platform_make" "$@"
+   log_entry "make::common::r_platform_make" "$@"
 
    local compilerpath="$1"
    local plugin="$2"
@@ -157,9 +157,9 @@ r_platform_make()
 
 # common functions for build tools
 
-r_use_ninja_instead_of_make()
+make::common::r_use_ninja_instead_of_make()
 {
-   log_entry "r_use_ninja_instead_of_make" "$@"
+   log_entry "make::common::r_use_ninja_instead_of_make" "$@"
 
    #
    # Ninja is preferable if installed for cmake but not else
@@ -229,9 +229,9 @@ r_use_ninja_instead_of_make()
 #
 # sets the MAKE environment variable
 #
-r_make_for_plugin()
+make::common::r_make_for_plugin()
 {
-   log_entry "r_make_for_plugin" "$@"
+   log_entry "make::common::r_make_for_plugin" "$@"
 
    local plugin="$1"
    local no_ninja="$2"
@@ -245,19 +245,19 @@ r_make_for_plugin()
    make="${DEFINITION_MAKE:-${MAKE}}"
    if [ -z "${make}" ]
    then
-      r_platform_make "${DEFINITION_CC}" "${plugin}"
+      make::common::r_platform_make "${DEFINITION_CC}" "${plugin}"
       make="${RVAL}"
 
       if [ -z "${no_ninja}" ]
       then
-         if r_use_ninja_instead_of_make
+         if make::common::r_use_ninja_instead_of_make
          then
             make="${RVAL}"
          fi
       fi
    fi
 
-   r_verify_binary "${make}" "make" "make"
+   make::command::r_verify_binary "${make}" "make" "make"
 }
 
 
@@ -267,9 +267,9 @@ r_make_for_plugin()
 # and then protect $$ as needed. So make can't mangle
 # it.
 #
-r_escaped_make_string()
+make::common::r_escaped_make_string()
 {
-   log_entry "r_escaped_make_string" "$@"
+   log_entry "make::common::r_escaped_make_string" "$@"
 
    local dollar='$'
 
@@ -290,9 +290,9 @@ r_escaped_make_string()
 }
 
 
-r_makeflags_add()
+make::common::r_makeflags_add()
 {
-   log_entry "r_makeflags_add" "$@"
+   log_entry "make::common::r_makeflags_add" "$@"
 
    local makeflags="$1"
    local value="$2"
@@ -308,9 +308,9 @@ r_makeflags_add()
 }
 
 
-r_build_makefile()
+make::common::r_build_makefile()
 {
-   log_entry "r_build_makefile" "$@"
+   log_entry "make::common::r_build_makefile" "$@"
 
    local make="$1"
    local kitchendir="$2"
@@ -332,9 +332,9 @@ r_build_makefile()
 }
 
 
-r_build_make_flags()
+make::common::r_build_make_flags()
 {
-   log_entry "r_build_make_flags" "$@"
+   log_entry "make::common::r_build_make_flags" "$@"
 
    local make="$1"
    local make_flags="$2"
@@ -350,8 +350,8 @@ r_build_make_flags()
          make_verbose_flags="-v"
          if [ ! -z "${OPTION_LOAD}" ]
          then
-            r_makeflags_add "${make_flags}" "-l"
-            r_makeflags_add "${RVAL}" "${OPTION_LOAD}"
+            make::common::r_makeflags_add "${make_flags}" "-l"
+            make::common::r_makeflags_add "${RVAL}" "${OPTION_LOAD}"
             make_flags="${RVAL}"
          fi
       ;;
@@ -378,17 +378,17 @@ r_build_make_flags()
    #
    if [ "${MULLE_FLAG_LOG_TERSE}" = 'YES' ]
    then
-      r_makeflags_add "${make_flags}" "${make_terse_flags}"
+      make::common::r_makeflags_add "${make_flags}" "${make_terse_flags}"
       make_flags="${RVAL}"
    else
-      r_makeflags_add "${make_flags}" "${make_verbose_flags}"
+      make::common::r_makeflags_add "${make_flags}" "${make_verbose_flags}"
       make_flags="${RVAL}"
    fi
 
    if [ ! -z "${cores}" ]
    then
-      r_makeflags_add "${make_flags}" "-j"
-      r_makeflags_add "${RVAL}" "${cores}"
+      make::common::r_makeflags_add "${make_flags}" "-j"
+      make::common::r_makeflags_add "${RVAL}" "${cores}"
       make_flags="${RVAL}"
    fi
 
@@ -396,9 +396,9 @@ r_build_make_flags()
 }
 
 
-r_convert_file_to_tool_flag()
+make::common::r_convert_file_to_tool_flag()
 {
-   log_entry "r_convert_file_to_tool_flag" "$@"
+   log_entry "make::common::r_convert_file_to_tool_flag" "$@"
 
    local filepath="$1"
    local flag="$2"
@@ -406,9 +406,9 @@ r_convert_file_to_tool_flag()
 
    case "${mangler}" in 
       wslpath)
-         include_mulle_tool_library "platform" "wsl"
+         include "platform::wsl"
 
-         r_mulle_wslpath "${filepath}"
+         platform::wsl::r_wslpath "${filepath}"
          filepath="${RVAL}" # wslpath complains if not there, we don't care
       ;;
 
@@ -425,14 +425,14 @@ r_convert_file_to_tool_flag()
    esac
 
    r_escaped_shell_string "${filepath}"
-   r_escaped_make_string "${RVAL}"
+   make::common::r_escaped_make_string "${RVAL}"
    RVAL="${flag}${RVAL}"
 }
 
 
-r_convert_path_to_tool_flags()
+make::common::r_convert_path_to_tool_flags()
 {
-   log_entry "r_convert_path_to_tool_flags" "$@"
+   log_entry "make::common::r_convert_path_to_tool_flags" "$@"
 
    local filepath="$1"
    local flag="$2"
@@ -449,7 +449,7 @@ r_convert_path_to_tool_flags()
    do
       shell_enable_glob
 
-      r_convert_file_to_tool_flag "${component}" "${flag}" "${mangler}"
+      make::common::r_convert_file_to_tool_flag "${component}" "${flag}" "${mangler}"
       r_concat "${output}" "${RVAL}" "${separator}"
       output="${RVAL}"
    done
@@ -458,20 +458,20 @@ r_convert_path_to_tool_flags()
 }
 
 
-r_sdkpath_tool_flags()
+make::common::r_sdkpath_tool_flags()
 {
-   log_entry "r_sdkpath_tool_flags" "$@"
+   log_entry "make::common::r_sdkpath_tool_flags" "$@"
 
    local sdk="$1"
 
    local sdkpath
 
-   r_compiler_get_sdkpath "${sdk}"
+   make::compiler::r_get_sdkpath "${sdk}"
    sdkpath="${RVAL}"
 
    if [ ! -z "${sdkpath}" ]
    then
-      r_convert_file_to_tool_flag "${sdkpath}" "-isysroot "
+      make::common::r_convert_file_to_tool_flag "${sdkpath}" "-isysroot "
       return 0
    fi 
 
@@ -479,28 +479,48 @@ r_sdkpath_tool_flags()
 }
 
 
-r_headerpath_preprocessor_flags()
+make::common::r_headerpath_preprocessor_flags()
 {
-   log_entry "r_headerpath_preprocessor_flags" "$@"
+   log_entry "make::common::r_headerpath_preprocessor_flags" "$@"
 
    local headersearchpaths
    local frameworksearchpaths
 
-   case "${DEFINITION_CC:-${CC}}" in
-      *clang*|*gcc)
-         r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-isystem "
+   local compiler
+
+   compiler="${DEFINITION_CC:-${CC}}"
+   compiler="${compiler%.*}"
+
+   if [ -z "${compiler}" ]
+   then
+      case "${MULLE_UNAME}" in
+         darwin|linux|freebsd)
+            compiler=gcc
+         ;;
+      esac
+   fi
+
+   case "${compiler}" in
+      *cl)
+         make::common::r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-external:I "
+         headersearchpaths="${RVAL}"
+      ;;
+
+      *clang|*gcc)
+         make::common::r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-isystem "
          headersearchpaths="${RVAL}"
       ;;
 
       *)
-         r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-I"
+         # assume most compilers can't do -isystem
+         make::common::r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-${MULLE_MAKE_ISYSTEM_FLAG:-I}"
          headersearchpaths="${RVAL}"
       ;;
    esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         r_convert_path_to_tool_flags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
+         make::common::r_convert_path_to_tool_flags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac
@@ -515,9 +535,9 @@ r_headerpath_preprocessor_flags()
 }
 
 
-r_librarypath_linker_flags()
+make::common::r_librarypath_linker_flags()
 {
-   log_entry "r_librarypath_linker_flags" "$@"
+   log_entry "make::common::r_librarypath_linker_flags" "$@"
 
    local librarysearchpaths
    local frameworksearchpaths
@@ -526,26 +546,26 @@ r_librarypath_linker_flags()
       windows)
          case "${LD:-ld.exe}" in 
             *.exe)
-               r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-LIBPATH:" "wslpath" 
+               make::common::r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-LIBPATH:" "wslpath"
                librarysearchpaths="${RVAL}"
             ;;
 
             *)
-               r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-L"
+               make::common::r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-L"
                librarysearchpaths="${RVAL}"
             ;;
          esac
       ;;
 
       *)
-         r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-L"
+         make::common::r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-L"
          librarysearchpaths="${RVAL}"
       ;;
    esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         r_convert_path_to_tool_flags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
+         make::common::r_convert_path_to_tool_flags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac
@@ -560,7 +580,7 @@ r_librarypath_linker_flags()
 }
 
 
-_add_path_tool_cppflags()
+make::common::_add_path_tool_cppflags()
 {
    log_entry "__add_path_tool_flags" "$@"
 
@@ -569,9 +589,9 @@ _add_path_tool_cppflags()
 }
 
 
-build_fail()
+make::common::build_fail()
 {
-   log_entry "build_fail" "$@"
+   log_entry "make::common::build_fail" "$@"
 
    local logfile="$1"
    local command="$2"
@@ -636,9 +656,9 @@ ${C_RESET_BOLD}   mulle-sde tool --global add --optional ${command}"
 }
 
 
-r_build_log_name()
+make::common::r_build_log_name()
 {
-   log_entry "r_build_log_name" "$@"
+   log_entry "make::common::r_build_log_name" "$@"
 
    local logsdir=$1
    local tool="$2"
@@ -674,7 +694,7 @@ r_build_log_name()
 }
 
 
-add_path_if_exists()
+make::common::add_path_if_exists()
 {
    local line="$1"
    local filepath="$2"
@@ -688,7 +708,7 @@ add_path_if_exists()
 }
 
 
-r_safe_tty()
+make::common::r_safe_tty()
 {
    local tty
 
@@ -717,9 +737,9 @@ r_safe_tty()
 # first find a project with matching name, otherwise find
 # first nearest project
 #
-r_find_nearest_matching_pattern()
+make::common::r_find_nearest_matching_pattern()
 {
-   log_entry "r_find_nearest_matching_pattern" "$@"
+   log_entry "make::common::r_find_nearest_matching_pattern" "$@"
 
    local directory="$1"
    local pattern="$2"
@@ -792,9 +812,9 @@ r_find_nearest_matching_pattern()
 }
 
 
-r_projectdir_relative_to_builddir()
+make::common::r_projectdir_relative_to_builddir()
 {
-   log_entry "r_projectdir_relative_to_builddir" "$@"
+   log_entry "make::common::r_projectdir_relative_to_builddir" "$@"
 
    local kitchendir="$1"
    local projectdir="$2"
@@ -802,17 +822,17 @@ r_projectdir_relative_to_builddir()
    r_relative_path_between "${projectdir}" "${kitchendir}"
 }
 
+#
+#
+# build_unix_flags()
+# {
+#    log_entry "make::common::build_unix_flags" "$@"
+#
+#    _build_flags "$@"
+# }
 
 
-build_unix_flags()
-{
-   log_entry "build_unix_flags" "$@"
-
-   _build_flags "$@"
-}
-
-
-make_common_initialize()
+make::common::initialize()
 {
    if [ -z "${MULLE_STRING_SH}" ]
    then
@@ -824,6 +844,6 @@ make_common_initialize()
    fi
 }
 
-make_common_initialize
+make::common::initialize
 
 :

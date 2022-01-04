@@ -9,6 +9,7 @@ tmp.*
 
 build/
 xcuserdata/
+research/
 *.xcworkspace/
 mulle-make.sublime-workspace
 mulle-project/publisher-info.sh
@@ -17,3 +18,10 @@ test/05-meson-build/src/
 tests/05-meson-build/src/
 escape-hell/
 dox/eval-echo-memo.txt
+
+CMakeCache.txt
+CMakeFiles/
+CPackConfig.cmake
+CPackSourceConfig.cmake
+Makefile
+cmake_install.cmake

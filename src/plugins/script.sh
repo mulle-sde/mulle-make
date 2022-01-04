@@ -31,7 +31,7 @@
 MULLE_MAKE_PLUGIN_SCRIPT_SH="included"
 
 
-r_build_script_absolutepath()
+make::plugin::script::r_build_script_absolutepath()
 {
    if [ -z "${DEFINITION_BUILD_SCRIPT}" ]
    then
@@ -115,9 +115,9 @@ r_build_script_absolutepath()
 }
 
 
-build_script()
+make::plugin::script::build()
 {
-   log_entry "build_script" "$@"
+   log_entry "make::plugin::script::build" "$@"
 
    [ $# -ge 9 ] || internal_fail "api error"
 
@@ -146,7 +146,7 @@ build_script()
 
    local env_common
 
-   r_mulle_make_env_flags
+   make::build::r_env_flags
    env_common="${RVAL}"
 
    mkdir_if_missing "${kitchendir}"
@@ -158,7 +158,7 @@ build_script()
 
    mkdir_if_missing "${logsdir}"
 
-   r_build_log_name "${logsdir}" "${scriptname}"
+   make::common::r_build_log_name "${logsdir}" "${scriptname}"
    logfile1="${RVAL}"
 
    local teefile1
@@ -166,7 +166,7 @@ build_script()
    local greplog
 
    teefile1="/dev/null"
-   grepper="log_grep_warning_error"
+   grepper="make::common::log_grep_warning_error"
    greplog="YES"
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
@@ -178,9 +178,9 @@ build_script()
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
    then
-      r_safe_tty
+      make::common::r_safe_tty
       teefile1="${RVAL}"
-      grepper="log_delete_all"
+      grepper="make::common::log_delete_all"
       greplog="NO"
    fi
 
@@ -209,15 +209,15 @@ build_script()
                      --sdk "'${sdk}'" \
                      "'${cmd}'"  | ${grepper}
       then
-         build_fail "${logfile1}" "${scriptname}" "${PIPESTATUS[ 0]}" "${greplog}"
+         make::common::build_fail "${logfile1}" "${scriptname}" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
    ) || exit 1
 }
 
 
-r_test_script()
+make::plugin::script::r_test()
 {
-   log_entry "r_test_script" "$@"
+   log_entry "make::plugin::script::r_test" "$@"
 
    [ $# -eq 1 ] || internal_fail "api error"
 
@@ -225,7 +225,7 @@ r_test_script()
 
    RVAL=""
 
-   if ! r_build_script_absolutepath
+   if ! make::plugin::script::r_build_script_absolutepath
    then
       return 1
    fi
@@ -250,11 +250,11 @@ r_test_script()
 }
 
 
-script_plugin_initialize()
+make::plugin::script::initialize()
 {
-   log_entry "script_plugin_initialize"
+   log_entry "make::plugin::script::initialize"
 }
 
-script_plugin_initialize
+make::plugin::script::initialize
 
 :

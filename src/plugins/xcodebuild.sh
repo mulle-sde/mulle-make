@@ -31,20 +31,20 @@
 MULLE_MAKE_PLUGIN_XCODEBUILD_SH="included"
 
 
-r_find_xcodebuild()
+make::plugin::xcodebuild::r_find_xcodebuild()
 {
    local toolname
 
    toolname="${DEFINITION_XCODEBUILD:-${XCODEBUILD:-xcodebuild}}"
-   r_verify_binary "${toolname}" "xcodebuild" "xcodebuild"
+   make::command::r_verify_binary "${toolname}" "xcodebuild" "xcodebuild"
 }
 
 
-tools_environment_xcodebuild()
+make::plugin::xcodebuild::tools_environment()
 {
-   tools_environment_common
+   make::common::tools_environment
 
-   r_find_xcodebuild "$@"
+   make::plugin::xcodebuild::r_find_xcodebuild "$@"
    XCODEBUILD="${RVAL}"
 }
 
@@ -75,9 +75,9 @@ tools_environment_xcodebuild()
 #
 # Let's not inherit here
 #
-r_convert_path_to_value()
+make::plugin::xcodebuild::r_convert_path_to_value()
 {
-   log_entry "r_convert_path_to_value" "$@"
+   log_entry "make::plugin::xcodebuild::r_convert_path_to_value" "$@"
 
    local filepath="$1"
    local inherit="${2:-NO}"
@@ -106,11 +106,11 @@ r_convert_path_to_value()
 
 
 #
-# called from build_xcodebuild for each required scheme and target
+# called from make::plugin::xcodebuild::build for each required scheme and target
 #
-_build_xcodebuild()
+make::plugin::xcodebuild::_build()
 {
-   log_entry "_build_xcodebuild" "$@"
+   log_entry "make::plugin::xcodebuild::_build" "$@"
 
    [ $# -ge 11 ] || internal_fail "api error"
 
@@ -259,7 +259,7 @@ EOF
 
    local env_common
 
-   r_mulle_make_env_flags
+   make::build::r_env_flags
    env_common="${RVAL}"
 
    local cflags
@@ -316,7 +316,7 @@ EOF
    #
    local value
 
-   r_convert_path_to_value "${DEFINITION_INCLUDE_PATH}"
+   make::plugin::xcodebuild::r_convert_path_to_value "${DEFINITION_INCLUDE_PATH}"
    value="${RVAL}"
    if [ ! -z "${value}" ]
    then
@@ -324,7 +324,7 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   r_convert_path_to_value "${DEFINITION_LIB_PATH}"
+   make::plugin::xcodebuild::r_convert_path_to_value "${DEFINITION_LIB_PATH}"
    value="${RVAL}"
    if [ ! -z "${value}" ]
    then
@@ -332,7 +332,7 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   r_convert_path_to_value "${DEFINITION_FRAMEWORKS_PATH}"
+   make::plugin::xcodebuild::r_convert_path_to_value "${DEFINITION_FRAMEWORKS_PATH}"
    value="${RVAL}"
    if [ ! -z "${value}" ]
    then
@@ -340,7 +340,7 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   user_buildsettings="`emit_userdefined_definitions '' '=' '=' '$(inherited) ' "'" `"
+   user_buildsettings="`make::definition::emit_userdefined '' '=' '=' '$(inherited) ' "'" `"
    if [ ! -z "${user_buildsettings}" ]
    then
       r_concat "${buildsettings}" "${user_buildsettings}"
@@ -350,7 +350,7 @@ EOF
    local logfile1
 
    mkdir_if_missing "${logsdir}"
-   r_build_log_name "${logsdir}" "${TOOLNAME}"
+   make::common::r_build_log_name "${logsdir}" "${TOOLNAME}"
    logfile1="${RVAL}"
 
    local teefile1
@@ -358,7 +358,7 @@ EOF
    local greplog
 
    teefile1="/dev/null"
-   grepper="log_grep_warning_error"
+   grepper="make::common::log_grep_warning_error"
    greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
@@ -370,9 +370,9 @@ EOF
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
    then
-      r_safe_tty
+      make::common::r_safe_tty
       teefile1="${RVAL}"
-      grepper="log_delete_all"
+      grepper="make::common::log_delete_all"
       greplog='NO'
    fi
 
@@ -397,15 +397,15 @@ EOF
                                        "${arguments}" \
                                        "${buildsettings}" | ${grepper}
       then
-         build_fail "${logfile}" "${TOOLNAME}" "${PIPESTATUS[ 0]}" "${greplog}"
+         make::common::build_fail "${logfile}" "${TOOLNAME}" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
    ) || exit 1
 }
 
 
-build_xcodebuild()
+make::plugin::xcodebuild::build()
 {
-   log_entry "build_xcodebuild" "$@"
+   log_entry "make::plugin::xcodebuild::build" "$@"
 
    [ $# -eq 9 ] || internal_fail "api error"
 
@@ -415,48 +415,34 @@ build_xcodebuild()
    local schemes
 
    schemes="${DEFINITION_SCHEMES}"
-   IFS=$'\n'
-   shell_disable_glob
-   for scheme in $schemes
-   do
-      IFS="${DEFAULT_IFS}"
-      shell_enable_glob
-
+   .foreachline scheme in $schemes
+   .do
       log_fluff "Building scheme \"${scheme}\" of \"${project}\" ..."
-      _build_xcodebuild "$@" "${scheme}" ""
-   done
-   IFS="${DEFAULT_IFS}"
-   shell_enable_glob
+      make::plugin::xcodebuild::_build "$@" "${scheme}" ""
+   .done
 
    local target
    local targets
 
    targets="${DEFINITION_TARGETS}"
 
-   IFS=$'\n'
-   shell_disable_glob
-   for target in $targets
-   do
-      IFS="${DEFAULT_IFS}"
-      shell_enable_glob
-
+   .foreachline target in $targets
+   .do
       log_fluff "Building target \"${target}\" of \"${project}\" ..."
-      _build_xcodebuild "$@" "" "${target}"
-   done
-   IFS="${DEFAULT_IFS}"
-   shell_enable_glob
+      make::plugin::xcodebuild::_build "$@" "" "${target}"
+   .done
 
    if [ -z "${targets}" -a -z "${schemes}" ]
    then
       log_fluff "Building project \"${project}\" ..."
-      _build_xcodebuild "$@" "" ""
+      make::plugin::xcodebuild::_build "$@" "" ""
    fi
 }
 
 
-r_test_xcodebuild()
+make::plugin::xcodebuild::r_test()
 {
-   log_entry "r_test_xcodebuild" "$@"
+   log_entry "make::plugin::xcodebuild::r_test" "$@"
 
    local srcdir="$1"
 
@@ -476,7 +462,7 @@ r_test_xcodebuild()
 
    if [ ! -d "${projectfile}" ]
    then
-      r_find_nearest_matching_pattern "${srcdir}" "*.xcodeproj" "${name}.xcodeproj"
+      make::common::r_find_nearest_matching_pattern "${srcdir}" "*.xcodeproj" "${name}.xcodeproj"
       projectfile="${RVAL}"
       if [ -z "${projectfile}" ]
       then
@@ -492,7 +478,7 @@ r_test_xcodebuild()
 
    r_dirname "${projectfile}"
    projectdir="${RVAL}"
-   tools_environment_xcodebuild "${projectdir}"
+   make::plugin::xcodebuild::tools_environment "${projectdir}"
 
    if [ -z "${XCODEBUILD}" ]
    then
@@ -511,9 +497,9 @@ r_test_xcodebuild()
 }
 
 
-xcodebuild_plugin_initialize()
+make::plugin::xcodebuild::initialize()
 {
-   log_entry "xcodebuild_plugin_initialize"
+   log_entry "make::plugin::xcodebuild::initialize"
 
    if [ -z "${MULLE_STRING_SH}" ]
    then
@@ -529,7 +515,7 @@ xcodebuild_plugin_initialize()
    fi
 }
 
-xcodebuild_plugin_initialize
+make::plugin::xcodebuild::initialize
 
 :
 

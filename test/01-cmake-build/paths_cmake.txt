@@ -1,6 +1,6 @@
 CMAKE_BUILD_TYPE=Release
-CMAKE_CXX_FLAGS=-I/usr/local/include -I/usr/include
-CMAKE_C_FLAGS=-I/usr/local/include -I/usr/include
+CMAKE_CXX_FLAGS=-isystem /usr/local/include -isystem /usr/include
+CMAKE_C_FLAGS=-isystem /usr/local/include -isystem /usr/include
 CMAKE_EXE_LINKER_FLAGS=-L/usr/local/lib -L/usr/lib
 CMAKE_EXPORT_COMPILE_COMMANDS=ON
 CMAKE_FRAMEWORK_PATH=/Network/Library/Frameworks;/Library/Frameworks

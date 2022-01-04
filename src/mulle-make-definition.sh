@@ -31,7 +31,7 @@
 MULLE_MAKE_DEFINITION_SH="included"
 
 
-make_definition_usage()
+make::definition::usage()
 {
    [ $# -ne 0 ] && log_error "$1"
 
@@ -47,6 +47,7 @@ Usage:
    on the commandline for the "make" command.
 
 Commands:
+   cat    :  show definition file contents
    get    :  get a specific value
    list   :  list defined values
    unset  :  remove a key from the definitions
@@ -61,7 +62,21 @@ EOF
 }
 
 
-make_definition_list_usage()
+make::definition::cat_usage()
+{
+   [ $# -ne 0 ] && log_error "$1"
+
+   cat <<EOF >&2
+Usage:
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} cat
+
+   Show setting file contents.
+EOF
+   exit 1
+}
+
+
+make::definition::list_usage()
 {
    [ $# -ne 0 ] && log_error "$1"
 
@@ -75,7 +90,7 @@ EOF
 }
 
 
-make_definition_get_usage()
+make::definition::get_usage()
 {
    [ $# -ne 0 ] && log_error "$1"
 
@@ -94,7 +109,7 @@ EOF
 }
 
 
-make_definition_set_usage()
+make::definition::set_usage()
 {
    [ $# -ne 0 ] && log_error "$1"
 
@@ -125,7 +140,7 @@ EOF
 }
 
 
-make_definition_unset_usage()
+make::definition::unset_usage()
 {
    [ $# -ne 0 ] && log_error "$1"
 
@@ -231,9 +246,9 @@ ${KNOWN_XCODEBUILD_PLUGIN_DEFINITIONS}"
 
 #
 #
-all_userdefined_unknown_keys()
+make::definition::all_userdefined_unknown_keys()
 {
-   log_entry "all_userdefined_unknown_keys" "$@"
+   log_entry "make::definition::all_userdefined_unknown_keys" "$@"
 
    if [ -z "${DEFINED_SET_DEFINITIONS}" ]
    then
@@ -250,9 +265,9 @@ all_userdefined_unknown_keys()
 }
 
 
-all_userdefined_unknown_plus_keys()
+make::definition::all_userdefined_unknown_plus_keys()
 {
-   log_entry "all_userdefined_unknown_plus_keys" "$@"
+   log_entry "make::definition::all_userdefined_unknown_plus_keys" "$@"
 
    if [ -z "${DEFINED_PLUS_DEFINITIONS}" ]
    then
@@ -269,9 +284,9 @@ all_userdefined_unknown_plus_keys()
 }
 
 
-is_plus_key()
+make::definition::is_plus_key()
 {
-   log_entry "is_plus_key" "$@"
+   log_entry "make::definition::is_plus_key" "$@"
 
    fgrep -q -F -x -e "$1" <<< "${DEFINED_PLUS_DEFINITIONS}"
 }
@@ -280,9 +295,9 @@ is_plus_key()
 #
 # defined for xcodebuild by default
 #
-r_print_definitions()
+make::definition::r_print()
 {
-   log_entry "r_print_definitions" "$@"
+   log_entry "make::definition::r_print" "$@"
 
    local keys="$1"      # list of -DFOO=XX keys separated by linefeed
    local pluskeys="$2"  # list of -DFOO+=XX keys separated by linefeed
@@ -298,11 +313,8 @@ r_print_definitions()
    local key
    local value
 
-   IFS=$'\n'
-   for key in ${keys}
-   do
-      IFS="${DEFAULT_IFS}"
-
+   .foreachline key in ${keys}
+   .do
       if [ ! -z "${ZSH_VERSION}" ]
       then
          value="${(P)key}"
@@ -311,17 +323,13 @@ r_print_definitions()
       fi
       r_concat "${s}" "${prefix}${key#DEFINITION_}${sep}${quote}${value}${quote}" "${concatsep}"
       s="${RVAL}"
-   done
-   IFS="${DEFAULT_IFS}"
+   .done
 
    #
    # emit plus definitions if they are distinguishable
    #
-   IFS=$'\n'
-   for key in ${pluskeys}
-   do
-      IFS="${DEFAULT_IFS}"
-
+   .foreachline key in ${pluskeys}
+   .do
       if [ ! -z "${ZSH_VERSION}" ]
       then
          value="${(P)key}"
@@ -330,8 +338,7 @@ r_print_definitions()
       fi
       r_concat "${s}" "${prefix}${key#DEFINITION_}${plussep}${quote}${pluspref}${value}${quote}" "${concatsep}"
       s="${RVAL}"
-   done
-   IFS="${DEFAULT_IFS}"
+   .done
 
    RVAL="$s"
 
@@ -342,9 +349,9 @@ r_print_definitions()
 #
 # defined for xcodebuild by default (\$(inherited))
 #
-emit_userdefined_definitions()
+make::definition::emit_userdefined()
 {
-   log_entry "emit_userdefined_definitions" "$@"
+   log_entry "make::definition::emit_userdefined" "$@"
 
    local prefix="$1"
    local sep="${2:-=}"
@@ -365,17 +372,17 @@ emit_userdefined_definitions()
    # only emit UNKNOWN keys, the known keys are handled
    # by the plugins themselves
    #
-   keys=`all_userdefined_unknown_keys`
+   keys=`make::definition::all_userdefined_unknown_keys`
 
    #
    # emit plus definitions if they are distinguishable
    #
    if [ "${plussep}" != "${sep}" -o ! -z "${pluspref}" ]
    then
-      pluskeys="`all_userdefined_unknown_plus_keys`"
+      pluskeys="`make::definition::all_userdefined_unknown_plus_keys`"
    fi
 
-   r_print_definitions "${keys}" "${pluskeys}" \
+   make::definition::r_print "${keys}" "${pluskeys}" \
                        "${prefix}" \
                        "${sep}" \
                        "${plussep}" \
@@ -386,9 +393,9 @@ emit_userdefined_definitions()
 }
 
 
-check_option_key_without_prefix()
+make::definition::check_option_key_without_prefix()
 {
-   log_entry "check_option_key_without_prefix" "$@"
+   log_entry "make::definition::check_option_key_without_prefix" "$@"
 
    local key="$1"
 
@@ -437,9 +444,9 @@ check_option_key_without_prefix()
 }
 
 
-check_key_without_prefix_exists()
+make::definition::check_key_without_prefix_exists()
 {
-   log_entry "check_key_without_prefix_exists" "$@"
+   log_entry "make::definition::check_key_without_prefix_exists" "$@"
 
    local key="$1"
    local option="$2"
@@ -460,9 +467,9 @@ check_key_without_prefix_exists()
 # this defines a non-exported variable with prefix
 # DEFINITION_
 #
-_make_define_option()
+make::definition::_make::definition::make_define_option()
 {
-   log_entry "_make_define_option" "$@"
+   log_entry "make::definition::_make::definition::make_define_option" "$@"
 
    local key="$1"
    local value="$2"
@@ -470,7 +477,7 @@ _make_define_option()
 
    local mayclobber
 
-   check_option_key_without_prefix "${key}"
+   make::definition::check_option_key_without_prefix "${key}"
 
    local oldvalue
    local optkey
@@ -518,7 +525,7 @@ _make_define_option()
 
 
       ''|'clobber')
-         if check_key_without_prefix_exists "${key}" "${option}" \
+         if make::definition::check_key_without_prefix_exists "${key}" "${option}" \
             && [ "${oldvalue}" != "${value}" ]
          then
             log_warning "warning: \"${key}\" previously defined as \
@@ -533,27 +540,13 @@ _make_define_option()
 }
 
 
-
-make_undefine_option()
+make::definition::make_define_option()
 {
-   log_entry "make_undefine_option" "$@"
+   log_entry "make::definition::make_define_option" "$@"
 
    local key="$1"
 
-   unset "DEFINITION_${key}"
-
-   DEFINED_SET_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
-   DEFINED_PLUS_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
-}
-
-
-make_define_option()
-{
-   log_entry "make_define_option" "$@"
-
-   local key="$1"
-
-   if ! _make_define_option "$@"
+   if ! make::definition::_make::definition::make_define_option "$@"
    then
       return 1
    fi
@@ -570,13 +563,27 @@ make_define_option()
 }
 
 
-make_define_plusoption()
+make::definition::make_undefine_option()
 {
-   log_entry "make_define_plusoption" "$@"
+   log_entry "make::definition::make_undefine_option" "$@"
 
    local key="$1"
 
-   if ! _make_define_option "$@"
+   unset "DEFINITION_${key}"
+
+   DEFINED_SET_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
+   DEFINED_PLUS_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
+}
+
+
+
+make::definition::make_define_plusoption()
+{
+   log_entry "make::definition::make_define_plusoption" "$@"
+
+   local key="$1"
+
+   if ! make::definition::_make::definition::make_define_option "$@"
    then
       return 1
    fi
@@ -593,9 +600,9 @@ make_define_plusoption()
 }
 
 
-make_define_set_keyvalue()
+make::definition::make_define_set_keyvalue()
 {
-   log_entry "make_define_set_keyvalue" "$@"
+   log_entry "make::definition::make_define_set_keyvalue" "$@"
 
    local keyvalue="$1"
    local option="$2"
@@ -613,13 +620,13 @@ make_define_set_keyvalue()
    then
       value="${keyvalue#*=}"
    fi
-   make_define_option "${key}" "${value}" "${option}"
+   make::definition::make_define_option "${key}" "${value}" "${option}"
 }
 
 
-make_define_plus_keyvalue()
+make::definition::make_define_plus_keyvalue()
 {
-   log_entry "make_define_plus_keyvalue" "$@"
+   log_entry "make::definition::make_define_plus_keyvalue" "$@"
 
    local keyvalue="$1"
    local option="$2"
@@ -638,13 +645,13 @@ make_define_plus_keyvalue()
       value="${keyvalue#*+=}"
    fi
 
-   make_define_plusoption "${key}" "${value}" "${option}"
+   make::definition::make_define_plusoption "${key}" "${value}" "${option}"
 }
 
 
-read_defines_dir()
+make::definition::read_defines_dir()
 {
-   log_entry "read_defines_dir" "$@"
+   log_entry "make::definition::read_defines_dir" "$@"
 
    local directory="$1"
    local callback="$2"
@@ -702,9 +709,9 @@ read_defines_dir()
 #
 # it is assumed that the caller (mulle-craft) resolved the UNAME already
 #
-read_definition_dir()
+make::definition::read()
 {
-   log_entry "read_definition_dir" "$@"
+   log_entry "make::definition::read" "$@"
 
    local directory="$1"
 
@@ -723,29 +730,58 @@ read_definition_dir()
 
    directory="${directory}"
 
-   read_defines_dir "${directory}/set/unset"    "make_define_option" "unset"
+   make::definition::read_defines_dir "${directory}/set/unset"    "make::definition::make_define_option" "unset"
 # old
-   read_defines_dir "${directory}/set/remove"   "make_define_option" "remove"
-   read_defines_dir "${directory}/set/clobber"  "make_define_option"
-   read_defines_dir "${directory}/set/ifempty"  "make_define_option" "ifempty"
-   read_defines_dir "${directory}/set/append"   "make_define_option" "append"
-   read_defines_dir "${directory}/set/append0"  "make_define_option" "append0"
-   read_defines_dir "${directory}/set"          "make_define_option" "append"
+   make::definition::read_defines_dir "${directory}/set/remove"   "make::definition::make_define_option" "remove"
+   make::definition::read_defines_dir "${directory}/set/clobber"  "make::definition::make_define_option"
+   make::definition::read_defines_dir "${directory}/set/ifempty"  "make::definition::make_define_option" "ifempty"
+   make::definition::read_defines_dir "${directory}/set/append"   "make::definition::make_define_option" "append"
+   make::definition::read_defines_dir "${directory}/set/append0"  "make::definition::make_define_option" "append0"
+   make::definition::read_defines_dir "${directory}/set"          "make::definition::make_define_option" "append"
 
-   read_defines_dir "${directory}/plus/unset"   "make_define_plusoption" "unset"
+   make::definition::read_defines_dir "${directory}/plus/unset"   "make::definition::make_define_plusoption" "unset"
 # old
-   read_defines_dir "${directory}/plus/remove"  "make_define_plusoption" "remove"
-   read_defines_dir "${directory}/plus/clobber" "make_define_plusoption"
-   read_defines_dir "${directory}/plus/ifempty" "make_define_plusoption" "ifempty"
-   read_defines_dir "${directory}/plus/append"  "make_define_plusoption" "append"
-   read_defines_dir "${directory}/plus/append0" "make_define_plusoption" "append0"
-   read_defines_dir "${directory}/plus"         "make_define_plusoption" "append"
+   make::definition::read_defines_dir "${directory}/plus/remove"  "make::definition::make_define_plusoption" "remove"
+   make::definition::read_defines_dir "${directory}/plus/clobber" "make::definition::make_define_plusoption"
+   make::definition::read_defines_dir "${directory}/plus/ifempty" "make::definition::make_define_plusoption" "ifempty"
+   make::definition::read_defines_dir "${directory}/plus/append"  "make::definition::make_define_plusoption" "append"
+   make::definition::read_defines_dir "${directory}/plus/append0" "make::definition::make_define_plusoption" "append0"
+   make::definition::read_defines_dir "${directory}/plus"         "make::definition::make_define_plusoption" "append"
+}
+
+#
+# it is assumed that the caller (mulle-craft) resolved the UNAME already
+#
+make::definition::cat()
+{
+   log_entry "make::definition::cat" "$@"
+
+   local directory="$1"
+
+   [ "${directory}" = "NONE" ] && return
+
+   if [ ! -d "${directory}" ]
+   then
+      if [ ! -z "${directory}" ]
+      then
+         log_fluff "There is no \"${directory#${MULLE_USER_PWD}/}\" here (${PWD#${MULLE_USER_PWD}/})"
+      fi
+      return
+   fi
+
+   local filename
+
+   for filename in `find ${directory} -type f -print`
+   do
+      log_info "${filename#${MULLE_USER_PWD}/}"
+      rexekutor cat "${filename}"
+   done
 }
 
 
-remove_other_keyfiles_than()
+make::definition::remove_other_keyfiles_than()
 {
-   log_entry "remove_other_keyfiles_than" "$@"
+   log_entry "make::definition::remove_other_keyfiles_than" "$@"
 
    local keyfile="$1" ; shift # empty is ok
 
@@ -770,9 +806,9 @@ remove_other_keyfiles_than()
 # Commands
 #
 
-unset_definition_dir()
+make::definition::unset_main()
 {
-   log_entry "unset_definition_dir" "$@"
+   log_entry "make::definition::unset_main" "$@"
 
    local directory="$1"
 
@@ -782,11 +818,11 @@ unset_definition_dir()
    do
       case "${argument}" in
          -h*|--help|help)
-            make_definition_remove_usage
+            make::definition::unset_usage
          ;;
 
 	      -*)
-            make_definition_remove_usage "unknown option \"${argument}\""
+            make::definition::unset_usage "unknown option \"${argument}\""
          ;;
 
          *)
@@ -800,17 +836,17 @@ unset_definition_dir()
 
    if [ -z "${argument}" ]
    then
-      make_definition_unset_usage "Missing key"
+      make::definition::unset_usage "Missing key"
    fi
    key="${argument}"
 
    if read -r argument
    then
-      make_definition_unset_usage "Superflous argument \"${argument}\""
+      make::definition::unset_usage "Superflous argument \"${argument}\""
    fi
 
    # remove all possible old settings
-   remove_other_keyfiles_than "" \
+   make::definition::remove_other_keyfiles_than "" \
                               "${directory}/set/${key}"          \
                               "${directory}/set/append/${key}"   \
                               "${directory}/set/append0/${key}"  \
@@ -832,9 +868,9 @@ unset_definition_dir()
 }
 
 
-set_definition_dir()
+make::definition::set_main()
 {
-   log_entry "set_definition_dir" "$@"
+   log_entry "make::definition::set_main" "$@"
 
    local directory="$1"
 
@@ -845,7 +881,7 @@ set_definition_dir()
    do
       case "${argument}" in
          -h*|--help|help)
-            make_definition_set_usage
+            make::definition::set_usage
          ;;
 
          -+|--additive)
@@ -857,7 +893,7 @@ set_definition_dir()
          ;;
 
          -*)
-            make_definition_set_usage "unknown option \"${argument}\""
+            make::definition::set_usage "unknown option \"${argument}\""
          ;;
 
          *)
@@ -871,24 +907,24 @@ set_definition_dir()
 
    if [ -z "${argument}" ]
    then
-      make_definition_set_usage "Missing key"
+      make::definition::set_usage "Missing key"
    fi
    key="${argument}"
 
    if ! read -r argument
    then
-      make_definition_set_usage "Missing value"
+      make::definition::set_usage "Missing value"
    fi
    value="${argument}"
 
    if read -r argument
    then
-      make_definition_set_usage "Superflous argument \"${argument}\""
+      make::definition::set_usage "Superflous argument \"${argument}\""
    fi
 
-   read_definition_dir "${directory}"
+   make::definition::read "${directory}"
 
-   check_option_key_without_prefix "${key}"
+   make::definition::check_option_key_without_prefix "${key}"
 
 
    local finaldirectory
@@ -897,7 +933,7 @@ set_definition_dir()
    finaldirectory="${RVAL}"
 
    # remove all possible old settings
-   remove_other_keyfiles_than "${finaldirectory}/${key}"         \
+   make::definition::remove_other_keyfiles_than "${finaldirectory}/${key}"         \
                               "${directory}/set/${key}"          \
                               "${directory}/set/append/${key}"   \
                               "${directory}/set/append0/${key}"  \
@@ -918,9 +954,9 @@ set_definition_dir()
 }
 
 
-get_definition_dir()
+make::definition::get_main()
 {
-   log_entry "get_definition_dir" "$@"
+   log_entry "make::definition::get_main" "$@"
 
    local directory="$1"
    local aux_directory="$2"
@@ -932,7 +968,7 @@ get_definition_dir()
    do
       case "${argument}" in
          -h*|--help|help)
-            make_definition_get_usage
+            make::definition::get_usage
          ;;
 
          --output-key)
@@ -940,7 +976,7 @@ get_definition_dir()
          ;;
 
          -*)
-            make_definition_get_usage "Unknown option \"${argument}\""
+            make::definition::get_usage "Unknown option \"${argument}\""
          ;;
 
          *)
@@ -953,19 +989,19 @@ get_definition_dir()
 
    if [ -z "${argument}" ]
    then
-      make_definition_get_usage "Missing key"
+      make::definition::get_usage "Missing key"
    fi
    key="${argument}"
 
    if read -r argument
    then
-      make_definition_list_usage "Superflous argument \"${argument}\""
+      make::definition::get_usage "Superflous argument \"${argument}\""
    fi
 
-   read_definition_dir "${directory}"
+   make::definition::read "${directory}"
    if [ ! -z "${aux_directory}" ]
    then
-      read_definition_dir "${aux_directory}"
+      make::definition::read "${aux_directory}"
    fi
 
    local varkey
@@ -992,9 +1028,9 @@ get_definition_dir()
 }
 
 
-list_definition_dir()
+make::definition::list_main()
 {
-   log_entry "list_definition_dir" "$@"
+   log_entry "make::definition::list_main" "$@"
 
    local directory="$1"
    local aux_directory="$2"
@@ -1005,11 +1041,11 @@ list_definition_dir()
    do
       case "${argument}" in
          -h*|--help|help)
-            make_definition_list_usage
+            make::definition::list_usage
          ;;
 
          -*)
-            make_definition_list_usage "Unknown option \"${argument}\""
+            make::definition::list_usage "Unknown option \"${argument}\""
          ;;
 
          *)
@@ -1020,32 +1056,71 @@ list_definition_dir()
 
    if [ ! -z "${argument}" ]
    then
-      make_definition_list_usage "Superflous argument \"${argument}\""
+      make::definition::list_usage "Superflous argument \"${argument}\""
    fi
 
-   read_definition_dir "${directory}"
+   make::definition::read "${directory}"
    if [ ! -z "${aux_directory}" ]
    then
-      read_definition_dir "${aux_directory}"
+      make::definition::read "${aux_directory}"
    fi
 
    local lf="
 "
-   r_print_definitions "${DEFINED_SET_DEFINITIONS}" "${DEFINED_PLUS_DEFINITIONS}" \
-                       "" \
-                       "=" \
-                       "+=" \
-                       "" \
-                       "'" \
-                       "${lf}"
+   make::definition::r_print "${DEFINED_SET_DEFINITIONS}" "${DEFINED_PLUS_DEFINITIONS}" \
+                             "" \
+                             "=" \
+                             "+=" \
+                             "" \
+                             "'" \
+                             "${lf}"
 
    [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
-make_definition_main()
+make::definition::cat_main()
 {
-   log_entry "make_definition_main" "$@"
+   log_entry "make::definition::cat_main" "$@"
+
+   local directory="$1"
+   local aux_directory="$2"
+
+   local argument
+
+   while read -r argument
+   do
+      case "${argument}" in
+         -h*|--help|help)
+            make::definition::cat_usage
+         ;;
+
+         -*)
+            make::definition::cat_usage "Unknown option \"${argument}\""
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+   done
+
+   if [ ! -z "${argument}" ]
+   then
+      make::definition::cat_usage "Superflous argument \"${argument}\""
+   fi
+
+   make::definition::cat "${directory}"
+   if [ ! -z "${aux_directory}" ]
+   then
+      make::definition::cat "${aux_directory}"
+   fi
+}
+
+
+make::definition::main()
+{
+   log_entry "make::definition::main" "$@"
 
    [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
 
@@ -1059,7 +1134,7 @@ make_definition_main()
    do
       case "${argument}" in
          -h*|--help|help)
-            make_definition_usage
+            make::definition::usage
          ;;
 
          --allow-unknown-option)
@@ -1075,16 +1150,16 @@ make_definition_main()
          #
          --definition-dir)
             read -r OPTION_DEFINITION_DIR ||
-               make_definition_usage "missing argument to \"${argument}\""
+               make::definition::usage "missing argument to \"${argument}\""
          ;;
 
          --aux-definition-dir)
             read -r OPTION_AUX_DEFINITION_DIR ||
-               make_definition_usage "missing argument to \"${argument}\""
+               make::definition::usage "missing argument to \"${argument}\""
          ;;
 
          -*)
-            make_definition_usage "Unknown definition option \"${argument}\""
+            make::definition::usage "Unknown definition option \"${argument}\""
          ;;
 
          *)
@@ -1101,14 +1176,14 @@ make_definition_main()
    local cmd="${argument}"
 
    case "${cmd}" in
-      list|get)
+      cat|get|list)
          if ! [ -d "${OPTION_DEFINITION_DIR}" ]
          then
             log_verbose "Directory \"${OPTION_DEFINITION_DIR}\" not found"
             return 4
          fi
 
-         ${cmd}_definition_dir "${OPTION_DEFINITION_DIR}" "${OPTION_AUX_DEFINITION_DIR}"
+         make::definition::${cmd}_main "${OPTION_DEFINITION_DIR}" "${OPTION_AUX_DEFINITION_DIR}"
       ;;
 
       show|keys)
@@ -1116,19 +1191,19 @@ make_definition_main()
       ;;
 
       set)
-         set_definition_dir "${OPTION_DEFINITION_DIR}"
+         make::definition::set_main "${OPTION_DEFINITION_DIR}"
       ;;
 
       remove|unset)
-         unset_definition_dir "${OPTION_DEFINITION_DIR}"
+         make::definition::unset_main "${OPTION_DEFINITION_DIR}"
       ;;
 
       "")
-         make_definition_usage
+         make::definition::usage
       ;;
 
       *)
-         make_definition_usage "Unknown command ${cmd}"
+         make::definition::usage "Unknown command ${cmd}"
       ;;
    esac
 }

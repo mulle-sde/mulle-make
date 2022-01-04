@@ -31,7 +31,7 @@
 MULLE_MAKE_BUILD_SH="included"
 
 
-_emit_common_options()
+make::build::emit_common_options()
 {
    local marks="$1"
 
@@ -77,7 +77,7 @@ EOF
 }
 
 
-_emit_uncommon_options()
+make::build::emit_uncommon_options()
 {
    local marks="$1"
 
@@ -114,19 +114,19 @@ EOF
 }
 
 
-emit_options()
+make::build::emit_options()
 {
    local marks="$1"
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
-      _emit_uncommon_options "${marks}"
+      make::build::emit_uncommon_options "${marks}"
    fi
-   _emit_common_options "${marks}"
+   make::build::emit_common_options "${marks}"
 }
 
 
-project_usage()
+make::build::project_usage()
 {
    cat <<EOF >&2
 Usage:
@@ -146,7 +146,7 @@ Usage:
 
 Options:
 EOF
-   emit_options "common-prefix" | LC_ALL=C sort
+   make::build::emit_options "common-prefix" | LC_ALL=C sort
 
    cat <<EOF >&2
 
@@ -161,13 +161,13 @@ EOF
 }
 
 
-install_usage()
+make::build::install_usage()
 {
    cat <<EOF >&2
 Usage:
    ${MULLE_USAGE_NAME} install [options] [src] [dst]
 
-   Build the project in the directory src. Then the build results are 
+   Build the project in the directory src. Then the build results are
    installed in dst.  If dst is omitted '/tmp' is used. If --prefix is 
    specified during options, do not specify dst as well.
 
@@ -176,13 +176,13 @@ Example:
 
 Options:
 EOF
-   emit_options "common-prefix" | LC_ALL=C sort
+   make::build::emit_options "common-prefix" | LC_ALL=C sort
 
    exit 1
 }
 
 
-list_usage()
+make::build::list_usage()
 {
    cat <<EOF >&2
 Usage:
@@ -192,13 +192,13 @@ Usage:
 
 Options:
 EOF
-   emit_options "common-prefix" | LC_ALL=C sort
+   make::build::emit_options "common-prefix" | LC_ALL=C sort
 
    exit 1
 }
 
 
-mkdir_build_directories()
+make::build::make_directories()
 {
    local kitchendir="$1"
    local logsdir="$2"
@@ -225,7 +225,7 @@ mkdir_build_directories()
 # need to run in subshell so that plugin changes
 # to variables are ignored
 #
-__build_with_preference_if_possible()
+make::build::__build_with_preference_if_possible()
 {
    [ ! -z "${configuration}" ] || internal_fail "configuration not defined"
    [ ! -z "${name}" ]          || internal_fail "name not defined"
@@ -245,14 +245,14 @@ __build_with_preference_if_possible()
 
       local projectinfo
 
-      if ! "r_test_${preference}" "${srcdir}"
+      if ! "make::plugin::${preference}::r_test" "${srcdir}"
       then
          return 127
       fi
       projectinfo="${RVAL}"
 
       [ -z "${projectinfo}" ] && \
-         internal_fail "r_test_${preference} did not return projectinfo"
+         internal_fail "make::plugin::${preference}::r_test did not return projectinfo"
       #statements
 
       local blurb
@@ -276,15 +276,15 @@ ${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
 ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${kitchendir#${PWD}/}\" ..."
       log_info "${blurb}"
 
-      if ! "build_${preference}" "${cmd}" \
-                                 "${projectinfo}" \
-                                 "${sdk}" \
-                                 "${platform}" \
-                                 "${configuration}" \
-                                 "${srcdir}" \
-                                 "${dstdir}" \
-                                 "${kitchendir}" \
-                                 "${logsdir}"
+      if ! "make::plugin::${preference}::build" "${cmd}" \
+                                                "${projectinfo}" \
+                                                "${sdk}" \
+                                                "${platform}" \
+                                                "${configuration}" \
+                                                "${srcdir}" \
+                                                "${dstdir}" \
+                                                "${kitchendir}" \
+                                                "${logsdir}"
       then
          internal_fail "build_${preference} should exit on failure and not return"
       fi
@@ -299,7 +299,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${kitchendir#${PWD}/}\" ...
 #
 # needs and sets srcdir
 #
-__determine_build_directories()
+make::build::__determine_directories()
 {
    name="${DEFINITION_PROJECT_NAME}"
    if [ -z "${name}" ]
@@ -320,8 +320,6 @@ __determine_build_directories()
 
    local markerfile
 
-   markerfile="${srcdir}/.mulle-make-build-dir"
-
    kitchendir="${DEFINITION_BUILD_DIR}"
    if [ -z "${kitchendir}" ]
    then
@@ -338,10 +336,11 @@ __determine_build_directories()
                local len=4 # turbo pedantic
 
                uuid="`uuidgen`" || internal_fail "uuidgen failed"
-               kitchendir="${srcdir}/build-${uuid:0:${len}}"
+               kitchendir="${srcdir}/:build-${uuid:0:${len}}"
                if [ ! -d "${kitchendir}" ]
                then
                   log_info "Use build directory ${C_RESET_BOLD}${kitchendir#${MULLE_USER_PWD}/}"
+                  markerfile="${srcdir}/.mulle-make-build-dir"
                   break
                fi
                len=$(( len + 1 ))
@@ -352,11 +351,16 @@ __determine_build_directories()
 
    logsdir="${DEFINITION_LOG_DIR:-${kitchendir}/.log}"
 
-   mkdir_build_directories "${kitchendir}" "${logsdir}"
+   make::build::make_directories "${kitchendir}" "${logsdir}"
 
-   redirect_exekutor "${markerfile}" \
-      echo "# memorizes build directory mulle-make used
+   if [ ! -z "${markerfile}" ]
+   then
+      redirect_exekutor "${markerfile}" \
+         echo "# memorizes the name-randomized build directory mulle-make uses
 ${kitchendir}"
+   else
+      remove_file_if_present "${srcdir}/.mulle-make-build-dir"
+   fi
 
    # now known to exist, so we can canonicalize
    r_canonicalize_path "${kitchendir}"
@@ -367,9 +371,9 @@ ${kitchendir}"
 }
 
 
-build_with_sdk_platform_configuration_preferences()
+make::build::build_with_sdk_platform_configuration_preferences()
 {
-   log_entry "build_with_sdk_platform_configuration_preferences" "$@"
+   log_entry "make::build::build_with_sdk_platform_configuration_preferences" "$@"
 
    local cmd="$1"; shift
 
@@ -395,25 +399,22 @@ build_with_sdk_platform_configuration_preferences()
    local kitchendir
    local logsdir
 
-   __determine_build_directories
+   make::build::__determine_directories
 
    local rval
    local preference
 
-   shell_disable_glob
-   for preference in ${preferences}
-   do
-      shell_enable_glob
+   .for preference in ${preferences}
+   .do
       # pass local context w/o arguments
-      __build_with_preference_if_possible
+      make::build::__build_with_preference_if_possible
 
       rval="$?"
       if [ "${rval}" != 127 ]
       then
          return "${rval}"
       fi
-   done
-   shell_enable_glob
+   .done
 
    return 127
 }
@@ -422,7 +423,7 @@ build_with_sdk_platform_configuration_preferences()
 #
 # used by plugins for environment calling cmake and friends.
 #
-r_mulle_make_env_flags()
+make::build::r_env_flags()
 {
    local env_flags
 
@@ -439,19 +440,19 @@ r_mulle_make_env_flags()
 #   fi
 }
 
-clean()
+make::build::clean()
 {
    local srcdir="$1"
 
-   __determine_build_directories
+   make::build::__determine_directories
 
    rmdir_safer "${kitchendir}"
 }
 
 
-build()
+make::build::build()
 {
-   log_entry "build" "$@"
+   log_entry "make::build::build" "$@"
 
    local cmd="$1"
    local srcdir="$2"
@@ -466,22 +467,30 @@ build()
    MULLE_MAKE_PROJECT_DIR="${RVAL}"
    r_simplified_absolutepath "${dstdir}"
    MULLE_MAKE_DESTINATION_DIR="${RVAL}"
-   MULLE_MAKE_DEFINITION_DIR=
 
+   MULLE_MAKE_DEFINITION_DIR=
+   MULLE_MAKE_AUX_DEFINITION_DIR=
+
+   #
+   # this is typically a definition in .mulle/etc|share/craft
+   #
    if [ ! -z "${definitiondir}" ]
    then
       r_simplified_absolutepath "${definitiondir}"
       MULLE_MAKE_DEFINITION_DIR="${RVAL}"
 
-      read_definition_dir "${definitiondir}"
+      make::definition::read "${definitiondir}"
    fi
 
+   #
+   # this is typically a craftinfo in dependency/share
+   #
    if [ ! -z "${aux_definitiondir}" ]
    then
       r_simplified_absolutepath "${aux_definitiondir}"
       MULLE_MAKE_AUX_DEFINITION_DIR="${RVAL}"
 
-      read_definition_dir "${aux_definitiondir}"
+      make::definition::read "${aux_definitiondir}"
    fi
 
    local sdk
@@ -571,13 +580,13 @@ ${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
    fi
 
 
-   # used to receive values from build_load_plugins
-   local plugins
+   # used to receive values from make::plugin::loads
+   local preferences
 
-   r_build_load_plugins "${DEFINITION_PLUGIN_PREFERENCES}" # can't be subshell !
-   plugins="${RVAL}"
+   make::plugin::r_loads "${DEFINITION_PLUGIN_PREFERENCES}" # can't be subshell !
+   preferences="${RVAL}"
 
-   if [ -z "${plugins}" ]
+   if [ -z "${preferences}" ]
    then
       fail "Don't know how to build \"${srcdir}\".
 There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_PREFERENCES}`\""
@@ -586,13 +595,13 @@ There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_P
    log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: ${plugins}"
 
 
-   build_with_sdk_platform_configuration_preferences "${cmd}" \
-                                                     "${srcdir}" \
-                                                     "${dstdir}" \
-                                                     "${sdk}" \
-                                                     "${platform}" \
-                                                     "${configuration}" \
-                                                     "${plugins}"
+   make::build::build_with_sdk_platform_configuration_preferences "${cmd}" \
+                                                                  "${srcdir}" \
+                                                                  "${dstdir}" \
+                                                                  "${sdk}" \
+                                                                  "${platform}" \
+                                                                  "${configuration}" \
+                                                                  "${preferences}"
    case "$?" in
       0)
       ;;
@@ -611,19 +620,19 @@ There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_P
 }
 
 
-list_main()
+make::build::list()
 {
    log_info "Definitions"
 
    local lf="
 "
-   r_print_definitions "${DEFINED_SET_DEFINITIONS}" \
-                       "${DEFINED_PLUS_DEFINITIONS}" \
-                       "" \
-                       "=" \
-                       "+=" \
-                       "" \
-                       "" \
+   make::definition::r_print "${DEFINED_SET_DEFINITIONS}" \
+                             "${DEFINED_PLUS_DEFINITIONS}" \
+                             "" \
+                             "=" \
+                             "+=" \
+                             "" \
+                             "" \
                        "${lf}"
    [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 
@@ -631,9 +640,9 @@ list_main()
 }
 
 
-_make_build_main()
+make::build::common()
 {
-   log_entry "_make_build_main" "$@"
+   log_entry "make::build::common" "$@"
 
    local cmd="${1:-project}"
    local argument="$2"
@@ -885,7 +894,7 @@ _make_build_main()
             # allow multiple -D+= values to appen values
             # useful for -DCFLAGS+= the most often used flag
             #
-            make_define_plus_keyvalue "${argument:2}" "append"
+            make::definition::make_define_plus_keyvalue "${argument:2}" "append"
          ;;
 
          '-D'*)
@@ -894,7 +903,7 @@ _make_build_main()
                . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
             fi
 
-            make_define_set_keyvalue "${argument:2}"
+            make::definition::make_define_set_keyvalue "${argument:2}"
          ;;
 
          '--ifempty'|'--append'|'--append0'|'--remove')
@@ -906,11 +915,11 @@ _make_build_main()
             read -r keyvalue || fail "missing argument to \"${argument}\""
             case "${keyvalue}" in
                *'+='*)
-                  make_define_plus_keyvalue "${keyvalue}" "${argument:2}"
+                  make::definition::make_define_plus_keyvalue "${keyvalue}" "${argument:2}"
                ;;
 
                *)
-                  make_define_set_keyvalue "${keyvalue}" "${argument:2}"
+                  make::definition::make_define_set_keyvalue "${keyvalue}" "${argument:2}"
                ;;
             esac
          ;;
@@ -921,7 +930,7 @@ _make_build_main()
                . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
             fi
 
-            make_undefine_option "${argument:2}"
+            make::definition::make_undefine_option "${argument:2}"
          ;;
 
          # as in /Library/Frameworks:Frameworks etc.
@@ -993,7 +1002,7 @@ _make_build_main()
             */${MULLE_SOURCETREE_STASH_DIRNAME:-stash}/*)
                fail "Source directory \"${srcdir}\" is missing.
 Maybe repair with:
-   ${C_RESET_BOLD}mulle-sde clean fetch"
+   ${C_RESET_BOLD}mulle-sde make::build::clean fetch"
             ;;
          esac
       fi
@@ -1005,10 +1014,10 @@ Maybe repair with:
          if read -r argument
          then
             log_error "Superflous argument \"${argument}\""
-            project_usage
+            make::build::project_usage
          fi
 
-         clean "${srcdir}" # not cleaning srcdir, dont't panic :)
+         make::build::clean "${srcdir}" # not cleaning srcdir, dont't panic :)
          return $?
       ;;
    esac
@@ -1028,19 +1037,19 @@ Maybe repair with:
          if read -r argument
          then
             log_error "Superflous argument \"${argument}\""
-            list_usage
+            make::build::list_usage
          fi
-         list_main
+         make::build::list
       ;;
 
       project)
          if read -r argument
          then
             log_error "Superflous argument \"${argument}\""
-            project_usage
+            make::build::project_usage
          fi
 
-         build "build" \
+         make::build::build "build" \
                "${srcdir}" \
                "" \
                "${OPTION_INFO_DIR}" \
@@ -1067,10 +1076,10 @@ Maybe repair with:
          if read -r argument
          then
             log_error "Superflous argument \"${argument}\""
-            install_usage
+            make::build::install_usage
          fi
 
-         build "install" \
+         make::build::build "install" \
                "${srcdir}" \
                "${dstdir}" \
                "${OPTION_INFO_DIR}" \
@@ -1080,37 +1089,37 @@ Maybe repair with:
 }
 
 
-make_build_main()
+make::build::build_main()
 {
-   log_entry "make_build_main" "$@"
+   log_entry "make::build::build_main" "$@"
 
-   usage="project_usage"
-   _make_build_main "project" "$1"
+   usage="make::build::project_usage"
+   make::build::common "project" "$1"
 }
 
 
-make_install_main()
+make::build::install_main()
 {
-   log_entry "make_install_main" "$@"
+   log_entry "make::build::install_main" "$@"
 
-   usage="install_usage"
-   _make_build_main "install"
+   usage="make::build::install_usage"
+   make::build::common "install"
 }
 
 
-make_list_main()
+make::build::list_main()
 {
-   log_entry "make_list_main" "$@"
+   log_entry "make::build::list_main" "$@"
 
-   usage="list_usage"
-   _make_build_main "list"
+   usage="make::build::list_usage"
+   make::build::common "list"
 }
 
 
-make_clean_main()
+make::build::clean_main()
 {
-   log_entry "make_clean_main" "$@"
+   log_entry "make::build::clean_main" "$@"
 
    usage="clean_usage"
-   _make_build_main "clean"
+   make::build::common "clean"
 }

@@ -32,9 +32,9 @@
 MULLE_MAKE_COMMAND_SH="included"
 
 
-suggest_binary_install()
+make::command::suggest_binary_install()
 {
-   log_entry "suggest_binary_install" "$@"
+   log_entry "make::command::suggest_binary_install" "$@"
 
    local toolname="$1"
 
@@ -94,9 +94,9 @@ suggest_binary_install()
 }
 
 
-which_binary()
+make::command::which_binary()
 {
-   log_entry "which_binary" "$@"
+   log_entry "make::command::which_binary" "$@"
 
    local toolname="$1"
 
@@ -136,9 +136,9 @@ which_binary()
 # toolfamily: CC
 # tooldefaultname: compiler
 #
-r_verify_binary()
+make::command::r_verify_binary()
 {
-   log_entry "r_verify_binary" "$@"
+   log_entry "make::command::r_verify_binary" "$@"
 
    local toolname="$1"
    local toolfamily="$2"
@@ -158,7 +158,7 @@ r_verify_binary()
       ;;
 
       *)
-         filepath="`which_binary "${toolname}"`"
+         filepath="`make::command::which_binary "${toolname}"`"
       ;;
    esac
 
@@ -183,7 +183,7 @@ r_verify_binary()
    then
       fail "${toolfamily} named \"${toolname}\" not found in PATH.
 Suggested fix:
-${C_RESET}${C_BOLD}   `suggest_binary_install "${toolname}"`"
+${C_RESET}${C_BOLD}   `make::command::suggest_binary_install "${toolname}"`"
    else
       log_fluff "${toolfamily} named \"${toolname}\" not found in PATH"
    fi
@@ -192,7 +192,7 @@ ${C_RESET}${C_BOLD}   `suggest_binary_install "${toolname}"`"
 }
 
 
-command_initialize()
+make::command::initialize()
 {
    if [ -z "${MULLE_PATH_SH}" ]
    then
@@ -201,7 +201,7 @@ command_initialize()
    fi
 }
 
-command_initialize
+make::command::initialize
 
 :
 

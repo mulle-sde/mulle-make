@@ -30,11 +30,12 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
-if [ -z "${MULLE_MAKE_MINGW_SH}" ]
+if [ -z "${MULLE_PLATFORM_MINGW_SH}" ]
 then
-   MULLE_MAKE_LIBEXEC_DIR="`mulle-make libexec-dir`"
-   . "${MULLE_MAKE_LIBEXEC_DIR:-mulle-make not in PATH}/mulle-make-mingw.sh"
+   MULLE_PLATFORM_LIBEXEC_DIR="`mulle-platform libexec-dir`"
+   . "${MULLE_PLATFORM_LIBEXEC_DIR:-mulle-platform not in PATH}/mulle-platform-mingw.sh"
 fi
 
 
-PATH="`mingw_buildpath "${PATH}"`" mingw32-make.exe "$@"
+
+PATH="`platform::mingw::buildpath "${PATH}"`" mingw32-make.exe "$@"

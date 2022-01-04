@@ -34,9 +34,9 @@ MULLE_MAKE_SDK_SH="included"
 # this should be a plugin based solution
 # for now hardcode it
 #
-r_sdk_cflags()
+make::sdk::r_cflags()
 {
-   log_entry "r_sdk_cflags" "$@"
+   log_entry "make::sdk::r_cflags" "$@"
 
    local sdk="$1"
    local platform="$2"

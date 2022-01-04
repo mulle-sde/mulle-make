@@ -30,16 +30,16 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
-if [ -z "${MULLE_MAKE_MINGW_SH}" ]
+if [ -z "${MULLE_PLATFORM_MINGW_SH}" ]
 then
-   MULLE_MAKE_LIBEXEC_DIR="`mulle-make libexec-dir`"
-   . "${MULLE_MAKE_LIBEXEC_DIR:-mulle-make not in PATH}/mulle-make-mingw.sh"
+   MULLE_PLATFORM_LIBEXEC_DIR="`mulle-platform libexec-dir`"
+   . "${MULLE_PLATFORM_LIBEXEC_DIR:-mulle-platform not in PATH}/mulle-platform-mingw.sh"
 fi
 
 #
 # fake up a cpp exe for configure scripts in MINGW
 #
-compiler="`find_msvc_executable "cl.exe" "compiler"`"
+compiler="`platform::mingw::find_msvc_executable "cl.exe" "compiler"`"
 if [ -z "${compiler}" ]
 then
 	fail "Could not find cl.exe in PATH"
