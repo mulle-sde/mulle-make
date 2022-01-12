@@ -336,7 +336,7 @@ make::build::__determine_directories()
                local len=4 # turbo pedantic
 
                uuid="`uuidgen`" || internal_fail "uuidgen failed"
-               kitchendir="${srcdir}/:build-${uuid:0:${len}}"
+               kitchendir="${srcdir}/build-${uuid:0:${len}}"
                if [ ! -d "${kitchendir}" ]
                then
                   log_info "Use build directory ${C_RESET_BOLD}${kitchendir#${MULLE_USER_PWD}/}"
