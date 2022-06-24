@@ -112,7 +112,7 @@ make::plugin::xcodebuild::_build()
 {
    log_entry "make::plugin::xcodebuild::_build" "$@"
 
-   [ $# -ge 11 ] || internal_fail "api error"
+   [ $# -ge 11 ] || _internal_fail "api error"
 
    local cmd="$1"
    local projectfile="$2"
@@ -131,11 +131,11 @@ make::plugin::xcodebuild::_build()
 
    shift 2
 
-   [ ! -z "${configuration}" ] || internal_fail "configuration is empty"
-   [ ! -z "${srcdir}" ]        || internal_fail "srcdir is empty"
-   [ ! -z "${kitchendir}" ]    || internal_fail "kitchendir is empty"
-   [ ! -z "${sdk}" ]           || internal_fail "sdk is empty"
-   [ ! -z "${projectfile}" ]   || internal_fail "project is empty"
+   [ ! -z "${configuration}" ] || _internal_fail "configuration is empty"
+   [ ! -z "${srcdir}" ]        || _internal_fail "srcdir is empty"
+   [ ! -z "${kitchendir}" ]    || _internal_fail "kitchendir is empty"
+   [ ! -z "${sdk}" ]           || _internal_fail "sdk is empty"
+   [ ! -z "${projectfile}" ]   || _internal_fail "project is empty"
 
    local projectdir
 
@@ -407,7 +407,7 @@ make::plugin::xcodebuild::build()
 {
    log_entry "make::plugin::xcodebuild::build" "$@"
 
-   [ $# -eq 9 ] || internal_fail "api error"
+   [ $# -eq 9 ] || _internal_fail "api error"
 
    local project="$2"
 

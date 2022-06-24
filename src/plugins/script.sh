@@ -33,14 +33,16 @@ MULLE_MAKE_PLUGIN_SCRIPT_SH="included"
 
 make::plugin::script::r_build_script_absolutepath()
 {
-   if [ -z "${DEFINITION_BUILD_SCRIPT}" ]
+   local definition="$1"
+
+   if [ -z "${definition}" ]
    then
       log_fluff "There is no BUILD_SCRIPT defined"
       return 1
    fi
 
-   RVAL="${DEFINITION_BUILD_SCRIPT}"
-   if is_absolutepath "${DEFINITION_BUILD_SCRIPT}"
+   RVAL="${definition}"
+   if is_absolutepath "${definition}"
    then
       return 0
    fi
@@ -51,7 +53,7 @@ make::plugin::script::r_build_script_absolutepath()
    local option
    local tmp
    
-   r_dirname "${DEFINITION_BUILD_SCRIPT}"
+   r_dirname "${definition}"
    directory="${RVAL}"
 
    # DEFINITION_PATH > OPTION_PATH > PATH
@@ -59,7 +61,7 @@ make::plugin::script::r_build_script_absolutepath()
    searchpath="${OPTION_PATH:-${PATH}}"
    searchpath="${DEFINITION_PATH:-${searchpath}}"
 
-   case "${DEFINITION_BUILD_SCRIPT}" in
+   case "${definition}" in
       /*)
          # clobber searchpath
          searchpath="${directory}"
@@ -84,7 +86,7 @@ make::plugin::script::r_build_script_absolutepath()
             searchpath="${RVAL}"
          fi
 
-         [ -z "${DEPENDENCY_DIR}" ] && internal_fail "DEPENDENCY_DIR not set"
+         [ -z "${DEPENDENCY_DIR}" ] && _internal_fail "DEPENDENCY_DIR not set"
 
          r_filepath_concat "${DEPENDENCY_DIR}/bin" "${directory}"
          r_colon_concat "${searchpath}" "${RVAL}"
@@ -99,7 +101,7 @@ make::plugin::script::r_build_script_absolutepath()
       ;;
    esac
 
-   r_basename "${DEFINITION_BUILD_SCRIPT}"
+   r_basename "${definition}"
    filename="${RVAL}"
 
    log_fluff "Looking for script \"${filename}\" in \"${searchpath}\""
@@ -119,7 +121,7 @@ make::plugin::script::build()
 {
    log_entry "make::plugin::script::build" "$@"
 
-   [ $# -ge 9 ] || internal_fail "api error"
+   [ $# -ge 9 ] || _internal_fail "api error"
 
    local cmd="$1"
    local projectfile="$2"
@@ -215,17 +217,21 @@ make::plugin::script::build()
 }
 
 
+#
+# this is supposed to work also with DEFINITION_POST_BUILD_SCRIPT, but that feature
+# is currently not used. Instead there is a new feature in mulle-dispense that maps
+# filenames
+#
 make::plugin::script::r_test()
 {
    log_entry "make::plugin::script::r_test" "$@"
 
-   [ $# -eq 1 ] || internal_fail "api error"
-
    local srcdir="$1"
+   local definition="${2:-${DEFINITION_BUILD_SCRIPT}}"
 
    RVAL=""
 
-   if ! make::plugin::script::r_build_script_absolutepath
+   if ! make::plugin::script::r_build_script_absolutepath "${definition}" 
    then
       return 1
    fi

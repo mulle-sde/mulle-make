@@ -41,7 +41,7 @@ make::plugin::configure::build()
 {
    log_entry "make::plugin::configure::build" "$@"
 
-   [ $# -ge 9 ] || internal_fail "api error"
+   [ $# -ge 9 ] || _internal_fail "api error"
 
    local cmd="$1"
    local projectfile="$2"
@@ -128,7 +128,7 @@ make::plugin::configure::build()
       ;;
 
       install)
-         [ -z "${dstdir}" ] && internal_fail "dstdir is empty"
+         [ -z "${dstdir}" ] && _internal_fail "dstdir is empty"
          maketarget="install"
       ;;
 
@@ -232,21 +232,18 @@ make::plugin::configure::build()
    r_absolutepath "${projectdir}"
    absprojectdir="${RVAL}"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "cflags:          ${cflags}"
-      log_trace2 "cppflags:        ${cppflags}"
-      log_trace2 "cxxflags:        ${cxxflags}"
-      log_trace2 "ldflags:         ${ldflags}"
-      log_trace2 "make_flags:      ${make_flags}"
-      log_trace2 "projectfile:     ${projectfile}"
-      log_trace2 "projectdir:      ${projectdir}"
-      log_trace2 "absprojectdir:   ${absprojectdir}"
-      log_trace2 "absbuilddir:     ${absbuilddir}"
-      log_trace2 "CONFIGUREFLAGS:  ${CONFIGUREFLAGS}"
-      log_trace2 "configure_flags: ${configure_flags}"
-      log_trace2 "arguments:       ${arguments}"
-   fi
+   log_setting "cflags:          ${cflags}"
+   log_setting "cppflags:        ${cppflags}"
+   log_setting "cxxflags:        ${cxxflags}"
+   log_setting "ldflags:         ${ldflags}"
+   log_setting "make_flags:      ${make_flags}"
+   log_setting "projectfile:     ${projectfile}"
+   log_setting "projectdir:      ${projectdir}"
+   log_setting "absprojectdir:   ${absprojectdir}"
+   log_setting "absbuilddir:     ${absbuilddir}"
+   log_setting "CONFIGUREFLAGS:  ${CONFIGUREFLAGS}"
+   log_setting "configure_flags: ${configure_flags}"
+   log_setting "arguments:       ${arguments}"
 
    local logfile1
    local logfile2
@@ -334,7 +331,7 @@ make::plugin::configure::r_test()
 {
    log_entry "make::plugin::configure::r_test" "$@"
 
-   [ $# -eq 1 ] || internal_fail "api error"
+   [ $# -eq 1 ] || _internal_fail "api error"
 
    local srcdir="$1"
 

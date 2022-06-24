@@ -29,10 +29,11 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${TRACE}" = 'YES' -o "${MULLE_MAKE_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+[ "${TRACE:-}" = 'YES' -o "${MULLE_MAKE_TRACE:-}" = 'YES' ] && set -x && : "$0" "$@"
+[ "${MULLE_MAKE_DUMP_ENV:-}" = 'YES' ] && env | sort >&2
 
 
-MULLE_EXECUTABLE_VERSION='1.0.0'
+MULLE_EXECUTABLE_VERSION='1.1.0'
 ##########################################################################
 ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
 ###########################################################################
@@ -44,7 +45,7 @@ MULLE_EXECUTABLE_VERSION='1.0.0'
 #
 # Figure out MULLE_BASHFUNCTIONS_LIBEXEC_DIR on this machine if needed.
 #
-if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+if ! [ ${MULLE_BASHFUNCTIONS_LIBEXEC_DIR+x} ]
 then
    MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
    export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
@@ -54,7 +55,7 @@ fi
 # The booter reruns the executable either with bash or zsh, whatever the
 # system provides. On the second run --no-auto-shell will be set first.
 #
-if [ "$1" != --no-auto-shell ]
+if [ "${1:-}" != --no-auto-shell ]
 then
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
 else
@@ -70,6 +71,7 @@ fi
 #
 # Do this first to get aliases
 #
+MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
 . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 
 ###
@@ -79,19 +81,19 @@ fi
 ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
 ###########################################################################
 
-MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
 
 #
 # Determine location of own libexec directory. Which is `src` in development
 # and ../libexec when deployed. MULLE_EXECUTABLE needs to be defined for this.
 #
 
-if [ -z "${MULLE_MAKE_LIBEXEC_DIR}" ]
+if ! [ ${MULLE_MAKE_LIBEXEC_DIR+x} ]
 then
    r_get_libexec_dir "${MULLE_EXECUTABLE}" "mulle-make" "mulle-make-build.sh"
    MULLE_MAKE_LIBEXEC_DIR="${RVAL}"
 fi
 
+set +u
 
 
 #
@@ -179,7 +181,8 @@ Options are command specific. Use ${MULLE_USAGE_NAME} <command> -h for help.
 Environment:
    mulle-make itself ignores environment variables. CFLAGS and other 
    environment variables are passed through to the actual build system. 
-   So \`CFLAGS=-O0 -g mulle-make\` will work.
+   So \`CFLAGS=-O0 -g mulle-make\` will work. An exception are the environment
+   variables CC and CXX which are used to figure out the C compilers used.
 
 EOF
 

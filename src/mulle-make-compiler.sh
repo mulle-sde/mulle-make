@@ -39,7 +39,7 @@ MULLE_MAKE_COMPILER_SH="included"
 #
 #    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
 #    then
-#       log_trace2 "CC:  ${DEFINITION_CC}"
+#       log_setting "CC:  ${DEFINITION_CC}"
 #    fi
 #
 #    name="${DEFINITION_CC}"
@@ -64,7 +64,7 @@ MULLE_MAKE_COMPILER_SH="included"
 #
 #    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
 #    then
-#       log_trace2 "CXX:  ${DEFINITION_CXX}"
+#       log_setting "CXX:  ${DEFINITION_CXX}"
 #    fi
 #
 #    name="${DEFINITION_CXX}"
@@ -204,13 +204,10 @@ make::compiler::r_cppflags_value()
 
    local flag_definer="${1:-make::compiler::r_default_flag_definer}"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "ENV CPPFLAGS:       ${CPPFLAGS}"
-      log_trace2 "ENV OTHER_CPPFLAGS: ${OTHER_CPPFLAGS}"
-      log_trace2 "CPPFLAGS:           ${DEFINITION_CPPFLAGS}"
-      log_trace2 "OTHER_CPPFLAG:      ${DEFINITION_OTHER_CPPFLAGS}"
-   fi
+   log_setting "ENV CPPFLAGS:       ${CPPFLAGS}"
+   log_setting "ENV OTHER_CPPFLAGS: ${OTHER_CPPFLAGS}"
+   log_setting "CPPFLAGS:           ${DEFINITION_CPPFLAGS}"
+   log_setting "OTHER_CPPFLAG:      ${DEFINITION_OTHER_CPPFLAGS}"
 
    local result 
 
@@ -234,23 +231,16 @@ make::compiler::r_cppflags_value()
 
    case "${compiler%.*}" in
       c++|cc|gcc*|*clang*|"")
-         if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-         then
-            log_trace2 "DEFINITION_GCC_PREPROCESSOR_DEFINITIONS:  ${DEFINITION_GCC_PREPROCESSOR_DEFINITIONS}"
-         fi
+         log_setting "DEFINITION_GCC_PREPROCESSOR_DEFINITIONS:  ${DEFINITION_GCC_PREPROCESSOR_DEFINITIONS}"
 
          local definition
 
-         IFS=","
-         shell_disable_glob
-         for definition in ${DEFINITION_GCC_PREPROCESSOR_DEFINITIONS}
-         do
+         .foreachitem definition in ${DEFINITION_GCC_PREPROCESSOR_DEFINITIONS}
+         .do
             "${flag_definer}" "${i}"
             r_concat "${result}" "${RVAL}"
             result="${RVAL}"
-         done
-         IFS="${DEFAULT_IFS}"
-         shell_enable_glob
+         .done
       ;;
    esac
 
@@ -268,7 +258,7 @@ make::compiler::_r_cflags_value()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "WARNING_CFLAGS:  ${DEFINITION_WARNING_CFLAGS}"
+      log_setting "WARNING_CFLAGS:  ${DEFINITION_WARNING_CFLAGS}"
    fi
 
    local result
@@ -294,13 +284,10 @@ make::compiler::r_cflags_value()
    local configuration="$2"
    local addoptflags="$3"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "ENV CFLAGS:       ${CFLAGS}"
-      log_trace2 "ENV OTHER_CFLAGS: ${OTHER_CFLAGS}"
-      log_trace2 "CFLAGS:           ${DEFINITION_CFLAGS}"
-      log_trace2 "OTHER_CFLAGS:     ${DEFINITION_OTHER_CFLAGS}"
-   fi
+   log_setting "ENV CFLAGS:       ${CFLAGS}"
+   log_setting "ENV OTHER_CFLAGS: ${OTHER_CFLAGS}"
+   log_setting "CFLAGS:           ${DEFINITION_CFLAGS}"
+   log_setting "OTHER_CFLAGS:     ${DEFINITION_OTHER_CFLAGS}"
 
    local result
 
@@ -336,13 +323,10 @@ make::compiler::r_cxxflags_value()
    local configuration="$2"
    local addoptflags="$3"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "ENV CXXFLAGS:       ${CXXFLAGS}"
-      log_trace2 "ENV OTHER_CXXFLAGS: ${OTHER_CXXFLAGS}"
-      log_trace2 "CXXFLAGS:           ${DEFINITION_CXXFLAGS}"
-      log_trace2 "OTHER_CXXFLAGS:     ${DEFINITION_OTHER_CXXFLAGS}"
-   fi
+   log_setting "ENV CXXFLAGS:       ${CXXFLAGS}"
+   log_setting "ENV OTHER_CXXFLAGS: ${OTHER_CXXFLAGS}"
+   log_setting "CXXFLAGS:           ${DEFINITION_CXXFLAGS}"
+   log_setting "OTHER_CXXFLAGS:     ${DEFINITION_OTHER_CXXFLAGS}"
 
    local result
 
@@ -377,13 +361,10 @@ make::compiler::r_ldflags_value()
    local compiler="$1"
    local configuration="$2"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "ENV LDFLAGS:       ${LDFLAGS}"
-      log_trace2 "ENV OTHER_LDFLAGS: ${OTHER_LDFLAGS}"
-      log_trace2 "LDFLAGS:           ${DEFINITION_LDFLAGS}"
-      log_trace2 "OTHER_LDFLAGS:     ${DEFINITION_OTHER_LDFLAGS}"
-   fi
+   log_setting "ENV LDFLAGS:       ${LDFLAGS}"
+   log_setting "ENV OTHER_LDFLAGS: ${OTHER_LDFLAGS}"
+   log_setting "LDFLAGS:           ${DEFINITION_LDFLAGS}"
+   log_setting "OTHER_LDFLAGS:     ${DEFINITION_OTHER_LDFLAGS}"
 
    local result
 

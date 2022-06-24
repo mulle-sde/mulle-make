@@ -47,7 +47,7 @@ expect_content()
 
    if [ ! -f "${expect}" ]
    then
-      internal_fail "\"${expect}\" is missing from test"
+      _internal_fail "\"${expect}\" is missing from test"
    fi
 
    local diffs

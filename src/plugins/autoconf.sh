@@ -85,7 +85,7 @@ make::plugin::autoconf::build()
 {
    log_entry "make::plugin::autoconf::build" "$@"
 
-   [ $# -ge 9 ] || internal_fail "api error"
+   [ $# -ge 9 ] || _internal_fail "api error"
 
    local cmd="$1"
    local projectfile="$2"
@@ -142,7 +142,7 @@ make::plugin::autoconf::build()
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" \
+      _log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" \
 and \"${logfile2#${MULLE_USER_PWD}/}\""
    fi
 
@@ -177,6 +177,8 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
          fi
       fi
 
+      local rval 
+
       if [ ! -z "${bootstrapper}" ]
       then
          make::common::r_build_log_name "${logsdir}" "${bootstrapper}"
@@ -187,7 +189,7 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
                                                       "./${bootstrapper}" | ${grepper}
          then
             make::plugin::autoconf::set_needs_rerun "${projectfile}"
-            make::common::build_fail "${logfile1}" "${bootstrapper}" "${PIPESTATUS[ 0]}" "${greplog}"
+            make::common::build_fail "${logfile1}" "${bootstrapper}" "${greplog}"
          fi
       else
          if ! [ -f "aclocal4.am" ]
@@ -198,8 +200,9 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
                                            "${AUTORECONF}" \
                                            "${autoreconf_flags}" | ${grepper}
             then
+               rval="${PIPESTATUS[ 0]}"
                make::plugin::autoconf::set_needs_rerun "${projectfile}"
-               make::common::build_fail "${logfile1}" "autoreconf" "${PIPESTATUS[ 0]}" "${greplog}"
+               make::common::build_fail "${logfile1}" "autoreconf" "${rval}" "${greplog}"
             fi
          fi
 
@@ -208,8 +211,9 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
                                         "${AUTOCONF}" \
                                         "${autoconf_flags}" | ${grepper}
          then
+            rval="${PIPESTATUS[ 0]}"
             make::plugin::autoconf::set_needs_rerun "${projectfile}"
-            make::common::build_fail "${logfile2}" "autoconf" "${PIPESTATUS[ 0]}" "${greplog}"
+            make::common::build_fail "${logfile2}" "autoconf" "${rval}" "${greplog}"
          fi
       fi
    ) || exit 1
@@ -227,10 +231,10 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
    PROJECTFILE="${RVAL}"
 
    [ -z "${PROJECTFILE}" ] \
-   && internal_fail "make::plugin::configure::r_test did not set PROJECTFILE"
+   && _internal_fail "make::plugin::configure::r_test did not set PROJECTFILE"
          #statements
 
-   log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a reconf of \
+   _log_info "Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a reconf of \
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${kitchendir}\" ..."
 
    if ! make::plugin::configure::build "${cmd}" \
@@ -243,7 +247,7 @@ ${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${kitchendir}\" ..."
                         "${kitchendir}" \
                         "${logsdir}"
    then
-      internal_fail "make::plugin::configure::build should exit on failure and not return"
+      _internal_fail "make::plugin::configure::build should exit on failure and not return"
    fi
 }
 
@@ -252,7 +256,7 @@ make::plugin::autoconf::r_test()
 {
    log_entry "make::plugin::autoconf::r_test" "$@"
 
-   [ $# -eq 1 ] || internal_fail "api error"
+   [ $# -eq 1 ] || _internal_fail "api error"
 
    local srcdir="$1"
 
@@ -264,8 +268,7 @@ make::plugin::autoconf::r_test()
    then
       if ! make::common::r_find_nearest_matching_pattern "${srcdir}" "configure.in"
       then
-         log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no autoconf \
-project found."
+         log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no autoconf project found."
          return 1
       fi
    fi
@@ -287,7 +290,7 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
 
    if [ "${DEFINITION_SKIP_AUTOCONF}" = 'YES' -a -f "${configurefile}" ]
    then
-      log_fluff "${srcdir#${MULLE_USER_PWD}/}: Skip to configure due to \
+      _log_fluff "${srcdir#${MULLE_USER_PWD}/}: Skip to configure due to \
 option SKIP_AUTOCONF being set..."
       return 1
    fi
@@ -296,7 +299,7 @@ option SKIP_AUTOCONF being set..."
    then
       if [ "${configurefile}" -nt "${projectfile}" ]
       then
-         log_fluff "${srcdir#${MULLE_USER_PWD}/}: Autoconf has already run \
+         _log_fluff "${srcdir#${MULLE_USER_PWD}/}: Autoconf has already run \
 once, skip to configure..."
          return 1
       fi
@@ -307,14 +310,14 @@ once, skip to configure..."
    if [ -z "${AUTOCONF}" ]
    then
       r_basename "${projectfile}"
-      log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a \"${RVAL}\", but \
+      _log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a \"${RVAL}\", but \
 ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
       return 1
    fi
 
    if [ -z "${AUTORECONF}" ]
    then
-      log_warning "${srcdir#${MULLE_USER_PWD}/}: No autoreconf executable \
+      _log_warning "${srcdir#${MULLE_USER_PWD}/}: No autoreconf executable \
 found, will continue though"
    fi
 

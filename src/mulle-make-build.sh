@@ -139,7 +139,7 @@ Usage:
    definition directory. Definitions read from the file system undergo variable
    expansion. You generally do not interact with ${MULLE_USAGE_NAME} through
    environment variables (though there are four notable exceptions) but 
-   though these definition directories.
+   through these definition directories.
 
    You can specify a preference for building dynamic or static libraries,
    but it may only work with some cmake and autoconf projects.
@@ -203,7 +203,7 @@ make::build::make_directories()
    local kitchendir="$1"
    local logsdir="$2"
 
-   [ -z "${kitchendir}" ] && internal_fail "kitchendir is empty"
+   [ -z "${kitchendir}" ] && _internal_fail "kitchendir is empty"
 
    if [ -d "${kitchendir}" -a "${DEFINITION_CLEAN_BEFORE_BUILD}" = 'YES' ]
    then
@@ -227,17 +227,17 @@ make::build::make_directories()
 #
 make::build::__build_with_preference_if_possible()
 {
-   [ ! -z "${configuration}" ] || internal_fail "configuration not defined"
-   [ ! -z "${name}" ]          || internal_fail "name not defined"
-   [ ! -z "${sdk}" ]           || internal_fail "sdk not defined"
-   [ ! -z "${platform}" ]      || internal_fail "platform not defined"
-   [ ! -z "${preference}" ]    || internal_fail "preference not defined"
-   [ ! -z "${cmd}" ]           || internal_fail "cmd not defined"
-   [ ! -z "${srcdir}" ]        || internal_fail "srcdir not defined"
+   [ ! -z "${configuration}" ] || _internal_fail "configuration not defined"
+   [ ! -z "${name}" ]          || _internal_fail "name not defined"
+   [ ! -z "${sdk}" ]           || _internal_fail "sdk not defined"
+   [ ! -z "${platform}" ]      || _internal_fail "platform not defined"
+   [ ! -z "${preference}" ]    || _internal_fail "preference not defined"
+   [ ! -z "${cmd}" ]           || _internal_fail "cmd not defined"
+   [ ! -z "${srcdir}" ]        || _internal_fail "srcdir not defined"
 # dstdir can be empty (check what DEFINITION_PREFIX does differently)
-#   [ ! -z "${dstdir}" ]        || internal_fail "dstdir not defined"
-   [ ! -z "${kitchendir}" ]      || internal_fail "kitchendir not defined"
-   [ ! -z "${logsdir}" ]       || internal_fail "logsdir not defined"
+#   [ ! -z "${dstdir}" ]        || _internal_fail "dstdir not defined"
+   [ ! -z "${kitchendir}" ]    || _internal_fail "kitchendir not defined"
+   [ ! -z "${logsdir}" ]       || _internal_fail "logsdir not defined"
 
    (
       local TOOLNAME="${preference}"
@@ -245,14 +245,14 @@ make::build::__build_with_preference_if_possible()
 
       local projectinfo
 
-      if ! "make::plugin::${preference}::r_test" "${srcdir}"
+      if ! "make::plugin::${preference}::r_test" "${srcdir}" "$@"
       then
          return 127
       fi
       projectinfo="${RVAL}"
 
       [ -z "${projectinfo}" ] && \
-         internal_fail "make::plugin::${preference}::r_test did not return projectinfo"
+         _internal_fail "make::plugin::${preference}::r_test did not return projectinfo"
       #statements
 
       local blurb
@@ -286,7 +286,7 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${kitchendir#${PWD}/}\" ...
                                                 "${kitchendir}" \
                                                 "${logsdir}"
       then
-         internal_fail "build_${preference} should exit on failure and not return"
+         _internal_fail "build_${preference} should exit on failure and not return"
       fi
    )
 }
@@ -320,27 +320,31 @@ make::build::__determine_directories()
 
    local markerfile
 
+   # we always create a marker file
+   markerfile="${srcdir}/.mulle-make-build-dir"
+
    kitchendir="${DEFINITION_BUILD_DIR}"
    if [ -z "${kitchendir}" ]
    then
-      kitchendir="`egrep -v '^#' "${markerfile}" 2> /dev/null`"
-      if [ -z "${kitchendir}" ]
+      # always prefer "build", if available
+      if [ ! -d "${srcdir}/build" ]
       then
-         if [ ! -d "${srcdir}/build" ]
+         kitchendir="${srcdir}/build"
+      else
+         kitchendir="`egrep -v '^#' "${markerfile}" 2> /dev/null`"
+
+         if [ -z "${kitchendir}" ]
          then
-            kitchendir="${srcdir}/build"
-         else
             while :
             do
                local uuid
                local len=4 # turbo pedantic
 
-               uuid="`uuidgen`" || internal_fail "uuidgen failed"
+               uuid="`uuidgen`" || _internal_fail "uuidgen failed"
                kitchendir="${srcdir}/build-${uuid:0:${len}}"
                if [ ! -d "${kitchendir}" ]
                then
                   log_info "Use build directory ${C_RESET_BOLD}${kitchendir#${MULLE_USER_PWD}/}"
-                  markerfile="${srcdir}/.mulle-make-build-dir"
                   break
                fi
                len=$(( len + 1 ))
@@ -353,14 +357,10 @@ make::build::__determine_directories()
 
    make::build::make_directories "${kitchendir}" "${logsdir}"
 
-   if [ ! -z "${markerfile}" ]
-   then
-      redirect_exekutor "${markerfile}" \
-         echo "# memorizes the name-randomized build directory mulle-make uses
+   redirect_exekutor "${markerfile}" \
+         echo "# mulle-make memorizes the (possibly randomized) name of the \
+build directory:
 ${kitchendir}"
-   else
-      remove_file_if_present "${srcdir}/.mulle-make-build-dir"
-   fi
 
    # now known to exist, so we can canonicalize
    r_canonicalize_path "${kitchendir}"
@@ -384,11 +384,11 @@ make::build::build_with_sdk_platform_configuration_preferences()
    local configuration="$5"
    local preferences="$6"
 
-   [ -z "${srcdir}" ]        && internal_fail "srcdir is empty"
-   [ -z "${configuration}" ] && internal_fail "configuration is empty"
-   [ -z "${sdk}" ]           && internal_fail "sdk is empty"
-   [ -z "${platform}" ]      && internal_fail "platform is empty"
-   [ -z "${preferences}" ]   && internal_fail "preferences is empty"
+   [ -z "${srcdir}" ]        && _internal_fail "srcdir is empty"
+   [ -z "${configuration}" ] && _internal_fail "configuration is empty"
+   [ -z "${sdk}" ]           && _internal_fail "sdk is empty"
+   [ -z "${platform}" ]      && _internal_fail "platform is empty"
+   [ -z "${preferences}" ]   && _internal_fail "preferences is empty"
 
    if [ "${configuration}" = "lib" -o "${configuration}" = "include" -o "${configuration}" = "Frameworks" ]
    then
@@ -408,12 +408,37 @@ make::build::build_with_sdk_platform_configuration_preferences()
    .do
       # pass local context w/o arguments
       make::build::__build_with_preference_if_possible
+      rval=$?
+      case $rval in
+         127)
+         ;;
 
-      rval="$?"
-      if [ "${rval}" != 127 ]
-      then
-         return "${rval}"
-      fi
+         0)
+            # UNTESTED addition. Prefer to use disepense mapping though...
+            # If we have a script, can we use it ?
+            # If yes, we only use the script and fail for every other plugin
+            #
+#            if [ -z "${DEFINITION_POST_BUILD_SCRIPT}" ]
+#            then
+#               log_fluff "No post build script defined"
+#               return 0
+#            fi
+#            if [ "${OPTION_ALLOW_SCRIPT}" != 'YES' ]
+#            then
+#               fail "No permission to run script \"${DEFINITION_POST_BUILD_SCRIPT}\".
+#${C_INFO}Use --allow-script option or enable scripts permanently with:
+#${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
+#            fi
+#
+#            preference="script"
+#            make::build::__build_with_preference_if_possible "${DEFINITION_POST_BUILD_SCRIPT}"
+            return $?
+         ;;
+
+         *)
+            return "${rval}"
+         ;;
+      esac
    .done
 
    return 127
@@ -592,7 +617,7 @@ ${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
 There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_PREFERENCES}`\""
    fi
 
-   log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: ${plugins}"
+   log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: `echo "${preferences}"`"
 
 
    make::build::build_with_sdk_platform_configuration_preferences "${cmd}" \
@@ -609,7 +634,7 @@ There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_P
       127)
          local pluginstring
 
-         pluginstring="`sort <<< "${plugins}" | tr '\n' ',' `"
+         pluginstring="`sort <<< "${preferences}" | tr '\n' ',' `"
          fail "Don't know how to build \"${srcdir}\" with plugins ${pluginstring%%,}"
       ;;
 
@@ -647,7 +672,7 @@ make::build::common()
    local cmd="${1:-project}"
    local argument="$2"
 
-   [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
+   [ -z "${DEFAULT_IFS}" ] && _internal_fail "IFS fail"
 
    if [ -z "${MULLE_PARALLEL_SH}" ]
    then
@@ -676,10 +701,11 @@ make::build::common()
    local DEFINITION_LOG_DIR
    local DEFINITION_PREFIX
 
-   local OPTION_INFO_DIR
    local OPTION_AUX_INFO_DIR
    local OPTION_ALLOW_SCRIPT
+   local OPTION_ANALYZE
    local OPTION_CORES
+   local OPTION_INFO_DIR
    local OPTION_LOAD
    local OPTION_RERUN_CMAKE
 
@@ -709,6 +735,14 @@ make::build::common()
       case "${argument}" in
          -h*|--help|help)
             "${usage}"
+         ;;
+
+         --analyze)
+            OPTION_ANALYZE='YES'
+         ;;
+
+         --no-analyze)
+            OPTION_ANALYZE='NO'
          ;;
 
          --allow-script)

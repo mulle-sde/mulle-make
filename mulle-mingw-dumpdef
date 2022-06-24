@@ -67,7 +67,7 @@ find_library_in_directories()
    local directory
    local filepath
 
-   [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
+   [ -z "${DEFAULT_IFS}" ] && _internal_fail "IFS fail"
 
    IFS=$'\n'
    shell_disable_glob

@@ -109,13 +109,13 @@ make::plugin::load()
          functionname="make::plugin::${preference}::r_test"
          if ! shell_is_function "${functionname}"
          then
-            internal_fail "Build plugin \"${pluginpath}\" has no \"${functionname}\" function"
+            _internal_fail "Build plugin \"${pluginpath}\" has no \"${functionname}\" function"
          fi
 
          functionname="make::plugin::${preference}::build"
          if ! shell_is_function "${functionname}"
          then
-            internal_fail "Build plugin \"${pluginpath}\" has no \"${functionname}\" function"
+            _internal_fail "Build plugin \"${pluginpath}\" has no \"${functionname}\" function"
          fi
       fi
 

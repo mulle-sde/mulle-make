@@ -25,3 +25,5 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 Makefile
 cmake_install.cmake
+.gitignore
+.mulle-make-build-dir

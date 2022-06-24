@@ -321,7 +321,7 @@ make::plugin::cmake::r_userdefined_definitions()
 
    .foreachline key in ${keys}
    .do
-      if [ ! -z "${ZSH_VERSION}" ]
+      if [ ${ZSH_VERSION+x} ]
       then
          value="${(P)key}"
       else
@@ -350,24 +350,20 @@ make::plugin::cmake::r_userdefined_definitions()
                               *.exe)
                                  include "platform::wsl"
 
-                                 translatepath="mulle_wslpath"
+                                 translatepath="platform::wsl::wslpath"
                               ;;
                            esac
                         fi
 
                         if [ ! -z "${translatepath}" ]
                         then
-                           IFS=":"; shell_disable_glob
-                           for filepath in ${value}
-                           do
-                              IFS="${DEFAULT_IFS}"; shell_enable_glob
-      
+                           .foreachpath filepath in ${value}
+                           .do
                               # wslpath complains if path is not there, stupid
                               filepath="`${translatepath} -w "${filepath}"`"
                               r_semicolon_concat "${cmakevalue}" "${filepath}"
                               cmakevalue="${RVAL}"
-                           done
-                           IFS="${DEFAULT_IFS}"; shell_enable_glob
+                           .done
                         fi
                      ;;
 
@@ -420,7 +416,7 @@ make::plugin::cmake::build()
 {
    log_entry "make::plugin::cmake::build" "$@"
 
-   [ $# -ge 9 ] || internal_fail "api error"
+   [ $# -ge 9 ] || _internal_fail "api error"
 
    local cmd="$1"
    local projectfile="$2"
@@ -434,14 +430,14 @@ make::plugin::cmake::build()
 
    shift 9
 
-   [ -z "${cmd}" ] && internal_fail "cmd is empty"
-   [ -z "${projectfile}" ] && internal_fail "projectfile is empty"
-   [ -z "${configuration}" ] && internal_fail "configuration is empty"
-   [ -z "${platform}" ] && internal_fail "platform is empty"
-   [ -z "${srcdir}" ] && internal_fail "srcdir is empty"
-   [ -z "${kitchendir}" ] && internal_fail "kitchendir is empty"
-   [ -z "${logsdir}" ] && internal_fail "logsdir is empty"
-   [ -z "${sdk}" ] && internal_fail "sdk is empty"
+   [ -z "${cmd}" ] && _internal_fail "cmd is empty"
+   [ -z "${projectfile}" ] && _internal_fail "projectfile is empty"
+   [ -z "${configuration}" ] && _internal_fail "configuration is empty"
+   [ -z "${platform}" ] && _internal_fail "platform is empty"
+   [ -z "${srcdir}" ] && _internal_fail "srcdir is empty"
+   [ -z "${kitchendir}" ] && _internal_fail "kitchendir is empty"
+   [ -z "${logsdir}" ] && _internal_fail "logsdir is empty"
+   [ -z "${sdk}" ] && _internal_fail "sdk is empty"
 
    # CMAKE=make::plugin::cmake::debug_cmake
 
@@ -456,8 +452,26 @@ make::plugin::cmake::build()
    local cc
    local cxx
 
-   cc="${DEFINITION_CC:-${CC}}"
-   cxx="${DEFINITION_CXX:-${cc}}"
+   #
+   # if we are analyzing we don't want to clobber override CC because its
+   # the analyzer...
+   if [ "${OPTION_ANALYZE}" = 'YES' ]
+   then
+      log_info "Using ${CC} and ${CXX} from environment for analyzer run"
+      cc="${CC}"
+      cxx="${CXX}}"
+      [ -z "${cc}" ] && fail "mulle-make with --analyze expects environment CC to be set"
+      DEFINITION_CC=
+      DEFINITION_CXX=
+
+#      if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+#      then
+         export CCC_ANALYZER_VERBOSE=1 # verbose
+#      fi
+   else
+      cc="${DEFINITION_CC:-${CC}}"
+      cxx="${DEFINITION_CXX:-${CXX:-${cc}}}"
+   fi
 
    #
    # We are clobbering the CMAKE_C_FLAGS variable, which means that cmake will
@@ -559,29 +573,23 @@ make::plugin::cmake::build()
       ;;
    esac
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "cflags:        ${cflags}"
-      log_trace2 "cppflags:      ${cppflags}"
-      log_trace2 "cxxflags:      ${cxxflags}"
-      log_trace2 "ldflags:       ${ldflags}"
-      log_trace2 "projectfile:   ${projectfile}"
-      log_trace2 "projectdir:    ${projectdir}"
-      log_trace2 "absprojectdir: ${absprojectdir}"
-      log_trace2 "absbuilddir:   ${absbuilddir}"
-      log_trace2 "projectdir:    ${projectdir}"
-   fi
+   log_setting "cflags:        ${cflags}"
+   log_setting "cppflags:      ${cppflags}"
+   log_setting "cxxflags:      ${cxxflags}"
+   log_setting "ldflags:       ${ldflags}"
+   log_setting "projectfile:   ${projectfile}"
+   log_setting "projectdir:    ${projectdir}"
+   log_setting "absprojectdir: ${absprojectdir}"
+   log_setting "absbuilddir:   ${absbuilddir}"
+   log_setting "projectdir:    ${projectdir}"
 
    local cmakeflags
 
    cmakeflags="${DEFINITION_CMAKEFLAGS}"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "PREFIX:        ${dstdir}"
-      log_trace2 "PHASE:         ${OPTION_PHASE}"
-      log_trace2 "CMAKEFLAGS:    ${DEFINITION_CMAKEFLAGS}"
-   fi
+   log_setting "PREFIX:        ${dstdir}"
+   log_setting "PHASE:         ${OPTION_PHASE}"
+   log_setting "CMAKEFLAGS:    ${DEFINITION_CMAKEFLAGS}"
 
    #
    # this should export a compile_commands.json command, which
@@ -618,13 +626,11 @@ make::plugin::cmake::build()
 
       lines="${RVAL}"
 
-      shell_disable_glob; IFS=$'\n'
-      for line in ${lines}
-      do
+      .foreachline line in ${lines}
+      .do
          make::plugin::cmake::r_cmakeflags_add "${cmakeflags}" "${line}"
          cmakeflags="${RVAL}"
-      done
-      IFS="${DEFAULT_IFS}" ; shell_enable_glob
+      .done
    fi
 
    local maketarget
@@ -635,7 +641,7 @@ make::plugin::cmake::build()
       ;;
 
       install)
-         [ -z "${dstdir}" ] && internal_fail "dstdir is empty"
+         [ -z "${dstdir}" ] && _internal_fail "dstdir is empty"
          maketarget="install"
       ;;
 
@@ -693,6 +699,15 @@ make::plugin::cmake::build()
    value="${DEFINITION_CMAKE_C_COMPILER:-${DEFINITION_CC}}"
    if [ ! -z "${value}" ]
    then
+      # on windows mulle-clang-cl.exe will not be found. if it's not in the
+      # PATH of windows (not wsl!)
+#      case "${MULLE_UNAME}" in
+#         windows)
+#            value="`mudo which mulle-clang-cl.exe`" || exit 1
+#            value="`wslpath -w "${value}" `"
+#            value="${value//\\/\\\\}"
+#         ;;
+#      esac
       make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_C_COMPILER" "${value}"
       cmakeflags="${RVAL}"
    fi
@@ -859,7 +874,7 @@ make::plugin::cmake::build()
             if ! make::plugin::cmake::cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
             then
                run='NO'
-               log_fluff "cmake skipped, as no changes to cmake files have been \
+               _log_fluff "cmake skipped, as no changes to cmake files have been \
 found in \"${absprojectdir#${MULLE_USER_PWD}/}\""
             else
                run='YES'
@@ -911,7 +926,7 @@ found in \"${absprojectdir#${MULLE_USER_PWD}/}\""
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" \
+      _log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" \
 and \"${logfile2#${MULLE_USER_PWD}/}\""
    fi
 
@@ -979,7 +994,7 @@ make::plugin::cmake::r_test()
 {
    log_entry "make::plugin::cmake::r_test" "$@"
 
-   [ $# -eq 1 ] || internal_fail "api error"
+   [ $# -eq 1 ] || _internal_fail "api error"
 
    local srcdir="$1"
 
@@ -1006,8 +1021,7 @@ make::plugin::cmake::r_test()
 
    if [ -z "${CMAKE}" ]
    then
-      log_warning "Found a CMakeLists.txt, but \
-${C_RESET}${C_BOLD}cmake${C_WARNING} is not installed"
+      log_warning "Found a CMakeLists.txt, but ${C_RESET}${C_BOLD}cmake${C_WARNING} is not installed"
       return 1
    fi
 

@@ -217,7 +217,7 @@ make::common::r_use_ninja_instead_of_make()
       ;;
 
       *)
-         internal_fail "DEFINITION_USE_NINJA contains garbage \"${DEFINITION_USE_NINJA}\""
+         _internal_fail "DEFINITION_USE_NINJA contains garbage \"${DEFINITION_USE_NINJA}\""
       ;;
    esac
 
@@ -357,7 +357,8 @@ make::common::r_build_make_flags()
       ;;
 
       *nmake*)
-         make_terse_flags="-s"
+         make_verbose_flags="VERBOSE=1"
+         make_terse_flags="/C"
       ;;
 
       *make*)
@@ -385,13 +386,24 @@ make::common::r_build_make_flags()
       make_flags="${RVAL}"
    fi
 
-   if [ ! -z "${cores}" ]
-   then
-      make::common::r_makeflags_add "${make_flags}" "-j"
-      make::common::r_makeflags_add "${RVAL}" "${cores}"
-      make_flags="${RVAL}"
-   fi
+   case "${make}" in
+      *nmake*)
+         if [ "${cores}" == 1 ]
+         then
+            make::common::r_makeflags_add "${make_flags}" # "/Y" # guess
+            make_flags="${RVAL}"
+         fi
+      ;;
 
+      *)
+         if [ ! -z "${cores}" ]
+         then
+            make::common::r_makeflags_add "${make_flags}" "-j"
+            make::common::r_makeflags_add "${RVAL}" "${cores}"
+            make_flags="${RVAL}"
+         fi
+      ;;
+   esac
    RVAL="${make_flags}"
 }
 
@@ -525,11 +537,8 @@ make::common::r_headerpath_preprocessor_flags()
       ;;
    esac
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "headersearchpaths:    ${headersearchpaths}"
-      log_trace2 "frameworksearchpaths: ${frameworksearchpaths}"
-   fi
+   log_setting "headersearchpaths:    ${headersearchpaths}"
+   log_setting "frameworksearchpaths: ${frameworksearchpaths}"
 
    r_concat "${headersearchpaths}" "${frameworksearchpaths}"
 }
@@ -570,11 +579,8 @@ make::common::r_librarypath_linker_flags()
       ;;
    esac
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "librarysearchpaths:   ${librarysearchpaths}"
-      log_trace2 "frameworksearchpaths: ${frameworksearchpaths}"
-   fi
+   log_setting "librarysearchpaths:   ${librarysearchpaths}"
+   log_setting "frameworksearchpaths: ${frameworksearchpaths}"
 
    r_concat "${librarysearchpaths}" "${frameworksearchpaths}"
 }
@@ -626,7 +632,7 @@ make::common::build_fail()
                testprefix="test"
             fi
 
-            log_info "See log with ${C_RESET_BOLD}mulle-sde ${testprefix}log ${RVAL} \
+            _log_info "See log with ${C_RESET_BOLD}mulle-sde ${testprefix}log ${RVAL} \
 ${C_INFO}(${logfile#${MULLE_USER_PWD}/})"
          fi
       fi
@@ -663,8 +669,8 @@ make::common::r_build_log_name()
    local logsdir=$1
    local tool="$2"
 
-   [ -z "${logsdir}" ] && internal_fail "logsdir missing"
-   [ -z "${tool}" ]    && internal_fail "tool missing"
+   [ -z "${logsdir}" ] && _internal_fail "logsdir missing"
+   [ -z "${tool}" ]    && _internal_fail "tool missing"
 
    r_absolutepath "${logsdir}"
 
@@ -770,7 +776,12 @@ make::common::r_find_nearest_matching_pattern()
    # don't go too deep in search
    #
    IFS=$'\n'
-   for i in `rexekutor find -L "${directory}" -maxdepth 2 -name "${pattern}" -print`
+
+   #
+   # error redirection on find to squelch broken symbolic links like
+   # find: ‘/home/src/srcM/mulle-cloud/mnt/Assets’: Datei oder Verzeichnis nicht gefunden
+   #
+   for i in `rexekutor find -L "${directory}" -maxdepth 2 -name "${pattern}" -print 2> /dev/null`
    do
       IFS="${DEFAULT_IFS}"
 

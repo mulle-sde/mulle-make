@@ -315,7 +315,7 @@ make::definition::r_print()
 
    .foreachline key in ${keys}
    .do
-      if [ ! -z "${ZSH_VERSION}" ]
+      if [ ${ZSH_VERSION+x} ]
       then
          value="${(P)key}"
       else
@@ -330,7 +330,7 @@ make::definition::r_print()
    #
    .foreachline key in ${pluskeys}
    .do
-      if [ ! -z "${ZSH_VERSION}" ]
+      if [ ${ZSH_VERSION+x} ]
       then
          value="${(P)key}"
       else
@@ -483,7 +483,7 @@ make::definition::_make::definition::make_define_option()
    local optkey
 
    optkey="DEFINITION_$key"
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       oldvalue="${(P)optkey}"
    else
@@ -528,7 +528,7 @@ make::definition::_make::definition::make_define_option()
          if make::definition::check_key_without_prefix_exists "${key}" "${option}" \
             && [ "${oldvalue}" != "${value}" ]
          then
-            log_warning "warning: \"${key}\" previously defined as \
+            _log_warning "warning: \"${key}\" previously defined as \
 \"${oldvalue}\" now redefined as \"${value}\""
          fi
       ;;
@@ -1009,7 +1009,7 @@ make::definition::get_main()
    varkey="DEFINITION_${key}"
    if [ "${OPTION_OUTPUT_KEY}" = 'YES' ]
    then
-      if [ ! -z "${ZSH_VERSION}" ]
+      if [ ${ZSH_VERSION+x} ]
       then
          value="${(P)varkey}"
       else
@@ -1122,7 +1122,7 @@ make::definition::main()
 {
    log_entry "make::definition::main" "$@"
 
-   [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
+   [ -z "${DEFAULT_IFS}" ] && _internal_fail "IFS fail"
 
    local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
    local OPTION_DEFINITION_DIR=".mulle/etc/craft/definition"

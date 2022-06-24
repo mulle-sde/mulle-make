@@ -1,3 +1,9 @@
+## 1.1.0
+
+* add build --analyze flag for scan-build/mulle-scan-build
+* some fixes for Windows
+
+
 # 1.0.0
 
 * big function rename to `<tool>`::`<file>`::`<function>` to make it easier to read hopefully

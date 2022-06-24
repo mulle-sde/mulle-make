@@ -94,9 +94,9 @@ make::command::suggest_binary_install()
 }
 
 
-make::command::which_binary()
+make::command::r_binary_name()
 {
-   log_entry "make::command::which_binary" "$@"
+   log_entry "make::command::r_binary_name" "$@"
 
    local toolname="$1"
 
@@ -118,16 +118,22 @@ make::command::which_binary()
             ;;
 
             *)
-               if command -v "${toolname}.exe" 2> /dev/null
-               then
-                  return 0
-               fi
+               toolname="${toolname}.exe"
             ;;
          esac
       ;;
    esac
+   RVAL="${toolname}"
+}
 
-   command -v "${toolname}" 2> /dev/null
+
+make::command::which_binary()
+{
+   log_entry "make::command::which_binary" "$@"
+
+   local binary="$1"
+
+   command -v "${binary}" 2> /dev/null
 }
 
 
@@ -144,21 +150,29 @@ make::command::r_verify_binary()
    local toolfamily="$2"
    local tooldefaultname="$3"
 
-   [ -z "${toolname}" ] && internal_fail "toolname for \"${toolfamily}\" is empty"
+   [ -z "${toolname}" ] && _internal_fail "toolname for \"${toolfamily}\" is empty"
 
+   # on wsl, binaries can be like "cmake"´or "cmake.exe" ?
    local filepath
+   local binary
 
-   case "${toolname}" in
+   # make::command::r_binary_name "${toolname}"
+   binary="${toolname}"
+
+   case "${binary}" in
       /*)
-         if [ ! -x "${toolname}" ]
+         if [ ! -x "${binary}" ]
          then
             fail "\"${toolname}\" is not present as an executable"
          fi
-         filepath="${toolname}"
+         filepath="${binary}"
+
+         r_basename="${binary}"
+         binary="${RVAL}"
       ;;
 
       *)
-         filepath="`make::command::which_binary "${toolname}"`"
+         filepath="`make::command::which_binary "${binary}"`"
       ;;
    esac
 
@@ -174,18 +188,18 @@ make::command::r_verify_binary()
    # there is bad.
    # Otherwise it's maybe OK (f.e. only using xcodebuild not cmake)
    #
-   r_extensionless_basename "${toolname}"
+   r_extensionless_basename "${binary}"
    toolname="${RVAL}"
    r_extensionless_basename "${tooldefaultname}"
    tooldefaultname="${RVAL}"
 
    if [ "${toolname}" != "${tooldefaultname}" ]
    then
-      fail "${toolfamily} named \"${toolname}\" not found in PATH.
+      fail "${toolfamily} named \"${binary}\" not found in PATH.
 Suggested fix:
-${C_RESET}${C_BOLD}   `make::command::suggest_binary_install "${toolname}"`"
+${C_RESET}${C_BOLD}   `make::command::suggest_binary_install "${binary}"`"
    else
-      log_fluff "${toolfamily} named \"${toolname}\" not found in PATH"
+      log_fluff "${toolfamily} named \"${binary}\" not found in PATH"
    fi
 
    return 1

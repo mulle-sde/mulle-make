@@ -13,7 +13,7 @@
 #
 # Figure out MULLE_BASHFUNCTIONS_LIBEXEC_DIR on this machine if needed.
 #
-if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+if ! [ ${MULLE_BASHFUNCTIONS_LIBEXEC_DIR+x} ]
 then
    MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
    export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
@@ -23,7 +23,7 @@ fi
 # The booter reruns the executable either with bash or zsh, whatever the
 # system provides. On the second run --no-auto-shell will be set first.
 #
-if [ "$1" != --no-auto-shell ]
+if [ "${1:-}" != --no-auto-shell ]
 then
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
 else
@@ -88,8 +88,8 @@ emit_defines()
    local escaped_test_path
    local escaped_tmp_path
 
-   [ -z "${MULLE_TEST_DIR}" ] && internal_fail "MULLE_TEST_DIR is undefined"
-   [ -z "${MULLE_TMP_DIR}" ] && internal_fail "MULLE_TMP_DIR is undefined"
+   [ -z "${MULLE_TEST_DIR}" ] && _internal_fail "MULLE_TEST_DIR is undefined"
+   [ -z "${MULLE_TMP_DIR}" ] && _internal_fail "MULLE_TMP_DIR is undefined"
 
    r_escaped_sed_pattern "${MULLE_TEST_DIR}"
    escaped_test_path="${RVAL}"
@@ -106,7 +106,7 @@ main()
 
    # remove mock- prefix , convert to uppercase, append _REDIRECT_FILE
    envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr 'a-z' 'A-Z'`_REDIRECT_FILE"
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       filename="${(P)envvar}"
    else

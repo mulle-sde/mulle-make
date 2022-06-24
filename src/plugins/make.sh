@@ -41,7 +41,7 @@ make::plugin::make::build()
 {
    log_entry "make::plugin::make::build" "$@"
 
-   [ $# -ge 9 ] || internal_fail "api error"
+   [ $# -ge 9 ] || _internal_fail "api error"
 
    local cmd="$1"
    local projectfile="$2"
@@ -128,7 +128,7 @@ make::plugin::make::build()
       ;;
 
       install)
-         [ -z "${dstdir}" ] && internal_fail "dstdir is empty"
+         [ -z "${dstdir}" ] && _internal_fail "dstdir is empty"
          maketarget="install"
       ;;
 
@@ -246,16 +246,16 @@ make::plugin::make::build()
 
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
-      log_trace2 "cflags:          ${cflags}"
-      log_trace2 "cppflags:        ${cppflags}"
-      log_trace2 "cxxflags:        ${cxxflags}"
-      log_trace2 "ldflags:         ${ldflags}"
-      log_trace2 "projectfile:     ${projectfile}"
-      log_trace2 "projectdir:      ${projectdir}"
-      log_trace2 "absprojectdir:   ${absprojectdir}"
-      log_trace2 "absbuilddir:     ${absbuilddir}"
-      log_trace2 "MAKEFLAGS:       ${MAKEFLAGS}"
-      log_trace2 "arguments:       ${arguments}"
+      log_setting "cflags:          ${cflags}"
+      log_setting "cppflags:        ${cppflags}"
+      log_setting "cxxflags:        ${cxxflags}"
+      log_setting "ldflags:         ${ldflags}"
+      log_setting "projectfile:     ${projectfile}"
+      log_setting "projectdir:      ${projectdir}"
+      log_setting "absprojectdir:   ${absprojectdir}"
+      log_setting "absbuilddir:     ${absbuilddir}"
+      log_setting "MAKEFLAGS:       ${MAKEFLAGS}"
+      log_setting "arguments:       ${arguments}"
    fi
 
    local logfile1
@@ -338,7 +338,7 @@ make::plugin::make::r_test()
 {
    log_entry "make::plugin::make::r_test" "$@"
 
-   [ $# -eq 1 ] || internal_fail "api error"
+   [ $# -eq 1 ] || _internal_fail "api error"
 
    local srcdir="$1"
 

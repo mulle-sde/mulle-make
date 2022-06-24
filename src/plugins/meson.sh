@@ -103,7 +103,7 @@ make::plugin::meson::build()
 {
    log_entry "make::plugin::meson::build" "$@"
 
-   [ $# -ge 9 ] || internal_fail "api error"
+   [ $# -ge 9 ] || _internal_fail "api error"
 
    local cmd="$1"
    local projectfile="$2"
@@ -117,14 +117,14 @@ make::plugin::meson::build()
 
    shift 9
 
-   [ -z "${cmd}" ] && internal_fail "cmd is empty"
-   [ -z "${projectfile}" ] && internal_fail "projectfile is empty"
-   [ -z "${configuration}" ] && internal_fail "configuration is empty"
-   [ -z "${srcdir}" ] && internal_fail "srcdir is empty"
-   [ -z "${kitchendir}" ] && internal_fail "kitchendir is empty"
-   [ -z "${logsdir}" ] && internal_fail "logsdir is empty"
-   [ -z "${sdk}" ] && internal_fail "sdk is empty"
-   [ -z "${platform}" ] && internal_fail "sdk is empty"
+   [ -z "${cmd}" ] && _internal_fail "cmd is empty"
+   [ -z "${projectfile}" ] && _internal_fail "projectfile is empty"
+   [ -z "${configuration}" ] && _internal_fail "configuration is empty"
+   [ -z "${srcdir}" ] && _internal_fail "srcdir is empty"
+   [ -z "${kitchendir}" ] && _internal_fail "kitchendir is empty"
+   [ -z "${logsdir}" ] && _internal_fail "logsdir is empty"
+   [ -z "${sdk}" ] && _internal_fail "sdk is empty"
+   [ -z "${platform}" ] && _internal_fail "sdk is empty"
 
    # need this now
    mkdir_if_missing "${kitchendir}"
@@ -197,19 +197,16 @@ make::plugin::meson::build()
    make::common::r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
    rel_project_dir="${RVAL}"
 
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "cflags:          ${cflags}"
-      log_trace2 "cppflags:        ${cppflags}"
-      log_trace2 "cxxflags:        ${cxxflags}"
-      log_trace2 "ldflags:         ${ldflags}"
-      log_trace2 "projectfile:     ${projectfile}"
-      log_trace2 "projectdir:      ${projectdir}"
-      log_trace2 "absprojectdir:   ${absprojectdir}"
-      log_trace2 "absbuilddir:     ${absbuilddir}"
-      log_trace2 "rel_project_dir: ${rel_project_dir}"
-      log_trace2 "PWD:             ${PWD}"
-   fi
+   log_setting "cflags:          ${cflags}"
+   log_setting "cppflags:        ${cppflags}"
+   log_setting "cxxflags:        ${cxxflags}"
+   log_setting "ldflags:         ${ldflags}"
+   log_setting "projectfile:     ${projectfile}"
+   log_setting "projectdir:      ${projectdir}"
+   log_setting "absprojectdir:   ${absprojectdir}"
+   log_setting "absbuilddir:     ${absbuilddir}"
+   log_setting "rel_project_dir: ${rel_project_dir}"
+   log_setting "PWD:             ${PWD}"
 
    local meson_flags
    local meson_env
@@ -232,7 +229,7 @@ make::plugin::meson::build()
       ;;
 
       install)
-         [ -z "${dstdir}" ] && internal_fail "srcdir is empty"
+         [ -z "${dstdir}" ] && _internal_fail "srcdir is empty"
          maketarget="install"
          r_concat "${meson_flags}" "--prefix '${dstdir}'"
          meson_flags="${RVAL}"
@@ -428,7 +425,7 @@ make::plugin::meson::r_test()
 {
    log_entry "make::plugin::meson::r_test" "$@"
 
-   [ $# -eq 1 ] || internal_fail "api error"
+   [ $# -eq 1 ] || _internal_fail "api error"
 
    local srcdir="$1"
 
@@ -452,7 +449,7 @@ make::plugin::meson::r_test()
 
    if [ -z "${MESON}" ]
    then
-      log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a meson.build, but \
+      _log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a meson.build, but \
 ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
       return 1
    fi

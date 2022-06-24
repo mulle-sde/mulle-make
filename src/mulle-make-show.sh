@@ -47,7 +47,7 @@ make::show::main()
 {
    log_entry "make::show::main" "$@"
 
-   [ -z "${DEFAULT_IFS}" ] && internal_fail "IFS fail"
+   [ -z "${DEFAULT_IFS}" ] && _internal_fail "IFS fail"
 
    if [ -z "${MULLE_MAKE_PLUGIN_SH}" ]
    then
