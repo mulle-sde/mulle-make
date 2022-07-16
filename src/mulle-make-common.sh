@@ -642,21 +642,21 @@ ${C_INFO}(${logfile#${MULLE_USER_PWD}/})"
       127)
          if [ -z "${MULLE_VIRTUAL_ROOT}" ]
          then
-            fail "${command} is apparently not in PATH."
+            fail "${C_RESET_BOLD}${command}${C_ERROR} is apparently not in PATH ($PATH)"
          fi
 
-         if [ -z `mudo command -v "${command}"` ]
+         if [ -z `mudo which "${command}"` ]
          then
-            fail "${command} is not installed in PATH."
+            fail "${C_RESET_BOLD}${command}${C_ERROR} is not installed in PATH ($PATH)"
          fi
 
-         fail "${command} is not available.
+         fail "${C_RESET_BOLD}${command}${C_ERROR} is not available.
 ${C_INFO}You may want to add it with
 ${C_RESET_BOLD}   mulle-sde tool --global add --optional ${command}"
       ;;
 
       *)
-         fail "${command} failed with $rval"
+         fail "${C_RESET_BOLD}${command}${C_ERROR} failed with $rval"
       ;;
    esac
 }

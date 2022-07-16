@@ -1,3 +1,7 @@
+### 1.1.1
+
+* * fix command -v being used with mudo
+
 ## 1.1.0
 
 * add build --analyze flag for scan-build/mulle-scan-build
