@@ -250,6 +250,21 @@ make::plugin::cmake::r_cmakeflags_add_flag()
    local flag="$2"
    local value="$3"
 
+   # cmake always needs a value, if its empty we substitute ON
+   # so if you really need an empty string to pass, use this UUID
+   # this will be sufficently impossible to hit accidentally.
+   if [ "${value}" = "empty-string (ad6fb17-8f70-4e68-b58a-f21633dff282)" ]
+   then
+      value=""
+   else
+      if [ -z "${value}" ]
+      then
+         value="ON"
+         _log_warning "Empty value for ${flag} set to ON.
+${C_INFO}Use \"empty-string (ad6fb17-8f70-4e68-b58a-f21633dff282)\" as the value for ${flag} to create an empty string."
+      fi
+   fi
+
    r_escaped_singlequotes "${value}"
    r_escaped_shell_string "-D${flag}=${RVAL}"
    r_concat "${cmakeflags}" "${RVAL}"
@@ -444,10 +459,7 @@ make::plugin::cmake::build()
    # need this now
    mkdir_if_missing "${kitchendir}"
 
-   local cflags
-   local cxxflags
-   local cppflags
-   local ldflags
+
 
    local cc
    local cxx
@@ -472,6 +484,12 @@ make::plugin::cmake::build()
       cc="${DEFINITION_CC:-${CC}}"
       cxx="${DEFINITION_CXX:-${CXX:-${cc}}}"
    fi
+
+   local cflags
+   local cxxflags
+   local cppflags
+   local ldflags
+   local pkgconfigpath
 
    #
    # We are clobbering the CMAKE_C_FLAGS variable, which means that cmake will
@@ -530,6 +548,10 @@ make::plugin::cmake::build()
    r_concat "${ldflags}" "${RVAL}"
    ldflags="${RVAL}"
 
+   make::common::r_pkg_config_path
+   r_colon_concat "${DEFINITION_PKG_CONFIG_PATH}" "${RVAL}"
+   pkgconfigpath="${RVAL}"
+
    #
    # basically adds some flags for android based on chosen SDK
    #
@@ -577,6 +599,7 @@ make::plugin::cmake::build()
    log_setting "cppflags:      ${cppflags}"
    log_setting "cxxflags:      ${cxxflags}"
    log_setting "ldflags:       ${ldflags}"
+   log_setting "pkgconfigpath: ${pkgconfigpath}"
    log_setting "projectfile:   ${projectfile}"
    log_setting "projectdir:    ${projectdir}"
    log_setting "absprojectdir: ${absprojectdir}"
@@ -894,6 +917,14 @@ found in \"${absprojectdir#${MULLE_USER_PWD}/}\""
 
    make::build::r_env_flags
    env_common="${RVAL}"
+
+   if [ ! -z "${pkgconfigpath}" ]
+   then
+      r_concat "${env_common}" "PKG_CONFIG_PATH='${pkgconfigpath}'"
+      env_common="${RVAL}"
+      r_concat "${env_common}" "__MULLE_MAKE_ENV_ARGS='PKG_CONFIG_PATH'"
+      env_common="${RVAL}"
+   fi
 
    local logname2
 

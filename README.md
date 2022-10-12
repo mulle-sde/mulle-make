@@ -28,7 +28,7 @@ to install mulle-sde.
 
 Essentially, **mulle-make** does (for cmake projects):
 
-```
+``` sh
 mkdir build
 cd build
 cmake ..
@@ -39,7 +39,7 @@ ninja
 
 Here we use **mulle-make** in conjunction with [mulle-fetch](//github.com/mulle-sde/mulle-fetch) to conveniently download and build an autoconf based project:
 
-```
+``` sh
 $ mulle-fetch https://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.gnu.org/bison/bison-3.5.4.tar.xz
 Fetching bison from https://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.gnu.org/bison/bison-3.5.4.tar.xz.
 $ cd bison/
@@ -57,6 +57,11 @@ Let configure do a Release build of bison for SDK Default in "build" ...
 $
 ```
 
+You can look at the log output with
+
+```sh 
+$ mulle-make log 
+```
 
 
 ## Project structure

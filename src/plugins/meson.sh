@@ -133,6 +133,7 @@ make::plugin::meson::build()
    local cxxflags
    local cppflags
    local ldflags
+   local pkgconfigpath
 
    make::compiler::r_cflags_value "${DEFINITION_CC}" "${configuration}" 'NO'
    cflags="${RVAL}"
@@ -159,6 +160,10 @@ make::plugin::meson::build()
    make::common::r_librarypath_linker_flags
    r_concat "${ldflags}" "${RVAL}"
    ldflags="${RVAL}"
+
+   make::common::r_pkg_config_path
+   r_colon_concat "${DEFINITION_PKG_CONFIG_PATH}" "${RVAL}"
+   pkgconfigpath="${RVAL}"
 
    #
    # basically adds some flags for android based on chosen SDK
@@ -201,6 +206,7 @@ make::plugin::meson::build()
    log_setting "cppflags:        ${cppflags}"
    log_setting "cxxflags:        ${cxxflags}"
    log_setting "ldflags:         ${ldflags}"
+   log_setting "pkgconfigpath:   ${pkgconfigpath}"
    log_setting "projectfile:     ${projectfile}"
    log_setting "projectdir:      ${projectdir}"
    log_setting "absprojectdir:   ${absprojectdir}"
@@ -307,9 +313,16 @@ make::plugin::meson::build()
       r_colon_concat "${passed_keys}" "LDFLAGS"
       passed_keys="${RVAL}"
    fi
+   if [ ! -z "${pkgconfigpath}" ]
+   then
+      r_concat "${meson_env}" "PKG_CONFIG_PATH='${pkgconfigpath}'"
+      meson_env="${RVAL}"
+      r_colon_concat "${passed_keys}" "PKG_CONFIG_PATH"
+      passed_keys="${RVAL}"
+   fi
 
    # always pass at least a trailing :
-   r_concat "${meson_env}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"
+   r_concat "${meson_env}" "__MULLE_MAKE_ENV_ARGS='${passed_keys:-:}'"
    meson_env="${RVAL}"
 
    local ninja_flags
@@ -328,14 +341,14 @@ make::plugin::meson::build()
       ninja_flags="${RVAL}"
    fi
 
-   local other_buildsettings
-
-   other_buildsettings="`make::definition::emit_userdefined "-D " "=" "=" "" "'"`"
-   if [ ! -z "${other_buildsettings}" ]
-   then
-      r_concat "${meson_flags}" "${other_buildsettings}"
-      meson_flags="${RVAL}"
-   fi
+#   local other_buildsettings
+#
+#   other_buildsettings="`make::definition::emit_userdefined "-D" "=" "=" "" "'"`"
+#   if [ ! -z "${other_buildsettings}" ]
+#   then
+#      r_concat "${meson_flags}" "${other_buildsettings}"
+#      meson_flags="${RVAL}"
+#   fi
 
    local env_common
 
@@ -404,7 +417,8 @@ make::plugin::meson::build()
                "${meson_env}" \
                "'${MESON}'" --backend "'${MESON_BACKEND}'" \
                             "${meson_flags}" \
-                            "'${kitchendir}'" | ${grepper}
+                            "'${kitchendir}'" \
+                            "'${projectdir}'" | ${grepper}
       then
          make::common::build_fail "${logfile1}" "meson" "${PIPESTATUS[ 0]}" "${greplog}"
       fi

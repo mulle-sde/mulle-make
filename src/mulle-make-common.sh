@@ -586,6 +586,24 @@ make::common::r_librarypath_linker_flags()
 }
 
 
+make::common::r_pkg_config_path()
+{
+   log_entry "make::common::r_pkg_config_path" "$@"
+
+   local pkg_config_path
+
+   RVAL=""
+   if [ ! -z "${DEFINITION_LIB_PATH}" ]
+   then
+      make::common::r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}/pkgconfig" ""
+      pkg_config_path="${RVAL}"
+
+      log_setting "PKG_CONFIG_PATH:   ${pkg_config_path}"
+   fi
+}
+
+
+
 make::common::_add_path_tool_cppflags()
 {
    log_entry "__add_path_tool_flags" "$@"

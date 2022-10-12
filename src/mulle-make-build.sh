@@ -161,6 +161,26 @@ EOF
 }
 
 
+make::build::clean_usage()
+{
+   cat <<EOF >&2
+Usage:
+   ${MULLE_USAGE_NAME} clean [options]
+
+   Clean the build directory. If you want to clean just the log files
+   use ${MULLE_USAGE_NAME} clean log.
+
+Example:
+   ${MULLE_USAGE_NAME} clean
+
+Options:
+EOF
+   make::build::emit_options "common-prefix" | LC_ALL=C sort
+
+   exit 1
+}
+
+
 make::build::install_usage()
 {
    cat <<EOF >&2
@@ -200,6 +220,8 @@ EOF
 
 make::build::make_directories()
 {
+   log_entry "make::build::make_directories" "$@"
+
    local kitchendir="$1"
    local logsdir="$2"
 
@@ -227,6 +249,8 @@ make::build::make_directories()
 #
 make::build::__build_with_preference_if_possible()
 {
+   log_entry "make::build::__build_with_preference_if_possible" "$@"
+
    [ ! -z "${configuration}" ] || _internal_fail "configuration not defined"
    [ ! -z "${name}" ]          || _internal_fail "name not defined"
    [ ! -z "${sdk}" ]           || _internal_fail "sdk not defined"
@@ -301,6 +325,10 @@ ${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${kitchendir#${PWD}/}\" ...
 #
 make::build::__determine_directories()
 {
+   log_entry "make::build::__determine_directories" "$@"
+
+   local create_if_missing="$1"
+
    name="${DEFINITION_PROJECT_NAME}"
    if [ -z "${name}" ]
    then
@@ -320,12 +348,13 @@ make::build::__determine_directories()
 
    local markerfile
 
-   # we always create a marker file
-   markerfile="${srcdir}/.mulle-make-build-dir"
-
+   # we create a marker file, if we are running default (no DEFINITION_BUILD_DIR given)
    kitchendir="${DEFINITION_BUILD_DIR}"
+
    if [ -z "${kitchendir}" ]
    then
+      markerfile="${MULLE_MAKE_VAR_DIR}/build-dir"
+
       # always prefer "build", if available
       if [ ! -d "${srcdir}/build" ]
       then
@@ -335,6 +364,11 @@ make::build::__determine_directories()
 
          if [ -z "${kitchendir}" ]
          then
+            if [ "${create_if_missing}" = 'NO' ]
+            then
+               return 1
+            fi
+
             while :
             do
                local uuid
@@ -355,12 +389,29 @@ make::build::__determine_directories()
 
    logsdir="${DEFINITION_LOG_DIR:-${kitchendir}/.log}"
 
-   make::build::make_directories "${kitchendir}" "${logsdir}"
+   if [ "${create_if_missing}" = 'NO' ]
+   then
+      if [ ! -d "${logsdir}" ]
+      then
+         return 1
+      fi
+   else
+      make::build::make_directories "${kitchendir}" "${logsdir}"
 
-   redirect_exekutor "${markerfile}" \
-         echo "# mulle-make memorizes the (possibly randomized) name of the \
+      #
+      # only memorize if kitchendir is not the default
+      #
+      if [ ! -z "${markerfile}" ]
+      then
+         r_mkdir_parent_if_missing "${markerfile}"
+         redirect_exekutor "${markerfile}" \
+            echo "# mulle-make memorizes the name of the \
 build directory:
-${kitchendir}"
+${kitchendir}" || exit 1
+      else
+         log_debug "Not remembering build dir"
+      fi
+   fi
 
    # now known to exist, so we can canonicalize
    r_canonicalize_path "${kitchendir}"
@@ -450,6 +501,8 @@ make::build::build_with_sdk_platform_configuration_preferences()
 #
 make::build::r_env_flags()
 {
+   log_entry "make::build::r_env_flags" "$@"
+
    local env_flags
 
    r_concat "${env_flags}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"
@@ -465,9 +518,15 @@ make::build::r_env_flags()
 #   fi
 }
 
+
 make::build::clean()
 {
+   log_entry "make::build::clean" "$@"
+
    local srcdir="$1"
+   local kitchendir
+   local name
+   local logsdir
 
    make::build::__determine_directories
 
@@ -649,8 +708,6 @@ make::build::list()
 {
    log_info "Definitions"
 
-   local lf="
-"
    make::definition::r_print "${DEFINED_SET_DEFINITIONS}" \
                              "${DEFINED_PLUS_DEFINITIONS}" \
                              "" \
@@ -658,7 +715,7 @@ make::build::list()
                              "+=" \
                              "" \
                              "" \
-                       "${lf}"
+                             $'\n'
    [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 
    :
@@ -1048,7 +1105,7 @@ Maybe repair with:
          if read -r argument
          then
             log_error "Superflous argument \"${argument}\""
-            make::build::project_usage
+            make::build::clean_usage
          fi
 
          make::build::clean "${srcdir}" # not cleaning srcdir, dont't panic :)
@@ -1058,7 +1115,12 @@ Maybe repair with:
 
    case "${OPTION_INFO_DIR:-Default}" in
       'Default')
-         OPTION_INFO_DIR="${srcdir}/.mulle/etc/craft/definition"
+         if [ -d "${srcdir}/.mulle/etc/craft/definition" ]
+         then
+            OPTION_INFO_DIR="${srcdir}/.mulle/etc/craft/definition"
+         else
+            OPTION_INFO_DIR="${srcdir}/.mulle/share/craft/definition"
+         fi
       ;;
 
       'NONE')

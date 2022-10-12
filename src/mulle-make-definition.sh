@@ -383,12 +383,12 @@ make::definition::emit_userdefined()
    fi
 
    make::definition::r_print "${keys}" "${pluskeys}" \
-                       "${prefix}" \
-                       "${sep}" \
-                       "${plussep}" \
-                       "${pluspref}" \
-                       "${quote}" \
-                       " "
+                             "${prefix}" \
+                             "${sep}" \
+                             "${plussep}" \
+                             "${pluspref}" \
+                             "${quote}" \
+                             " "
    [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
@@ -523,7 +523,6 @@ make::definition::_make::definition::make_define_option()
          value="${oldvalue}${value}"
       ;;
 
-
       ''|'clobber')
          if make::definition::check_key_without_prefix_exists "${key}" "${option}" \
             && [ "${oldvalue}" != "${value}" ]
@@ -574,7 +573,6 @@ make::definition::make_undefine_option()
    DEFINED_SET_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
    DEFINED_PLUS_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
 }
-
 
 
 make::definition::make_define_plusoption()

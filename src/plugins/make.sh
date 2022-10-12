@@ -67,6 +67,7 @@ make::plugin::make::build()
    local cxxflags
    local cppflags
    local ldflags
+   local pkgconfigpath
 
    make::compiler::r_cflags_value "${DEFINITION_CC}" "${configuration}"
    cflags="${RVAL}"
@@ -94,6 +95,10 @@ make::plugin::make::build()
    make::common::r_librarypath_linker_flags
    r_concat "${ldflags}" "${RVAL}"
    ldflags="${RVAL}"
+
+   make::common::r_pkg_config_path
+   r_colon_concat "${DEFINITION_PKG_CONFIG_PATH}" "${RVAL}"
+   pkgconfigpath="${RVAL}"
 
    #
    # basically adds some flags for android based on chosen SDK
@@ -224,10 +229,17 @@ make::plugin::make::build()
       r_colon_concat "${passed_keys}" "LDFLAGS"
       passed_keys="${RVAL}"
    fi
+   if [ ! -z "${pkgconfigpath}" ]
+   then
+      r_concat "${meson_env}" "PKG_CONFIG_PATH='${pkgconfigpath}'"
+      meson_env="${RVAL}"
+      r_colon_concat "${passed_keys}" "PKG_CONFIG_PATH"
+      passed_keys="${RVAL}"
+   fi
 
    # always pass at least a trailing :
 
-   r_concat "${env_flags}" "__MULLE_MAKE_ENV_ARGS='${passed_keys}':"
+   r_concat "${env_flags}" "__MULLE_MAKE_ENV_ARGS='${passed_keys:-:}'"
    env_flags="${RVAL}"
 
    local make_flags

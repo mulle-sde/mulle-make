@@ -190,6 +190,30 @@ EOF
 }
 
 
+make::r_consume_arguments()
+{
+   log_entry "make::r_consume_arguments"
+
+   local argument="$1"
+
+   local arguments 
+
+   if [ ! -z "${argument}" ]
+   then
+      arguments="'${argument}'"
+   fi
+
+   while read -r argument
+   do
+      r_escaped_singlequotes "${argument}"
+      r_concat "${arguments}" "'${argument}'"
+      arguments="${RVAL}"
+   done
+
+   RVAL="${arguments}"
+}
+
+
 make::_main()
 {
    local MULLE_FLAG_MAGNUM_FORCE='NO'
@@ -250,6 +274,8 @@ make::_main()
 
    options_setup_trace "${MULLE_TRACE}" && set -x
 
+   eval `"${MULLE_ENV:-mulle-env}" --search-as-is mulle-tool-env make` || exit 1
+
    if [ -z "${cmd}" ]
    then
       cmd="${argument:-make}"
@@ -292,6 +318,15 @@ make::_main()
          . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-build.sh"
 
          make::build::list_main
+      ;;
+
+      log)
+         # shellcheck source=src/mulle-make-log.sh
+         . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-log.sh"
+
+         # possibly unconsumed argument
+         make::r_consume_arguments "${argument}"
+         eval make::log::main ${RVAL}
       ;;
 
       show)
