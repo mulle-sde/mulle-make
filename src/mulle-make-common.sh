@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
 #
 #   Copyright (c) 2015-2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -79,20 +79,195 @@ make::common::log_grep_warning_error()
 }
 
 
+# local _env_flags
+# local _passed_keys
+make::common::_add_env_flag()
+{
+   local envkey="$1"
+   local value="$2"
+
+   if [ "${value}" != "${!envkey}" ]
+   then
+      r_concat "${_env_flags}" "${envkey}='${value}'"
+      _env_flags="${RVAL}"
+      r_colon_concat "${_passed_keys}" "${envkey}"
+      _passed_keys="${RVAL}"
+   fi
+}
+
+make::common::r_env_std_flags()
+{
+   log_entry "make::common::r_env_std_flags" "$@"
+
+   [ $# -eq 7 ] || _internal_fail "API mismatch"
+
+   local c_compiler="$1"
+   local cxx_compiler="$2"
+   local cppflags="$3"
+   local cflags="$4"
+   local cxxflags="$5"
+   local ldflags="$6"
+   local pkgconfigpath="$7"
+
+   local _env_flags
+
+   make::build::r_env_flags
+   _env_flags="${RVAL}"
+
+   local _passed_keys
+
+   make::common::_add_env_flag "CC" "${c_compiler}"
+   make::common::_add_env_flag "CXX" "${cxx_compiler}"
+   make::common::_add_env_flag "CPPFLAGS" "${cppflags}"
+   make::common::_add_env_flag "CFLAGS" "${cflags}"
+   make::common::_add_env_flag "CXXFLAGS" "${cxxflags}"
+   make::common::_add_env_flag "LDFLAGS" "${ldflags}"
+   make::common::_add_env_flag "PKG_CONFIG_PATH" "${pkgconfigpath}"
+
+   # always pass at least a trailing :
+
+   r_concat "${_env_flags}" "__MULLE_MAKE_ENV_ARGS='${_passed_keys:-:}'"
+}
+
+
+# local _c_compiler
+# local _cxx_compiler
+# local _cppflags
+# local _cflags
+# local _cxxflags
+# local _ldflags
+# local _pkgconfigpath
+make::common::_std_flags()
+{
+   log_entry "make::common::_std_flags" "$@"
+
+   [ $# -ge 3 ] || _internal_fail "API mismatch"
+
+   local sdk="$1"
+   local platform="$2"
+   local configuration="$3"
+   local addoptflags="$4"  # optional
+
+   _c_compiler=
+   _cxx_compiler=
+
+   case "${DEFINITION_PROJECT_LANGUAGE:-c}" in
+      'c')
+         make::compiler::r_c_dialect_compiler
+         _c_compiler="${RVAL}"
+
+         make::compiler::r_cflags_value "${_c_compiler}" "${configuration}" "${addoptflags}"
+         _cflags="${RVAL}"
+
+         make::compiler::r_cppflags_value "${_c_compiler}" "${configuration}"
+         _cppflags="${RVAL}"
+         make::compiler::r_ldflags_value "${_c_compiler}" "${configuration}"
+         _ldflags="${RVAL}"
+      ;;
+
+      'cxx'|'c++'|'cpp'|'cplusplus')
+         make::compiler::r_cxx_compiler
+         _cxx_compiler="${RVAL}"
+
+         make::compiler::r_cxxflags_value "${_cxx_compiler}" "${configuration}" "${addoptflags}"
+         _cxxflags="${RVAL}"
+
+         make::compiler::r_cppflags_value "${_cxx_compiler}" "${configuration}"
+         _cppflags="${RVAL}"
+         make::compiler::r_ldflags_value "${_cxx_compiler}" "${configuration}"
+         _ldflags="${RVAL}"
+      ;;
+
+      'objc'|'obj-c'|'objective-c'|'objectivec')
+         fail "Objective-C is a dialect, not a language"
+      ;;
+
+      *)
+         log_fluff "No compiler chosen for unknown PROJECT_LANGUAGE=\"${DEFINITION_PROJECT_LANGUAGE}\""
+      ;;
+
+   esac
+
+   # hackish! changes cflags and friends to possibly add dependency dir ?
+
+   case "${MULLE_UNAME}" in
+      darwin)
+      ;;
+
+      *)
+         local sdkflags
+
+         make::common::r_sdkpath_tool_flags "${sdk}"
+         sdkflags="${RVAL}"
+         r_concat "${_cppflags}" "${sdkflags}"
+         _cppflags="${RVAL}"
+         r_concat "${_ldflags}" "${sdkflags}"
+         _ldflags="${RVAL}"
+      ;;
+   esac
+
+   make::common::r_headerpath_preprocessor_flags
+   r_concat "${_cppflags}" "${RVAL}"
+   _cppflags="${RVAL}"
+
+   make::common::r_librarypath_linker_flags
+   r_concat "${_ldflags}" "${RVAL}"
+   _ldflags="${RVAL}"
+
+   _pkgconfigpath="${DEFINITION_PKG_CONFIG_PATH}"
+   make::common::r_pkg_config_path
+   r_colon_concat "${_pkgconfigpath}" "${RVAL}"
+   _pkgconfigpath="${RVAL}"
+
+   #
+   # basically adds some flags for android based on chosen SDK
+   #
+   make::sdk::r_cflags "${sdk}" "${platform}"
+   r_concat "${_cflags}" "${RVAL}"
+   _cflags="${RVAL}"
+
+   log_setting "c_compiler:      ${_c_compiler}"
+   log_setting "cxx_compiler:    ${_cxx_compiler}"
+   log_setting "cflags:          ${_cflags}"
+   log_setting "cppflags:        ${_cppflags}"
+   log_setting "cxxflags:        ${_cxxflags}"
+   log_setting "ldflags:         ${_ldflags}"
+   log_setting "pkgconfigpath:   ${_pkgconfigpath}"
+}
+
+
+# local _absprojectdir
+# local _projectdir
+make::common::_project_directories()
+{
+   log_entry "make::common::_project_directories" "$@"
+
+   local projectfile="$1"
+
+   r_dirname "${projectfile}"
+   _projectdir="${RVAL}"
+   r_simplified_absolutepath "${_projectdir}"
+   _absprojectdir="${RVAL}"
+
+   case "${MULLE_UNAME}" in
+      mingw*)
+         _projectdir="${_absprojectdir}"
+      ;;
+
+#      *)
+#         make::common::r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
+#         projectdir="${RVAL}"
+#      ;;
+   esac
+
+   log_setting "absprojectdir: ${_absprojectdir}"
+   log_setting "projectdir:    ${_projectdir}"
+}
+
+
 make::common::tools_environment()
 {
    log_entry "make::common::tools_environment" "$@"
-
-   # no problem if those are empty
-   if [ -z "${CC}" ]
-   then
-      CC="${DEFINITION_CC}"
-   fi
-
-   if [ -z "${CXX}" ]
-   then
-      CXX="${DEFINITION_CXX}"
-   fi
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
@@ -245,7 +420,8 @@ make::common::r_make_for_plugin()
    make="${DEFINITION_MAKE:-${MAKE}}"
    if [ -z "${make}" ]
    then
-      make::common::r_platform_make "${DEFINITION_CC}" "${plugin}"
+      make::compiler::r_compiler
+      make::common::r_platform_make "${RVAL}" "${plugin}"
       make="${RVAL}"
 
       if [ -z "${no_ninja}" ]
@@ -303,7 +479,8 @@ make::common::r_makeflags_add()
       return
    fi
 
-   r_escaped_shell_string "${value}"
+   make::common::r_escaped_make_string "${value}"
+   r_escaped_shell_string "${RVAL}"
    r_concat "${makeflags}" "${RVAL}"
 }
 
@@ -408,100 +585,101 @@ make::common::r_build_make_flags()
 }
 
 
-make::common::r_convert_file_to_tool_flag()
+#
+# input:  filepaths, separated by ':'
+# sep:    separator to use for output
+# escape: YES: single quote escape each file QUOTE: escape and put in quotes
+# prefix: prefix to placwe in front of fiile
+#
+make::common::r_translated_path()
 {
-   log_entry "make::common::r_convert_file_to_tool_flag" "$@"
+   log_entry "make::common::r_translated_path" "$@"
 
-   local filepath="$1"
-   local flag="$2"
-   local mangler="$3"
+   local input="$1"
+   local sep="${2:-:}"
+   local escape="$3"    # esa
+   local prefix="$4"
 
-   case "${mangler}" in 
-      wslpath)
-         include "platform::wsl"
-
-         platform::wsl::r_wslpath "${filepath}"
-         filepath="${RVAL}" # wslpath complains if not there, we don't care
-      ;;
-
-      cygpath)
-         filepath="`cygpath -w "${filepath}" `"
-      ;;
-
-      "")
-      ;;
-
-      *)
-         filepath="`${mangler} "${filepath}" `"
-      ;;
-   esac
-
-   r_escaped_shell_string "${filepath}"
-   make::common::r_escaped_make_string "${RVAL}"
-   RVAL="${flag}${RVAL}"
-}
-
-
-make::common::r_convert_path_to_tool_flags()
-{
-   log_entry "make::common::r_convert_path_to_tool_flags" "$@"
-
-   local filepath="$1"
-   local flag="$2"
-   local mangler="$3"
-   local separator="${4:- }"
-
-   local output
-
-   RVAL=""
-
-   IFS=':'
-   shell_disable_glob
-   for component in ${filepath}
-   do
-      shell_enable_glob
-
-      make::common::r_convert_file_to_tool_flag "${component}" "${flag}" "${mangler}"
-      r_concat "${output}" "${RVAL}" "${separator}"
-      output="${RVAL}"
-   done
-   IFS="${DEFAULT_IFS}"
-   shell_enable_glob
-}
-
-
-make::common::r_sdkpath_tool_flags()
-{
-   log_entry "make::common::r_sdkpath_tool_flags" "$@"
-
-   local sdk="$1"
-
-   local sdkpath
-
-   make::compiler::r_get_sdkpath "${sdk}"
-   sdkpath="${RVAL}"
-
-   if [ ! -z "${sdkpath}" ]
+   if [ -z "${input}" ]
    then
-      make::common::r_convert_file_to_tool_flag "${sdkpath}" "-isysroot "
+      RVAL=
       return 0
-   fi 
+   fi
+   
+   local translatepath
 
-   return 1
+   # on mingw we always expect cmake.exe
+   # on wsl, we gotta check which it is
+   if [ "${MULLE_UNAME}" = "mingw" ]
+   then
+      translatepath="cygpath"
+   else
+      case "${CMAKE}" in
+         *.exe)
+            include "platform::wsl"
+
+            translatepath="platform::wsl::wslpath"
+         ;;
+      esac
+   fi
+
+
+   local value
+   local filepath
+
+   .foreachpath filepath in ${input}
+   .do
+      # wslpath complains if path is not there, stupid
+      if [ ! -z "${translatepath}" ]
+      then
+         filepath="`${translatepath} -w "${filepath}"`" || exit 1
+         [ -z "${filepath}" ] && _internal_fail "translated filepath \"${filepath}\" is returned empty by \"${translatepath}\""
+      fi
+
+      case "${escape}" in
+         NO|"")
+            r_concat "${value}" "${prefix}${filepath}" "${sep}"
+         ;;
+
+         YES)
+            r_escaped_shell_string "${filepath}"
+            r_concat "${value}" "${prefix}${RVAL}" "${sep}"
+         ;;
+
+         QUOTE)
+            r_escaped_shell_string "${filepath}"
+            r_concat "${value}" "${prefix}'${RVAL}'" "${sep}"
+         ;;
+
+         *)
+            _internal_fail "invalid escape mode"
+         ;;
+      esac
+      value="${RVAL}"
+   .done
+
+   [ -z "${value}" ] && _internal_fail "no filepath in \"${input}\""
+
+   RVAL="${value}"
 }
 
-
+#
+# preprocessor flags are added to cflags. cflags will be passed via environment
+# or as CMAKE_C_FLAGS. So there will be a single quote around everything eventually
+#
 make::common::r_headerpath_preprocessor_flags()
 {
    log_entry "make::common::r_headerpath_preprocessor_flags" "$@"
+
+   local sep="${1:- }"
 
    local headersearchpaths
    local frameworksearchpaths
 
    local compiler
 
-   compiler="${DEFINITION_CC:-${CC}}"
-   compiler="${compiler%.*}"
+   make::compiler::r_compiler
+   compiler="${RVAL%.*}"
 
    if [ -z "${compiler}" ]
    then
@@ -509,30 +687,33 @@ make::common::r_headerpath_preprocessor_flags()
          darwin|linux|freebsd)
             compiler=gcc
          ;;
+
+         windows)
+            compiler="cl"
       esac
    fi
 
    case "${compiler}" in
       *cl)
-         make::common::r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-external:I "
+         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" "YES" "-external:I "
          headersearchpaths="${RVAL}"
       ;;
 
       *clang|*gcc)
-         make::common::r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-isystem "
+         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" "YES" "-isystem "
          headersearchpaths="${RVAL}"
       ;;
 
       *)
          # assume most compilers can't do -isystem
-         make::common::r_convert_path_to_tool_flags "${DEFINITION_INCLUDE_PATH}" "-${MULLE_MAKE_ISYSTEM_FLAG:-I}"
+         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" "YES" "-${MULLE_MAKE_ISYSTEM_FLAG:-I}"
          headersearchpaths="${RVAL}"
       ;;
    esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         make::common::r_convert_path_to_tool_flags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
+         make::common::r_translated_path "${DEFINITION_FRAMEWORKS_PATH}" "${sep}" "YES" "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac
@@ -548,6 +729,8 @@ make::common::r_librarypath_linker_flags()
 {
    log_entry "make::common::r_librarypath_linker_flags" "$@"
 
+   local sep="${1:- }"
+
    local librarysearchpaths
    local frameworksearchpaths
 
@@ -555,26 +738,26 @@ make::common::r_librarypath_linker_flags()
       windows)
          case "${LD:-ld.exe}" in 
             *.exe)
-               make::common::r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-LIBPATH:" "wslpath"
+               make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" "YES" "-LIBPATH:"
                librarysearchpaths="${RVAL}"
             ;;
 
             *)
-               make::common::r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-L"
+               make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" "YES" "-L"
                librarysearchpaths="${RVAL}"
             ;;
          esac
       ;;
 
       *)
-         make::common::r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}" "-L"
+         make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" "YES" "-L"
          librarysearchpaths="${RVAL}"
       ;;
    esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         make::common::r_convert_path_to_tool_flags "${DEFINITION_FRAMEWORKS_PATH}" "-F"
+         make::common::r_translated_path "${DEFINITION_FRAMEWORKS_PATH}" "${sep}" "YES" "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac
@@ -586,20 +769,77 @@ make::common::r_librarypath_linker_flags()
 }
 
 
+# return value is already quoted
+make::common::r_sdkpath_tool_flags()
+{
+   log_entry "make::common::r_sdkpath_tool_flags" "$@"
+
+   local sdk="$1"
+
+   local sdkpath
+
+   make::compiler::r_get_sdkpath "${sdk}"
+   sdkpath="${RVAL}"
+
+   if [ ! -z "${sdkpath}" ]
+   then
+      make::common::r_translated_path "${sdkpath}"
+      r_escaped_shell_string "${RVAL}"
+      RVAL="-isysroot '${RVAL}'"
+      return 0
+   fi
+
+   return 1
+}
+
+
 make::common::r_pkg_config_path()
 {
    log_entry "make::common::r_pkg_config_path" "$@"
+
+   local sep="${1:- }"
 
    local pkg_config_path
 
    RVAL=""
    if [ ! -z "${DEFINITION_LIB_PATH}" ]
    then
-      make::common::r_convert_path_to_tool_flags "${DEFINITION_LIB_PATH}/pkgconfig" ""
+      make::common::r_translated_path "${DEFINITION_LIB_PATH}/pkgconfig" "${sep}" "YES" ""
       pkg_config_path="${RVAL}"
 
       log_setting "PKG_CONFIG_PATH:   ${pkg_config_path}"
    fi
+}
+
+
+make::common::r_maketarget()
+{
+   log_entry "make::common::r_maketarget" "$@"
+
+   local cmd="$1"
+   local definitions="$2"
+
+   RVAL=
+   .foreachline target in $definitions
+   .do
+      r_concat "${RVAL}" "'${target}'"
+   .done
+
+   case "${cmd}" in
+      build|project)
+         RVAL="${RVAL:-all}"
+      ;;
+
+      install)
+         [ -z "${dstdir}" ] && _internal_fail "dstdir is empty"
+         RVAL="install"
+      ;;
+
+      *)
+         r_concat "${RVAL}" "'${cmd}'"
+         RVAL="${RVAL}"
+      ;;
+   esac
 }
 
 
@@ -651,7 +891,7 @@ make::common::build_fail()
             fi
 
             _log_info "See log with ${C_RESET_BOLD}mulle-sde ${testprefix}log ${RVAL} \
-${C_INFO}(${logfile#${MULLE_USER_PWD}/})"
+${C_INFO}(${logfile#"${MULLE_USER_PWD}/"})"
          fi
       fi
    fi
@@ -711,6 +951,7 @@ make::common::r_build_log_name()
       if [ ! -f "${logfile}" ]
       then
          redirect_exekutor "${countfile}" printf "%s\n" "${count}"
+         exekutor touch "${logfile}"
          RVAL="${logfile}"
          return
       fi

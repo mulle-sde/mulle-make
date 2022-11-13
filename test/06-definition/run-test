@@ -47,9 +47,9 @@ expect_content()
       log_error "Unexpected result generated"
       cat <<EOF >&2
 ----------------
-Output:
+Result:
 ----------------
-${output}
+${result}
 ----------------
 Expected:
 ----------------

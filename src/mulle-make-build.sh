@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
 #
 #   Copyright (c) 2015 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -48,8 +48,7 @@ EOF
    --build-dir <dir>           : specify build directory
    --debug                     : build with configuration "Debug"
    --include-path <path>       : specify header search PATH, separated by :
-   --definition-dir <path>     : specify definition directory
-   --aux-definition-dir <path> : specify auxiliar definition directory
+   --definition-dir <path>     : specify definition directories (multi-use)
    --dynamic                   : prefer dynamic library output
    --library-path <path>       : specify library search PATH, separated by :
    --no-ninja                  : prefer make over ninja
@@ -251,17 +250,17 @@ make::build::__build_with_preference_if_possible()
 {
    log_entry "make::build::__build_with_preference_if_possible" "$@"
 
-   [ ! -z "${configuration}" ] || _internal_fail "configuration not defined"
-   [ ! -z "${name}" ]          || _internal_fail "name not defined"
-   [ ! -z "${sdk}" ]           || _internal_fail "sdk not defined"
-   [ ! -z "${platform}" ]      || _internal_fail "platform not defined"
-   [ ! -z "${preference}" ]    || _internal_fail "preference not defined"
-   [ ! -z "${cmd}" ]           || _internal_fail "cmd not defined"
-   [ ! -z "${srcdir}" ]        || _internal_fail "srcdir not defined"
+   [ ! -z "${configuration}" ]  || _internal_fail "configuration not defined"
+   [ ! -z "${name}" ]           || _internal_fail "name not defined"
+   [ ! -z "${sdk}" ]            || _internal_fail "sdk not defined"
+   [ ! -z "${platform}" ]       || _internal_fail "platform not defined"
+   [ ! -z "${preference}" ]     || _internal_fail "preference not defined"
+   [ ! -z "${cmd}" ]            || _internal_fail "cmd not defined"
+   [ ! -z "${srcdir}" ]         || _internal_fail "srcdir not defined"
 # dstdir can be empty (check what DEFINITION_PREFIX does differently)
 #   [ ! -z "${dstdir}" ]        || _internal_fail "dstdir not defined"
-   [ ! -z "${kitchendir}" ]    || _internal_fail "kitchendir not defined"
-   [ ! -z "${logsdir}" ]       || _internal_fail "logsdir not defined"
+   [ ! -z "${kitchendir}" ]     || _internal_fail "kitchendir not defined"
+   [ ! -z "${logsdir}" ]        || _internal_fail "logsdir not defined"
 
    (
       local TOOLNAME="${preference}"
@@ -269,7 +268,9 @@ make::build::__build_with_preference_if_possible()
 
       local projectinfo
 
-      if ! "make::plugin::${preference}::r_test" "${srcdir}" "$@"
+      if ! "make::plugin::${preference}::r_test" "${srcdir}" \
+                                                 "${DEFINITION_BUILD_SCRIPT}" \
+                                                 "${definitiondirs}"
       then
          return 127
       fi
@@ -378,7 +379,7 @@ make::build::__determine_directories()
                kitchendir="${srcdir}/build-${uuid:0:${len}}"
                if [ ! -d "${kitchendir}" ]
                then
-                  log_info "Use build directory ${C_RESET_BOLD}${kitchendir#${MULLE_USER_PWD}/}"
+                  log_info "Use build directory ${C_RESET_BOLD}${kitchendir#"${MULLE_USER_PWD}/"}"
                   break
                fi
                len=$(( len + 1 ))
@@ -414,11 +415,15 @@ ${kitchendir}" || exit 1
    fi
 
    # now known to exist, so we can canonicalize
-   r_canonicalize_path "${kitchendir}"
-   kitchendir="${RVAL}"
-
-   r_canonicalize_path "${logsdir}"
-   logsdir="${RVAL}"
+   # canonicalize can fail on dry-run
+   if r_canonicalize_path "${kitchendir}"
+   then
+      kitchendir="${RVAL}"
+   fi
+   if r_canonicalize_path "${logsdir}"
+   then
+      logsdir="${RVAL}"
+   fi
 }
 
 
@@ -434,6 +439,7 @@ make::build::build_with_sdk_platform_configuration_preferences()
    local platform="$4"
    local configuration="$5"
    local preferences="$6"
+   local definitiondirs="$7"
 
    [ -z "${srcdir}" ]        && _internal_fail "srcdir is empty"
    [ -z "${configuration}" ] && _internal_fail "configuration is empty"
@@ -452,6 +458,9 @@ make::build::build_with_sdk_platform_configuration_preferences()
 
    make::build::__determine_directories
 
+   log_setting "kitchendir : ${kitchendir}"
+   log_setting "logsdir    : ${logsdir}"
+
    local rval
    local preference
 
@@ -460,36 +469,10 @@ make::build::build_with_sdk_platform_configuration_preferences()
       # pass local context w/o arguments
       make::build::__build_with_preference_if_possible
       rval=$?
-      case $rval in
-         127)
-         ;;
-
-         0)
-            # UNTESTED addition. Prefer to use disepense mapping though...
-            # If we have a script, can we use it ?
-            # If yes, we only use the script and fail for every other plugin
-            #
-#            if [ -z "${DEFINITION_POST_BUILD_SCRIPT}" ]
-#            then
-#               log_fluff "No post build script defined"
-#               return 0
-#            fi
-#            if [ "${OPTION_ALLOW_SCRIPT}" != 'YES' ]
-#            then
-#               fail "No permission to run script \"${DEFINITION_POST_BUILD_SCRIPT}\".
-#${C_INFO}Use --allow-script option or enable scripts permanently with:
-#${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
-#            fi
-#
-#            preference="script"
-#            make::build::__build_with_preference_if_possible "${DEFINITION_POST_BUILD_SCRIPT}"
-            return $?
-         ;;
-
-         *)
-            return "${rval}"
-         ;;
-      esac
+      if [ $rval -ne 127 ]
+      then
+         return $rval
+      fi
    .done
 
    return 127
@@ -503,19 +486,7 @@ make::build::r_env_flags()
 {
    log_entry "make::build::r_env_flags" "$@"
 
-   local env_flags
-
-   r_concat "${env_flags}" "MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"
-
-#   if [ ! -z "${MULLE_MAKE_PROJECT_DIR}" ]
-#   then
-#      env_flags="`concat "${env_flags}" "MULLE_MAKE_PROJECT_DIR='${MULLE_MAKE_PROJECT_DIR}'"`"
-#   fi
-#
-#   if [ ! -z "${MULLE_MAKE_DESTINATION_DIR}" ]
-#   then
-#      env_flags="`concat "${env_flags}" "MULLE_MAKE_DESTINATION_DIR='${MULLE_MAKE_DESTINATION_DIR}'"`"
-#   fi
+   RVAL="MULLE_MAKE_VERSION='${MULLE_EXECUTABLE_VERSION}'"
 }
 
 
@@ -524,6 +495,7 @@ make::build::clean()
    log_entry "make::build::clean" "$@"
 
    local srcdir="$1"
+
    local kitchendir
    local name
    local logsdir
@@ -541,8 +513,7 @@ make::build::build()
    local cmd="$1"
    local srcdir="$2"
    local dstdir="$3"
-   local definitiondir="$4"
-   local aux_definitiondir="$5"
+   local definitiondirs="$4"
 
    #
    # need these three defined before read_info_dir
@@ -552,37 +523,22 @@ make::build::build()
    r_simplified_absolutepath "${dstdir}"
    MULLE_MAKE_DESTINATION_DIR="${RVAL}"
 
-   MULLE_MAKE_DEFINITION_DIR=
-   MULLE_MAKE_AUX_DEFINITION_DIR=
 
    #
    # this is typically a definition in .mulle/etc|share/craft
    #
-   if [ ! -z "${definitiondir}" ]
-   then
-      r_simplified_absolutepath "${definitiondir}"
-      MULLE_MAKE_DEFINITION_DIR="${RVAL}"
+   local definitiondir
 
+   .foreachline definitiondir in ${definitiondirs}
+   .do
       make::definition::read "${definitiondir}"
-   fi
-
-   #
-   # this is typically a craftinfo in dependency/share
-   #
-   if [ ! -z "${aux_definitiondir}" ]
-   then
-      r_simplified_absolutepath "${aux_definitiondir}"
-      MULLE_MAKE_AUX_DEFINITION_DIR="${RVAL}"
-
-      make::definition::read "${aux_definitiondir}"
-   fi
+   .done
 
    local sdk
 
    sdk="${DEFINITION_SDK:-Default}"
    case "${sdk}" in
       Default)
-         sdk="Default"
       ;;
 
       maosx)
@@ -651,12 +607,32 @@ make::build::build()
    #
    if [ ! -z "${DEFINITION_BUILD_SCRIPT}" ]
    then
-      if [ "${OPTION_ALLOW_SCRIPT}" != 'YES' ]
+      local ok
+
+      case "${OPTION_ALLOW_SCRIPTS}" in
+         ""|'YES'|'NO')
+            ok="${OPTION_ALLOW_SCRIPTS}"
+         ;;
+
+         *)
+            if find_item "${OPTION_ALLOW_SCRIPTS}" "${DEFINITION_BUILD_SCRIPT}" ||
+               find_item "${OPTION_ALLOW_SCRIPTS}" "${DEFINITION_BUILD_SCRIPT%.${MULLE_UNAME}}"
+            then
+               ok='YES'
+            else
+               ok='NO'
+            fi
+         ;;
+      esac
+
+      if [ "${ok}" != 'YES' ]
       then
          fail "No permission to run script \"${DEFINITION_BUILD_SCRIPT}\".
-${C_INFO}Use --allow-script option or enable scripts permanently with:
-${C_RESET_BOLD}   mulle-sde environment --global set MULLE_CRAFT_USE_SCRIPT YES"
+${C_INFO}Use --allow-build-script \"${DEFINITION_BUILD_SCRIPT}\" option or enable
+script permanently with:
+${C_RESET_BOLD}   mulle-sde environment --global set --add MULLE_CRAFT_USE_SCRIPTS ${DEFINITION_BUILD_SCRIPT}"
       fi
+
       DEFINITION_PLUGIN_PREFERENCES="script"
       log_verbose "A script is defined, only considering a script build now"
    else
@@ -685,7 +661,8 @@ There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_P
                                                                   "${sdk}" \
                                                                   "${platform}" \
                                                                   "${configuration}" \
-                                                                  "${preferences}"
+                                                                  "${preferences}"  \
+                                                                  "${definitiondirs}"
    case "$?" in
       0)
       ;;
@@ -752,27 +729,32 @@ make::build::common()
    local DEFINITION_PLATFORM
    local DEFINITION_LIBRARY_STYLE
    local DEFINITION_PREFERRED_LIBRARY_STYLE
+   local DEFINITION_TARGET
 
    # why are these definitions ?
    local DEFINITION_BUILD_DIR
    local DEFINITION_LOG_DIR
    local DEFINITION_PREFIX
 
-   local OPTION_AUX_INFO_DIR
-   local OPTION_ALLOW_SCRIPT
+   local OPTION_ALLOW_SCRIPTS
    local OPTION_ANALYZE
    local OPTION_CORES
-   local OPTION_INFO_DIR
+   local OPTION_INFO_DIRS
    local OPTION_LOAD
    local OPTION_RERUN_CMAKE
+   local OPTION_TARGET
 
    local state
+   local value
 
    state='NEXT'
    if [ ! -z "${argument}" ]
    then
       state='FIRST'
    fi
+
+   include "make::common"
+   include "make::definition"
 
    while :
    do
@@ -803,11 +785,26 @@ make::build::common()
          ;;
 
          --allow-script)
-            OPTION_ALLOW_SCRIPT='YES'
+            OPTION_ALLOW_SCRIPTS='YES'
+         ;;
+
+         --allow-build-script)
+            read -r value || fail "missing argument to \"${value}\""
+
+            if [ "${OPTION_ALLOW_SCRIPTS}" != 'YES' ]
+            then
+               if [ "${OPTION_ALLOW_SCRIPTS}" = 'NO' ]
+               then
+                  OPTION_ALLOW_SCRIPTS="${value}"
+               else
+                  r_comma_concat "${OPTION_ALLOW_SCRIPTS}" "${value}"
+                  OPTION_ALLOW_SCRIPTS="${RVAL}"
+               fi
+            fi
          ;;
 
          --no-allow-script)
-            OPTION_ALLOW_SCRIPT='NO'
+            OPTION_ALLOW_SCRIPTS='NO'
          ;;
 
          --allow-unknown-option)
@@ -854,13 +851,17 @@ make::build::common()
             read -r DEFINITION_PROJECT_LANGUAGE || fail "missing argument to \"${argument}\""
          ;;
 
+         --dialect|--project-dialect)
+            read -r DEFINITION_PROJECT_DIALECT || fail "missing argument to \"${argument}\""
+         ;;
+
          --plugins|--plugin-preferences|--tools|--tool-preferences)
-            read -r argument || fail "missing argument to \"${argument}\""
+            read -r value || fail "missing argument to \"${argument}\""
 
             # convenient to allow empty parameter here (for mulle-bootstrap)
-            if [ ! -z "${argument}" ]
+            if [ ! -z "${value}" ]
             then
-               DEFINITION_PLUGIN_PREFERENCES="${argument}"
+               DEFINITION_PLUGIN_PREFERENCES="${value}"
             fi
          ;;
 
@@ -879,12 +880,11 @@ make::build::common()
             read -r DEFINITION_CONFIGURATION || fail "missing argument to \"${argument}\""
          ;;
 
-         -d|--definition-dir|--info-dir|--makeinfo-dir)
-            read -r OPTION_INFO_DIR || fail "missing argument to \"${argument}\""
-         ;;
+         -d|--definition-dir|--info-dir|--makeinfo-dir|--aux-definition-dir)
+            read -r value || fail "missing argument to \"${argument}\""
 
-         --aux-definition-dir)
-            read -r OPTION_AUX_INFO_DIR || fail "missing argument to \"${argument}\""
+            r_add_line "${OPTION_INFO_DIRS}" "${value}"
+            OPTION_INFO_DIRS="${RVAL}"
          ;;
 
          --serial|--no-parallel)
@@ -975,53 +975,8 @@ make::build::common()
             read -r DEFINITION_SDK || fail "missing argument to \"${argument}\""
          ;;
 
-         '-D'*'+='*)
-            if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
-            then
-               . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
-            fi
-
-            #
-            # allow multiple -D+= values to appen values
-            # useful for -DCFLAGS+= the most often used flag
-            #
-            make::definition::make_define_plus_keyvalue "${argument:2}" "append"
-         ;;
-
-         '-D'*)
-            if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
-            then
-               . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
-            fi
-
-            make::definition::make_define_set_keyvalue "${argument:2}"
-         ;;
-
-         '--ifempty'|'--append'|'--append0'|'--remove')
-            if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
-            then
-               . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
-            fi
-
-            read -r keyvalue || fail "missing argument to \"${argument}\""
-            case "${keyvalue}" in
-               *'+='*)
-                  make::definition::make_define_plus_keyvalue "${keyvalue}" "${argument:2}"
-               ;;
-
-               *)
-                  make::definition::make_define_set_keyvalue "${keyvalue}" "${argument:2}"
-               ;;
-            esac
-         ;;
-
-         '-U'*)
-            if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
-            then
-               . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
-            fi
-
-            make::definition::make_undefine_option "${argument:2}"
+         --target|--targets)
+            read -r DEFINITION_TARGETS || fail "missing argument to \"${argument}\""
          ;;
 
          # as in /Library/Frameworks:Frameworks etc.
@@ -1040,8 +995,11 @@ make::build::common()
          ;;
 
          -*)
-            log_error "Unknown build option ${argument}"
-            "${usage}"
+            if ! make::definition::handle_definition_options "${argument}"
+            then
+               log_error "Unknown build option ${argument}"
+               "${usage}"
+            fi
          ;;
 
          *)
@@ -1050,35 +1008,10 @@ make::build::common()
       esac
    done
 
-   if [ -z "${MULLE_MAKE_COMMON_SH}" ]
-   then
-      . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-common.sh" || return 1
-   fi
-
-   if [ -z "${MULLE_MAKE_DEFINITION_SH}" ]
-   then
-      . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-definition.sh" || return 1
-   fi
-
-   if [ -z "${MULLE_MAKE_COMMAND_SH}" ]
-   then
-      . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-command.sh" || return 1
-   fi
-
-   if [ -z "${MULLE_MAKE_COMPILER_SH}" ]
-   then
-      . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-compiler.sh" || return 1
-   fi
-
-   if [ -z "${MULLE_MAKE_PLUGIN_SH}" ]
-   then
-      . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-plugin.sh" || return 1
-   fi
-
-   if [ -z "${MULLE_MAKE_SDK_SH}" ]
-   then
-      . "${MULLE_MAKE_LIBEXEC_DIR}/mulle-make-sdk.sh" || return 1
-   fi
+   include "make::command"
+   include "make::compiler"
+   include "make::plugin"
+   include "make::sdk"
 
    local srcdir
 
@@ -1093,11 +1026,15 @@ make::build::common()
             */${MULLE_SOURCETREE_STASH_DIRNAME:-stash}/*)
                fail "Source directory \"${srcdir}\" is missing.
 Maybe repair with:
-   ${C_RESET_BOLD}mulle-sde make::build::clean fetch"
+   ${C_RESET_BOLD}mulle-sde clean fetch"
             ;;
          esac
       fi
-      fail "Source directory \"${srcdir}\" is missing"
+      if [ -f "${srcdir}" ]
+      then
+         fail "\"${srcdir}\" is a file, but mulle-make wants a directory."
+      fi
+      fail "Source directory \"${srcdir}\" is missing."
    fi
 
    case "${cmd}" in
@@ -1113,18 +1050,18 @@ Maybe repair with:
       ;;
    esac
 
-   case "${OPTION_INFO_DIR:-Default}" in
+   case "${OPTION_INFO_DIRS:-Default}" in
       'Default')
          if [ -d "${srcdir}/.mulle/etc/craft/definition" ]
          then
-            OPTION_INFO_DIR="${srcdir}/.mulle/etc/craft/definition"
+            OPTION_INFO_DIRS="${srcdir}/.mulle/etc/craft/definition"
          else
-            OPTION_INFO_DIR="${srcdir}/.mulle/share/craft/definition"
+            OPTION_INFO_DIRS="${srcdir}/.mulle/share/craft/definition"
          fi
       ;;
 
       'NONE')
-         unset OPTION_INFO_DIR
+         unset OPTION_INFO_DIRS
       ;;
    esac
 
@@ -1146,10 +1083,9 @@ Maybe repair with:
          fi
 
          make::build::build "build" \
-               "${srcdir}" \
-               "" \
-               "${OPTION_INFO_DIR}" \
-               "${OPTION_AUX_INFO_DIR}"
+                            "${srcdir}" \
+                            "" \
+                            "${OPTION_INFO_DIRS}"
       ;;
 
       install)
@@ -1176,10 +1112,9 @@ Maybe repair with:
          fi
 
          make::build::build "install" \
-               "${srcdir}" \
-               "${dstdir}" \
-               "${OPTION_INFO_DIR}" \
-               "${OPTION_AUX_INFO_DIR}"
+                            "${srcdir}" \
+                            "${dstdir}" \
+                            "${OPTION_INFO_DIRS}"
       ;;
    esac
 }

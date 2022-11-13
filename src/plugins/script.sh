@@ -34,6 +34,7 @@ MULLE_MAKE_PLUGIN_SCRIPT_SH="included"
 make::plugin::script::r_build_script_absolutepath()
 {
    local definition="$1"
+   local definitiondirs="$2"
 
    if [ -z "${definition}" ]
    then
@@ -72,19 +73,16 @@ make::plugin::script::r_build_script_absolutepath()
          searchpath=
 
          # prefer aux
-         if [ ! -z "${MULLE_MAKE_AUX_DEFINITION_DIR}" ]
-         then
-            r_filepath_concat "${MULLE_MAKE_AUX_DEFINITION_DIR}/bin" "${directory}"
-            r_colon_concat "${searchpath}" "${RVAL}"
-            searchpath="${RVAL}"
-         fi
+         local definitiondir
 
-         if [ ! -z "${MULLE_MAKE_DEFINITION_DIR}" ]
-         then
-            r_filepath_concat "${MULLE_MAKE_DEFINITION_DIR}/bin" "${directory}"
+         r_reverse_lines "${definitiondirs}"
+
+         .foreachline definitiondir in ${RVAL}
+         .do
+            r_filepath_concat "${definitiondir}/bin" "${directory}"
             r_colon_concat "${searchpath}" "${RVAL}"
             searchpath="${RVAL}"
-         fi
+         .done
 
          [ -z "${DEPENDENCY_DIR}" ] && _internal_fail "DEPENDENCY_DIR not set"
 
@@ -175,7 +173,7 @@ make::plugin::script::build()
    then
       logfile1="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\""
+      log_verbose "Build logs will be in \"${logfile1#"${MULLE_USER_PWD}/"}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
@@ -190,6 +188,7 @@ make::plugin::script::build()
       exekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
 
       PATH="${OPTION_PATH:-${PATH}}"
+      PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
@@ -227,11 +226,13 @@ make::plugin::script::r_test()
    log_entry "make::plugin::script::r_test" "$@"
 
    local srcdir="$1"
-   local definition="${2:-${DEFINITION_BUILD_SCRIPT}}"
+   local definition="$2"
+   local definitiondirs="$3"
 
    RVAL=""
 
-   if ! make::plugin::script::r_build_script_absolutepath "${definition}" 
+   if ! make::plugin::script::r_build_script_absolutepath "${definition}" \
+                                                          "${definitiondirs}"
    then
       return 1
    fi
@@ -241,14 +242,14 @@ make::plugin::script::r_test()
    then
       if [ -e "${scriptfile}" ]
       then
-         log_warning "There is a build script \"${scriptfile#${MULLE_USER_PWD}/}\" but its not executable"
+         log_warning "There is a build script \"${scriptfile#"${MULLE_USER_PWD}/"}\" but its not executable"
       else
-         log_fluff "There is no build script \"${scriptfile#${MULLE_USER_PWD}/}\""
+         log_fluff "There is no build script \"${scriptfile#"${MULLE_USER_PWD}/"}\""
       fi
       return 1
    fi
 
-   log_verbose "Found build script \"${scriptfile#${MULLE_USER_PWD}/}\""
+   log_verbose "Found build script \"${scriptfile#"${MULLE_USER_PWD}/"}\""
 
    RVAL="${scriptfile};${srcdir}"
 

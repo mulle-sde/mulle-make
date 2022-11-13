@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
 #
 #   Copyright (c) 2015 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -387,24 +387,253 @@ make::compiler::r_ldflags_value()
       result="${RVAL}"
    fi
 
+   #
    # doesn't work for me though...
    # https://stackoverflow.com/questions/11731229/dladdr-doesnt-return-the-function-name/11732893?r=SearchResults&s=3|31.5239#11732893
-   case "${configuration}" in
-      'Debug'|'Test')
-         case "${MULLE_UNAME}" in
-            linux)
-               case "${compiler%.*}" in
-                  *gcc|*clang)
-                     r_concat "${result}" "-Wl,--export-dynamic"
-                     result="${RVAL}"
+   #
+   # MEMO: commented this out, because it's not wanted in every case
+   #       (-> cosmopolitan), also not sure if this is still needed
+   #
+   #   case "${configuration}" in
+   #      'Debug'|'Test')
+   #         case "${MULLE_UNAME}" in
+   #            linux)
+   #               case "${compiler%.*}" in
+   #                  *gcc|*clang)
+   #                     r_concat "${result}" "-Wl,--export-dynamic"
+   #                     result="${RVAL}"
+   #                  ;;
+   #               esac
+   #            ;;
+   #         esac
+   #      ;;
+   #   esac
+
+   RVAL="${result}"
+}
+
+
+
+#
+# Support overriding c-compilers better.
+#
+# gcc for C, mulle-clang for Objective-C, but then also variants like
+# gcc.musl and mulle-clang.cosmpolitan. We may need to build some parts
+# with "gcc" only and some parts with gcc.musl and some with
+# mulle-clang.musl.
+#
+# Old Scheme:
+# cmakes pick is the default
+# DEFINITION_CC is what the project wants (important: switch to ObjC implied)
+# $ENV{CC} overrides DEFINITION_CC
+#
+# New Scheme:
+#
+# Make it possible to change the new order
+# Add DEFINITION:PREFER_ENV_CC definition set to NO, so that a project that really
+# wants only the value set in DEFINITION_CC.
+#
+# ``` bash
+# mulle-sde definition set CC gcc
+# mulle-sde definition set DEFINITION_PREFER_ENV_CC NO
+# ```
+make::compiler::r_c_compiler()
+{
+   log_entry "make::compiler::r_c_compiler" "$@"
+
+   RVAL=
+
+   local selection
+
+   selection="${DEFINITION_SELECT_CC:-environment,definition}"
+   log_debug "selection: ${selection}"
+
+   case ",${selection}," in
+      *',definition,environment,'*)
+         RVAL="${DEFINITION_CC:-${CC}}"
+      ;;
+
+      *',environment,definition,'*)
+         RVAL="${CC:-${DEFINITION_CC}}"
+      ;;
+
+      *',environment,'*)
+         RVAL="${CC}"
+      ;;
+
+      *',definition,'*)
+         RVAL="${DEFINITION_CC}"
+      ;;
+
+      *',clobber,'*)
+         CC=
+         export CC
+      ;;
+
+      *',none,'*)
+      ;;
+
+      *)
+         fail "invalid value \"${DEFINITION_SELECT_CC}\" for DEFINITION_SELECT_CC (environment, definition, clobber, none, no-fallback))"
+      ;;
+   esac
+
+   log_fluff "C compiler set to ${RVAL:-system default cc}"
+}
+
+
+
+make::compiler::r_c_dialect_compiler()
+{
+   log_entry "make::compiler::r_c_dialect_compiler" "$@"
+
+   local language
+   local dialect
+   local selection
+
+   language="${DEFINITION_PROJECT_LANGUAGE:-c}"
+   log_debug "language: ${language}"
+
+   RVAL=
+   case "${language}" in
+      [cC])
+         #
+         # use DEFINITION_CC as a hint, for objc
+         # don't use c_compiler here
+         #
+         # case "${DEFINITION_COBJC}" in
+         #    *mulle-clang*)
+         #       c_dialect="objc"
+         #    ;;
+         # esac
+
+         r_lowercase "${DEFINITION_PROJECT_DIALECT:-${dialect}}"
+         dialect="${RVAL}"
+
+         log_debug "dialect: ${dialect}"
+
+         RVAL=
+         case "${dialect}" in
+            'objc'|'obj-c'|'objective-c'|'objectivec')
+               local selection
+
+               selection="${DEFINITION_SELECT_COBJC:-environment,definition}"
+               log_debug "selection: ${selection}"
+
+               case ",${selection}," in
+                  *',definition,environment,'*)
+                     RVAL="${DEFINITION_COBJC:-${COBJC}}"
+                  ;;
+
+                  *',environment,definition,'*)
+                     RVAL="${COBJC:-${DEFINITION_COBJC}}"
+                  ;;
+
+                  *',environment,'*)
+                     RVAL="${COBJC}"
+                  ;;
+
+                  *',definition,'*)
+                     RVAL="${DEFINITION_COBJC}"
+                  ;;
+
+                  *',clobber,'*)
+                     COBJC=
+                     export COBJC
+                  ;;
+
+                  *',none,'*)
+                  ;;
+
+                  *)
+                     fail "invalid value \"${DEFINITION_SELECT_COBJC}\" for DEFINITION_SELECT_COBJC (environment, definition, clobber, none, no-fallback))"
+                  ;;
+               esac
+
+               if [ ! -z "${RVAL}" ]
+               then
+                  return
+               fi
+
+               case ",${DEFINITION_SELECT_COBJC}," in
+                  *,no-fallback,*)
+                     log_fluff "No fallback and no objc compiler set"
+                     return
                   ;;
                esac
             ;;
          esac
+
+         make::compiler::r_c_compiler
+      ;;
+   esac
+}
+
+
+make::compiler::r_cxx_compiler()
+{
+   log_entry "make::compiler::r_cxx_compiler" "$@"
+
+   RVAL=
+   case ",${DEFINITION_SELECT_CXX:-environment,definition}," in
+      *',definition,environment,'*)
+         RVAL="${DEFINITION_CXX:-${CXX}}"
+      ;;
+
+      *',environment,definition,'*)
+         RVAL="${CXX:-${DEFINITION_CXX}}"
+      ;;
+
+      *',environment,'*)
+         RVAL="${CXX}"
+      ;;
+
+      *',definition,'*)
+         RVAL="${DEFINITION_CXX}"
+      ;;
+
+      *',clobber,'*)
+         CXX=
+         export CXX
+      ;;
+
+      *',none,'*)
+      ;;
+
+      *)
+         fail "invalid value \"${DEFINITION_SELECT_CXX}\" for DEFINITION_SELECT_CXX (environment, definition, clobber, none, no-fallback))"
       ;;
    esac
 
-   RVAL="${result}"
+   if [ -z "${RVAL}" ]
+   then
+      case ",${DEFINITION_SELECT_CXX}," in
+         *,no-fallback,*)
+            log_fluff "No fallback and no c++ compiler set"
+            return
+         ;;
+      esac
+
+      make::compiler::r_c_compiler
+   fi
+
+   log_fluff "c++ compiler set to ${RVAL}"
+}
+
+
+# useful for some tool selection
+make::compiler::r_compiler()
+{
+   RVAL=
+   case "${DEFINITION_PROJECT_LANGUAGE:-c}" in
+      'c')
+         make::compiler::r_c_dialect_compiler
+      ;;
+
+      'cxx'|'c++'|'cpp'|'cplusplus')
+         make::compiler::r_cxx_compiler
+      ;;
+   esac
 }
 
 

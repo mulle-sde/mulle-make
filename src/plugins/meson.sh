@@ -75,22 +75,22 @@ make::plugin::meson::tools_environment()
 }
 
 
-make::plugin::meson::r_sdk_parameter()
-{
-   local sdk="$1"
-
-   RVAL=""
-   case "${MULLE_UNAME}" in
-      "darwin")
-         make::compiler::r_get_sdkpath "${sdk}"
-         if [ ! -z "${RVAL}" ]
-         then
-            log_fluff "Set meson sdk to \"${RVAL}\""
-            RVAL="-isysroot '${RVAL}'"
-         fi
-      ;;
-   esac
-}
+# make::plugin::meson::r_sdk_parameter()
+# {
+#    local sdk="$1"
+#
+#    RVAL=""
+#    case "${MULLE_UNAME}" in
+#       "darwin")
+#          make::compiler::r_get_sdkpath "${sdk}"
+#          if [ ! -z "${RVAL}" ]
+#          then
+#             log_fluff "Set meson sdk to \"${RVAL}\""
+#             RVAL="-isysroot '${RVAL}'"
+#          fi
+#       ;;
+#    esac
+# }
 
 
 #
@@ -129,48 +129,23 @@ make::plugin::meson::build()
    # need this now
    mkdir_if_missing "${kitchendir}"
 
-   local cflags
-   local cxxflags
-   local cppflags
-   local ldflags
-   local pkgconfigpath
+   local _c_compiler
+   local _cxx_compiler
+   local _cppflags
+   local _cflags
+   local _cxxflags
+   local _ldflags
+   local _pkgconfigpath
 
-   make::compiler::r_cflags_value "${DEFINITION_CC}" "${configuration}" 'NO'
-   cflags="${RVAL}"
-   make::compiler::r_cxxflags_value "${DEFINITION_CXX:-${DEFINITION_CC}}" "${configuration}" 'NO'
-   cxxflags="${RVAL}"
-   make::compiler::r_cppflags_value "${DEFINITION_CC}" "${DEFINITION_INCLUDE_PATH}"
-   cppflags="${RVAL}"
-   make::compiler::r_ldflags_value "${DEFINITION_CC}" "${configuration}"
-   ldflags="${RVAL}"
+   make::common::_std_flags "${sdk}" "${platform}" "${configuration}"
 
-   local sdkflags
-
-   make::common::r_sdkpath_tool_flags "${sdk}"
-   sdkflags="${RVAL}"
-   r_concat "${cppflags}" "${sdkflags}"
-   cppflags="${RVAL}"
-   r_concat "${ldflags}" "${sdkflags}"
-   ldflags="${RVAL}"
-
-   make::common::r_headerpath_preprocessor_flags
-   r_concat "${cppflags}" "${RVAL}"
-   cppflags="${RVAL}"
-
-   make::common::r_librarypath_linker_flags
-   r_concat "${ldflags}" "${RVAL}"
-   ldflags="${RVAL}"
-
-   make::common::r_pkg_config_path
-   r_colon_concat "${DEFINITION_PKG_CONFIG_PATH}" "${RVAL}"
-   pkgconfigpath="${RVAL}"
-
-   #
-   # basically adds some flags for android based on chosen SDK
-   #
-   make::sdk::r_cflags "${sdk}" "${platform}"
-   r_concat "${cflags}" "${RVAL}"
-
+   local c_compiler="${_c_compiler}"
+   local cxx_compiler="${_cxx_compiler}"
+   local cppflags="${_cppflags}"
+   local cflags="${_cflags}"
+   local cxxflags="${_cxxflags}"
+   local ldflags="${_ldflags}"
+   local pkgconfigpath="${_pkgconfigpath}"
    #
    # not really sure about what MESON wants, assume its like configure
    # and does CPPFLAGS
@@ -187,39 +162,20 @@ make::plugin::meson::build()
    #    fi
    # fi
 
-   local rel_project_dir
-   local absbuilddir
-   local absprojectdir
-   local projectdir
 
-   r_dirname "${projectfile}"
-   projectdir="${RVAL}"
-   r_simplified_absolutepath "${projectdir}"
-   absprojectdir="${RVAL}"
-   r_simplified_absolutepath "${kitchendir}"
-   absbuilddir="${RVAL}"
+   local _absprojectdir
+   local _projectdir
 
-   make::common::r_projectdir_relative_to_builddir "${absbuilddir}" "${absprojectdir}"
-   rel_project_dir="${RVAL}"
+   make::common::_project_directories "${projectfile}"
 
-   log_setting "cflags:          ${cflags}"
-   log_setting "cppflags:        ${cppflags}"
-   log_setting "cxxflags:        ${cxxflags}"
-   log_setting "ldflags:         ${ldflags}"
-   log_setting "pkgconfigpath:   ${pkgconfigpath}"
-   log_setting "projectfile:     ${projectfile}"
-   log_setting "projectdir:      ${projectdir}"
-   log_setting "absprojectdir:   ${absprojectdir}"
-   log_setting "absbuilddir:     ${absbuilddir}"
-   log_setting "rel_project_dir: ${rel_project_dir}"
+   local absprojectdir="${_absprojectdir}"
+   local projectdir="${_projectdir}"
+
+
    log_setting "PWD:             ${PWD}"
 
    local meson_flags
-   local meson_env
-   local passed_keys
 
-   passed_keys=
-   meson_env=
    meson_flags="${DEFINITION_MESONFLAGS}"
 
    local maketarget
@@ -253,76 +209,32 @@ make::plugin::meson::build()
 
    if [ ! -z "${configuration}" ]
    then
-      configuration="$(tr 'A-Z' 'a-z' <<< "${configuration}" )"
-      r_concat "${meson_flags}" "--buildtype '${configuration}'"
+      r_lowercase "${configuration}"
+      r_concat "${meson_flags}" "--buildtype '${RVAL}'"
       meson_flags="${RVAL}"
    fi
 
-   if [ ! -z "${DEFINITION_CC}" ]
-   then
-      r_concat "${meson_env}" "CC='${DEFINITION_CC}'"
-      meson_env="${RVAL}"
-      r_colon_concat "${passed_keys}" "CC"
-      passed_keys="${RVAL}"
-   fi
+#   local sdkparameter
+#
+#   make::plugin::meson::r_sdk_parameter "${sdk}"
+#   sdkparameter="${RVAL}"
+#
+#   if [ ! -z "${sdkparameter}" ]
+#   then
+#      r_concat "${cppflags}" "${sdkparameter}"
+#      cppflags="${RVAL}"
+#   fi
 
-   if [ ! -z "${DEFINITION_CXX}" ]
-   then
-      r_concat "${meson_env}" "CXX='${DEFINITION_CXX}'"
-      meson_env="${RVAL}"
-      r_colon_concat "${passed_keys}" "CXX"
-      passed_keys="${RVAL}"
-   fi
+   local meson_env
 
-   local sdkparameter
+   make::common::r_env_std_flags "${c_compiler}" \
+                                 "${cxx_compiler}" \
+                                 "${cppflags}" \
+                                 "${cflags}" \
+                                 "${cxxflags}" \
+                                 "${ldflags}" \
+                                 "${pkgconfigpath}"
 
-   make::plugin::meson::r_sdk_parameter "${sdk}"
-   sdkparameter="${RVAL}"
-
-   if [ ! -z "${sdkparameter}" ]
-   then
-      r_concat "${cppflags}" "${sdkparameter}"
-      cppflags="${RVAL}"
-   fi
-
-   if [ ! -z "${cppflags}" ]
-   then
-      r_concat "${meson_env}" "CPPFLAGS='${cppflags}'"
-      meson_env="${RVAL}"
-      r_colon_concat "${passed_keys}" "CPPFLAGS"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${cflags}" ]
-   then
-      r_concat "${meson_env}" "CFLAGS='${cflags}'"
-      meson_env="${RVAL}"
-      r_colon_concat "${passed_keys}" "CFLAGS"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${cxxflags}" ]
-   then
-      r_concat "${meson_env}" "CXXFLAGS='${cxxflags}'"
-      meson_env="${RVAL}"
-      r_colon_concat "${passed_keys}" "CXXFLAGS"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${ldflags}" ]
-   then
-      r_concat "${meson_env}" "LDFLAGS='${ldflags}'"
-      meson_env="${RVAL}"
-      r_colon_concat "${passed_keys}" "LDFLAGS"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${pkgconfigpath}" ]
-   then
-      r_concat "${meson_env}" "PKG_CONFIG_PATH='${pkgconfigpath}'"
-      meson_env="${RVAL}"
-      r_colon_concat "${passed_keys}" "PKG_CONFIG_PATH"
-      passed_keys="${RVAL}"
-   fi
-
-   # always pass at least a trailing :
-   r_concat "${meson_env}" "__MULLE_MAKE_ENV_ARGS='${passed_keys:-:}'"
    meson_env="${RVAL}"
 
    local ninja_flags
@@ -380,7 +292,7 @@ make::plugin::meson::build()
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" and \"${logfile2#${MULLE_USER_PWD}/}\""
+      log_verbose "Build logs will be in \"${logfile1#"${MULLE_USER_PWD}/"}\" and \"${logfile2#"${MULLE_USER_PWD}/"}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
@@ -394,6 +306,7 @@ make::plugin::meson::build()
 
    (
       PATH="${OPTION_PATH:-${PATH}}"
+      PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
@@ -439,9 +352,11 @@ make::plugin::meson::r_test()
 {
    log_entry "make::plugin::meson::r_test" "$@"
 
-   [ $# -eq 1 ] || _internal_fail "api error"
+   [ $# -eq 3 ] || _internal_fail "api error"
 
    local srcdir="$1"
+   local definition="$2"
+   local definitiondirs="$3"
 
    local projectfile
    local projectdir
@@ -449,31 +364,31 @@ make::plugin::meson::r_test()
    RVAL=""
    if ! make::common::r_find_nearest_matching_pattern "${srcdir}" "meson.build"
    then
-      log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no meson.build file found"
+      log_fluff "${srcdir#"${MULLE_USER_PWD}/"}: There was no meson.build file found"
       return 1
    fi
    projectfile="${RVAL}"
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      fail "${srcdir#${MULLE_USER_PWD}/}: meson does not support build phases"
+      fail "${srcdir#"${MULLE_USER_PWD}/"}: meson does not support build phases"
    fi
 
    make::plugin::meson::tools_environment
 
    if [ -z "${MESON}" ]
    then
-      _log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a meson.build, but \
+      _log_warning "${srcdir#"${MULLE_USER_PWD}/"}: Found a meson.build, but \
 ${C_RESET}${C_BOLD}meson${C_WARNING} is not installed"
       return 1
    fi
 
    if [ -z "${MESON_BACKEND}" ]
    then
-      fail "${srcdir#${MULLE_USER_PWD}/}: No meson backend available"
+      fail "${srcdir#"${MULLE_USER_PWD}/"}: No meson backend available"
    fi
 
-   log_verbose "Found meson project \"${projectfile#${MULLE_USER_PWD}/}\""
+   log_verbose "Found meson project \"${projectfile#"${MULLE_USER_PWD}/"}\""
 
    RVAL="${projectfile}"
 

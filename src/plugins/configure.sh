@@ -59,53 +59,28 @@ make::plugin::configure::build()
 
    configure_flags="${DEFINITION_CONFIGUREFLAGS}"
 
-#   create_dummy_dirs_against_warnings "${mapped}" "${suffix}"
-
+   # need this now
    mkdir_if_missing "${kitchendir}"
 
-   local cflags
-   local cxxflags
-   local cppflags
-   local ldflags
-   local pkgconfigpath
+#   create_dummy_dirs_against_warnings "${mapped}" "${suffix}"
 
-   make::compiler::r_cflags_value "${DEFINITION_CC}" "${configuration}"
-   cflags="${RVAL}"
-   make::compiler::r_cxxflags_value "${DEFINITION_CXX:-${DEFINITION_CC}}" "${configuration}"
-   cxxflags="${RVAL}"
-   make::compiler::r_cppflags_value "${DEFINITION_CC}" "${configuration}"
-   cppflags="${RVAL}"
-   make::compiler::r_ldflags_value "${DEFINITION_CC}" "${configuration}"
-   ldflags="${RVAL}"
+   local _c_compiler
+   local _cxx_compiler
+   local _cppflags
+   local _cflags
+   local _cxxflags
+   local _ldflags
+   local _pkgconfigpath
 
-   # hackish! changes cflags and friends to possibly add dependency dir ?
-   local sdkflags
+   make::common::_std_flags "${sdk}" "${platform}" "${configuration}"
 
-   make::common::r_sdkpath_tool_flags "${sdk}"
-   sdkflags="${RVAL}"
-   r_concat "${cppflags}" "${sdkflags}"
-   cppflags="${RVAL}"
-   r_concat "${ldflags}" "${sdkflags}"
-   ldflags="${RVAL}"
-
-   make::common::r_headerpath_preprocessor_flags
-   r_concat "${cppflags}" "${RVAL}"
-   cppflags="${RVAL}"
-
-   make::common::r_librarypath_linker_flags
-   r_concat "${ldflags}" "${RVAL}"
-   ldflags="${RVAL}"
-
-   make::common::r_pkg_config_path
-   r_colon_concat "${DEFINITION_PKG_CONFIG_PATH}" "${RVAL}"
-   pkgconfigpath="${RVAL}"
-
-   #
-   # basically adds some flags for android based on chosen SDK
-   #
-   make::sdk::r_cflags "${sdk}" "${platform}"
-   r_concat "${cflags}" "${RVAL}"
-   cflags="${RVAL}"
+   local c_compiler="${_c_compiler}"
+   local cxx_compiler="${_cxx_compiler}"
+   local cppflags="${_cppflags}"
+   local cflags="${_cflags}"
+   local cxxflags="${_cxxflags}"
+   local ldflags="${_ldflags}"
+   local pkgconfigpath="${_pkgconfigpath}"
 
 #
 # cppflags should not be duplicated into CFLAGS and CXXFLAGS for configure.
@@ -124,27 +99,13 @@ make::plugin::configure::build()
 #      fi
 #   fi
 
-   local maketarget
    local arguments
+   local prefix
 
-   case "${cmd}" in
-      build|project)
-         maketarget=all
-      ;;
-
-      install)
-         [ -z "${dstdir}" ] && _internal_fail "dstdir is empty"
-         maketarget="install"
-      ;;
-
-      *)
-         maketarget="${cmd}"
-      ;;
-   esac
-
-   if [ ! -z "${DEFINITION_PREFIX}" ]
+   prefix="${DEFINITION_PREFIX}"
+   if [ ! -z "${prefix}" ]
    then
-      arguments="--prefix${MULLE_MAKE_CONFIGURE_SPACE:-=}'${DEFINITION_PREFIX}'"
+      arguments="--prefix${MULLE_MAKE_CONFIGURE_SPACE:-=}'${prefix}'"
    else
       if [ ! -z "${dstdir}" ]
       then
@@ -168,66 +129,21 @@ make::plugin::configure::build()
       ;;
    esac
 
+   local maketarget
+
+   make::common::r_maketarget "${cmd}" "${DEFINITION_TARGETS}"
+   maketarget="${RVAL}"
+
    local env_flags
-   local passed_keys
 
-   make::build::r_env_flags
-   env_flags="${RVAL}"
+   make::common::r_env_std_flags "${c_compiler}" \
+                                 "${cxx_compiler}" \
+                                 "${cppflags}" \
+                                 "${cflags}" \
+                                 "${cxxflags}" \
+                                 "${ldflags}" \
+                                 "${pkgconfigpath}"
 
-   passed_keys=
-
-   if [ ! -z "${DEFINITION_CC}" ]
-   then
-      r_concat "${env_flags}" "CC='${DEFINITION_CC}'"
-      env_flags="${RVAL}"
-      r_colon_concat "${passed_keys}" "CC"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${DEFINITION_CXX}" ]
-   then
-      r_concat "${env_flags}" "CXX='${DEFINITION_CXX}'"
-      env_flags="${RVAL}"
-      r_colon_concat "${passed_keys}" "CXX"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${cppflags}" ]
-   then
-      r_concat "${env_flags}" "CPPFLAGS='${cppflags}'"
-      env_flags="${RVAL}"
-      r_colon_concat "${passed_keys}" "CPPFLAGS"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${cflags}" ]
-   then
-      r_concat "${env_flags}" "CFLAGS='${cflags}'"
-      env_flags="${RVAL}"
-      r_colon_concat "${passed_keys}" "CFLAGS"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${cxxflags}" ]
-   then
-      r_concat "${env_flags}" "CXXFLAGS='${cxxflags}'"
-      env_flags="${RVAL}"
-      r_colon_concat "${passed_keys}" "CXXFLAGS"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${ldflags}" ]
-   then
-      r_concat "${env_flags}" "LDFLAGS='${ldflags}'"
-      env_flags="${RVAL}"
-      r_colon_concat "${passed_keys}" "LDFLAGS"
-      passed_keys="${RVAL}"
-   fi
-   if [ ! -z "${pkgconfigpath}" ]
-   then
-      r_concat "${env_flags}" "PKG_CONFIG_PATH='${pkgconfigpath}'"
-      env_flags="${RVAL}"
-      r_colon_concat "${passed_keys}" "PKG_CONFIG_PATH"
-      passed_keys="${RVAL}"
-   fi
-   # always pass at least a trailing :
-
-   r_concat "${env_flags}" "__MULLE_MAKE_ENV_ARGS='${passed_keys:-:}'"
    env_flags="${RVAL}"
 
    local make_flags
@@ -235,24 +151,17 @@ make::plugin::configure::build()
    make::common::r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"
    make_flags="${RVAL}"
 
-   local absprojectdir
-   local projectdir
+   local _absprojectdir
+   local _projectdir
 
-   r_dirname "${projectfile}"
-   projectdir="${RVAL}"
-   r_absolutepath "${projectdir}"
-   absprojectdir="${RVAL}"
+   make::common::_project_directories "${projectfile}"
 
-   log_setting "cflags:          ${cflags}"
-   log_setting "cppflags:        ${cppflags}"
-   log_setting "cxxflags:        ${cxxflags}"
-   log_setting "ldflags:         ${ldflags}"
-   log_setting "pkgconfigpath:   ${pkgconfigpath}"
+   local absprojectdir="${_absprojectdir}"
+   local projectdir="${_projectdir}"
+
+   log_setting "prefix:          ${prefix}"
+   log_setting "env_flags:       ${env_flags}"
    log_setting "make_flags:      ${make_flags}"
-   log_setting "projectfile:     ${projectfile}"
-   log_setting "projectdir:      ${projectdir}"
-   log_setting "absprojectdir:   ${absprojectdir}"
-   log_setting "absbuilddir:     ${absbuilddir}"
    log_setting "CONFIGUREFLAGS:  ${CONFIGUREFLAGS}"
    log_setting "configure_flags: ${configure_flags}"
    log_setting "arguments:       ${arguments}"
@@ -282,7 +191,7 @@ make::plugin::configure::build()
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" and \"${logfile2#${MULLE_USER_PWD}/}\""
+      log_verbose "Build logs will be in \"${logfile1#"${MULLE_USER_PWD}/"}\" and \"${logfile2#"${MULLE_USER_PWD}/"}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
@@ -294,10 +203,10 @@ make::plugin::configure::build()
       greplog="NO"
    fi
 
-
    (
       exekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
 
+      PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
@@ -329,8 +238,22 @@ make::plugin::configure::build()
          fi
       fi
 
+      local sudo
+
+      # check if prefix needs sudo, if yes ask user
+      if [ ! -z "${prefix}" ]
+      then
+         exekutor mkdir -p "${prefix}" 2> /dev/null
+         if [ ! -w "${prefix}" ]
+         then
+            _log_info "Sudo is needed to install into \"${prefix#"${MULLE_USER_PWD}/"}\".
+You might get asked for your password."
+            sudo="sudo"
+         fi
+      fi
+
       if ! logging_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
-               "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "${maketarget}"  | ${grepper}
+              "${sudo}" "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "${maketarget}"  | ${grepper}
       then
          make::common::build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
@@ -343,9 +266,11 @@ make::plugin::configure::r_test()
 {
    log_entry "make::plugin::configure::r_test" "$@"
 
-   [ $# -eq 1 ] || _internal_fail "api error"
+   [ $# -eq 3 ] || _internal_fail "api error"
 
    local srcdir="$1"
+   local definition="$2"
+   local definitiondirs="$3"
 
    local projectfile
    local projectdir
@@ -364,7 +289,7 @@ make::plugin::configure::r_test()
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      fail "${srcdir#${MULLE_USER_PWD}/}: configure does not support build phases
+      fail "${srcdir#"${MULLE_USER_PWD}/"}: configure does not support build phases
 ${C_INFO}This is probably a misconfiguration in your sourcetree. Suggest:
 ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
    fi
@@ -387,7 +312,7 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
 
    make::common::tools_environment
 
-   log_verbose "Found configure script \"${projectfile#${MULLE_USER_PWD}/}\""
+   log_verbose "Found configure script \"${projectfile#"${MULLE_USER_PWD}/"}\""
 
    RVAL="${projectfile}"
    return 0

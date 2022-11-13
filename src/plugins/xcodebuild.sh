@@ -137,10 +137,13 @@ make::plugin::xcodebuild::_build()
    [ ! -z "${sdk}" ]           || _internal_fail "sdk is empty"
    [ ! -z "${projectfile}" ]   || _internal_fail "project is empty"
 
-   local projectdir
+   local _absprojectdir
+   local _projectdir
 
-   r_dirname "${projectfile}"
-   projectdir="${RVAL}"
+   make::common::_project_directories "${projectfile}"
+
+   local absprojectdir="${_absprojectdir}"
+   local projectdir="${_projectdir}"
 
    #
    # xctool needs schemes, these are often autocreated, which xctool cant do
@@ -262,10 +265,6 @@ EOF
    make::build::r_env_flags
    env_common="${RVAL}"
 
-   local cflags
-   local cxxflags
-   local ldflags
-
    if [ ! -z "${DEFINITION_CFLAGS}" ]
    then
       r_concat "${buildsettings}" "CFLAGS='${DEFINITION_CFLAGS}'"
@@ -340,7 +339,7 @@ EOF
       buildsettings="${RVAL}"
    fi
 
-   user_buildsettings="`make::definition::emit_userdefined '' '=' '=' '$(inherited) ' "'" `"
+   user_buildsettings="`make::definition::emit_userdefined '' '=' '+=' '$(inherited) ' "'" `"
    if [ ! -z "${user_buildsettings}" ]
    then
       r_concat "${buildsettings}" "${user_buildsettings}"
@@ -365,7 +364,7 @@ EOF
    then
       logfile1="/dev/null"
    else
-      log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\""
+      log_verbose "Build logs will be in \"${logfile1#"${MULLE_USER_PWD}/"}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
@@ -383,6 +382,7 @@ EOF
 
       # DONT READ CONFIG SETTING IN THIS INDENT ?
 
+      PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
@@ -407,32 +407,25 @@ make::plugin::xcodebuild::build()
 {
    log_entry "make::plugin::xcodebuild::build" "$@"
 
-   [ $# -eq 9 ] || _internal_fail "api error"
-
    local project="$2"
 
    local scheme
-   local schemes
 
-   schemes="${DEFINITION_SCHEMES}"
-   .foreachline scheme in $schemes
+   .foreachline scheme in ${DEFINITION_SCHEMES}
    .do
       log_fluff "Building scheme \"${scheme}\" of \"${project}\" ..."
       make::plugin::xcodebuild::_build "$@" "${scheme}" ""
    .done
 
    local target
-   local targets
 
-   targets="${DEFINITION_TARGETS}"
-
-   .foreachline target in $targets
+   .foreachline target in ${DEFINITION_TARGETS}
    .do
       log_fluff "Building target \"${target}\" of \"${project}\" ..."
       make::plugin::xcodebuild::_build "$@" "" "${target}"
    .done
 
-   if [ -z "${targets}" -a -z "${schemes}" ]
+   if [ -z "${DEFINITION_SCHEMES}" -a -z "${DEFINITION_TARGETS}" ]
    then
       log_fluff "Building project \"${project}\" ..."
       make::plugin::xcodebuild::_build "$@" "" ""
@@ -445,6 +438,8 @@ make::plugin::xcodebuild::r_test()
    log_entry "make::plugin::xcodebuild::r_test" "$@"
 
    local srcdir="$1"
+   local definition="$2"
+   local definitiondirs="$3"
 
    local projectfile
    local projectdir
@@ -466,14 +461,14 @@ make::plugin::xcodebuild::r_test()
       projectfile="${RVAL}"
       if [ -z "${projectfile}" ]
       then
-         log_fluff "${srcdir#${MULLE_USER_PWD}/}: There is no Xcode project in \"${srcdir}\""
+         log_fluff "${srcdir#"${MULLE_USER_PWD}/"}: There is no Xcode project in \"${srcdir}\""
          return 1
       fi
    fi
 
    if [ ! -z "${OPTION_PHASE}" ]
    then
-      fail "${srcdir#${MULLE_USER_PWD}/}: Xcode does not support build phases"
+      fail "${srcdir#"${MULLE_USER_PWD}/"}: Xcode does not support build phases"
    fi
 
    r_dirname "${projectfile}"
@@ -482,14 +477,14 @@ make::plugin::xcodebuild::r_test()
 
    if [ -z "${XCODEBUILD}" ]
    then
-      log_verbose "${srcdir#${MULLE_USER_PWD}/}: No xcodebuild found."
+      log_verbose "${srcdir#"${MULLE_USER_PWD}/"}: No xcodebuild found."
       return 1
    fi
 
    r_basename "${XCODEBUILD}"
    TOOLNAME="${RVAL}"
 
-   log_verbose "Found Xcode project \"${projectfile#${MULLE_USER_PWD}/}\""
+   log_verbose "Found Xcode project \"${projectfile#"${MULLE_USER_PWD}/"}\""
 
    RVAL="${projectfile}"
 

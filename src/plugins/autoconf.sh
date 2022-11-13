@@ -99,10 +99,13 @@ make::plugin::autoconf::build()
 
    shift 9
 
-   local projectdir
+   local _absprojectdir
+   local _projectdir
 
-   r_dirname "${projectfile}"
-   projectdir="${RVAL}"
+   make::common::_project_directories "${projectfile}"
+
+   local absprojectdir="${_absprojectdir}"
+   local projectdir="${_projectdir}"
 
    local env_common
 
@@ -142,8 +145,8 @@ make::plugin::autoconf::build()
       logfile1="/dev/null"
       logfile2="/dev/null"
    else
-      _log_verbose "Build logs will be in \"${logfile1#${MULLE_USER_PWD}/}\" \
-and \"${logfile2#${MULLE_USER_PWD}/}\""
+      _log_verbose "Build logs will be in \"${logfile1#"${MULLE_USER_PWD}/"}\" \
+and \"${logfile2#"${MULLE_USER_PWD}/"}\""
    fi
 
    if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
@@ -158,6 +161,7 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
    (
       exekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
 
+      PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"
       log_fluff "PATH temporarily set to $PATH"
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
@@ -224,7 +228,7 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
    local PROJECTFILE
    local TOOLNAME=configure
 
-   if ! make::plugin::configure::r_test "${srcdir}"
+   if ! make::plugin::configure::r_test "${srcdir}" "" ""
    then
       fail "Could not run configure for \"${srcdir}"\"
    fi
@@ -238,14 +242,14 @@ and \"${logfile2#${MULLE_USER_PWD}/}\""
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} in \"${kitchendir}\" ..."
 
    if ! make::plugin::configure::build "${cmd}" \
-                        "${PROJECTFILE}"  \
-                        "${sdk}" \
-                        "${platform}" \
-                        "${configuration}" \
-                        "${srcdir}" \
-                        "${dstdir}" \
-                        "${kitchendir}" \
-                        "${logsdir}"
+                                       "${PROJECTFILE}"  \
+                                       "${sdk}" \
+                                       "${platform}" \
+                                       "${configuration}" \
+                                       "${srcdir}" \
+                                       "${dstdir}" \
+                                       "${kitchendir}" \
+                                       "${logsdir}"
    then
       _internal_fail "make::plugin::configure::build should exit on failure and not return"
    fi
@@ -256,9 +260,11 @@ make::plugin::autoconf::r_test()
 {
    log_entry "make::plugin::autoconf::r_test" "$@"
 
-   [ $# -eq 1 ] || _internal_fail "api error"
+   [ $# -eq 3 ] || _internal_fail "api error"
 
    local srcdir="$1"
+   local definition="$2"
+   local definitiondirs="$3"
 
    local projectfile
    local projectdir
@@ -268,7 +274,7 @@ make::plugin::autoconf::r_test()
    then
       if ! make::common::r_find_nearest_matching_pattern "${srcdir}" "configure.in"
       then
-         log_fluff "${srcdir#${MULLE_USER_PWD}/}: There was no autoconf project found."
+         log_fluff "${srcdir#"${MULLE_USER_PWD}/"}: There was no autoconf project found."
          return 1
       fi
    fi
@@ -278,7 +284,7 @@ make::plugin::autoconf::r_test()
    then
       local name
 
-      fail "${srcdir#${MULLE_USER_PWD}/}: autoconf does not support build phases
+      fail "${srcdir#"${MULLE_USER_PWD}/"}: autoconf does not support build phases
 ${C_INFO}This is probably a misconfiguration in your sourcetree. Suggest:
 ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
    fi
@@ -290,7 +296,7 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
 
    if [ "${DEFINITION_SKIP_AUTOCONF}" = 'YES' -a -f "${configurefile}" ]
    then
-      _log_fluff "${srcdir#${MULLE_USER_PWD}/}: Skip to configure due to \
+      _log_fluff "${srcdir#"${MULLE_USER_PWD}/"}: Skip to configure due to \
 option SKIP_AUTOCONF being set..."
       return 1
    fi
@@ -299,7 +305,7 @@ option SKIP_AUTOCONF being set..."
    then
       if [ "${configurefile}" -nt "${projectfile}" ]
       then
-         _log_fluff "${srcdir#${MULLE_USER_PWD}/}: Autoconf has already run \
+         _log_fluff "${srcdir#"${MULLE_USER_PWD}/"}: Autoconf has already run \
 once, skip to configure..."
          return 1
       fi
@@ -310,24 +316,24 @@ once, skip to configure..."
    if [ -z "${AUTOCONF}" ]
    then
       r_basename "${projectfile}"
-      _log_warning "${srcdir#${MULLE_USER_PWD}/}: Found a \"${RVAL}\", but \
+      _log_warning "${srcdir#"${MULLE_USER_PWD}/"}: Found a \"${RVAL}\", but \
 ${C_RESET}${C_BOLD}autoconf${C_WARNING} is not installed"
       return 1
    fi
 
    if [ -z "${AUTORECONF}" ]
    then
-      _log_warning "${srcdir#${MULLE_USER_PWD}/}: No autoreconf executable \
+      _log_warning "${srcdir#"${MULLE_USER_PWD}/"}: No autoreconf executable \
 found, will continue though"
    fi
 
    if [ -z "${MAKE}" ]
    then
-      log_warning "${srcdir#${MULLE_USER_PWD}/}: No make executable found"
+      log_warning "${srcdir#"${MULLE_USER_PWD}/"}: No make executable found"
       return 1
    fi
 
-   log_verbose "Found autoconf project \"${projectfile#${MULLE_USER_PWD}/}\""
+   log_verbose "Found autoconf project \"${projectfile#"${MULLE_USER_PWD}/"}\""
 
    RVAL="${projectfile}"
    return 0

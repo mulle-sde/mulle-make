@@ -1,0 +1,114 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+
+run_mulle_make()
+{
+   log_fluff "####################################"
+   log_fluff ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
+   log_fluff "####################################"
+
+   exekutor ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
+}
+
+
+expect_content()
+{
+   local resultfile="$1"
+   local expect="$2"
+
+   local result 
+
+   result="`cat "${resultfile}" `" || fail "\"${resultfile}\" is missing"
+
+   if [ -z "${result}" ]
+   then
+      if [ -z "${expect}" ]
+      then
+         return
+      fi
+      fail "Did not produce \"${expect}\" as expected (\"${resultfile}\")"
+   else
+      if [ -z "${expect}" ]
+      then
+         fail "Did produce \"${result}\" unexpectedly. Nothing was expected (\"${resultfile}\")"
+      fi
+   fi
+
+   local diffs
+
+   diffs="`diff -b "${resultfile}" <(printf "%s\n" "${expect}") `"
+   if [ $? -ne 0 ]
+   then
+      log_error "Unexpected result generated"
+      cat <<EOF >&2
+----------------
+Result: (${resultfile})
+----------------
+${result}
+----------------
+Expected:
+----------------
+${expect}
+----------------
+Diff:
+----------------
+${diffs}
+----------------
+EOF
+      exit 1
+   fi
+}
+
+
+main()
+{
+   MULLE_MAKE_FLAGS="$@"
+
+   _options_mini_main "$@" && set -x
+
+   local directory
+
+   r_make_tmp_directory || exit 1
+   directory="${RVAL}"
+
+   run_mulle_make definition -DA+=X write "${directory}/definition1"
+   run_mulle_make definition -DB=X write "${directory}/definition1"
+   run_mulle_make definition -DA+=Y write "${directory}/definition2"
+   run_mulle_make definition -DB=Y write "${directory}/definition2"
+   run_mulle_make definition --definition-dir "${directory}/definition1" \
+                             --definition-dir "${directory}/definition2" \
+                             write            "${directory}/definition3"
+ 
+   # write of normal definitions is "clobber" except if write
+   # is specified with --append or some such
+   #
+   # write of plus definitions are always "append"
+   #
+   expect="X Y"
+   expect_content "${directory}/definition3/plus/append/A" "${expect}"
+
+   expect="Y"
+   expect_content "${directory}/definition3/set/clobber/B" "${expect}"
+}
+
+
+
+init()
+{
+   MULLE_MAKE="${MULLE_MAKE:-${PWD}/../../mulle-make}"
+}
+
+
+
+init "$@"
+main "$@"
+
