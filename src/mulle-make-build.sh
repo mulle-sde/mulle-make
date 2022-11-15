@@ -370,11 +370,11 @@ make::build::__determine_directories()
                return 1
             fi
 
+            local uuid
+            local len=4 # turbo pedantic
+
             while :
             do
-               local uuid
-               local len=4 # turbo pedantic
-
                uuid="`uuidgen`" || _internal_fail "uuidgen failed"
                kitchendir="${srcdir}/build-${uuid:0:${len}}"
                if [ ! -d "${kitchendir}" ]

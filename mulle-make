@@ -326,7 +326,7 @@ make::main()
 {
    local args
 
-   if [ $# -eq 2 -a "$1" == "--args" ]
+   if [ $# -eq 2 -a "$1" = "--args" ]
    then
       local filename
 

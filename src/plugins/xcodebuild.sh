@@ -140,7 +140,7 @@ make::plugin::xcodebuild::_build()
    local _absprojectdir
    local _projectdir
 
-   make::common::_project_directories "${projectfile}"
+   make::common::__project_directories "${projectfile}"
 
    local absprojectdir="${_absprojectdir}"
    local projectdir="${_projectdir}"

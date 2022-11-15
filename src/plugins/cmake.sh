@@ -461,7 +461,7 @@ make::plugin::cmake::build()
    local _ldflags
    local _pkgconfigpath
 
-   make::common::_std_flags "${sdk}" "${platform}" "${configuration}" "NO"
+   make::common::__std_flags "${sdk}" "${platform}" "${configuration}" "NO"
 
    local c_compiler="${_c_compiler}"
    local cxx_compiler="${_cxx_compiler}"
@@ -498,7 +498,7 @@ make::plugin::cmake::build()
    local _absprojectdir
    local _projectdir
 
-   make::common::_project_directories "${projectfile}"
+   make::common::__project_directories "${projectfile}"
 
    local absprojectdir="${_absprojectdir}"
    local projectdir="${_projectdir}"
@@ -967,7 +967,7 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
          make::common::build_fail "${logfile2}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
 
-      if [ "${cmd}" == "install" ]
+      if [ "${cmd}" = "install" ]
       then
          if ! logging_tee_eval_exekutor "${logfile3}" "${teefile3}" \
                   "${env_common}" \

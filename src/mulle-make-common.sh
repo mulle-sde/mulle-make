@@ -81,7 +81,7 @@ make::common::log_grep_warning_error()
 
 # local _env_flags
 # local _passed_keys
-make::common::_add_env_flag()
+make::common::__add_env_flag()
 {
    local envkey="$1"
    local value="$2"
@@ -116,13 +116,13 @@ make::common::r_env_std_flags()
 
    local _passed_keys
 
-   make::common::_add_env_flag "CC" "${c_compiler}"
-   make::common::_add_env_flag "CXX" "${cxx_compiler}"
-   make::common::_add_env_flag "CPPFLAGS" "${cppflags}"
-   make::common::_add_env_flag "CFLAGS" "${cflags}"
-   make::common::_add_env_flag "CXXFLAGS" "${cxxflags}"
-   make::common::_add_env_flag "LDFLAGS" "${ldflags}"
-   make::common::_add_env_flag "PKG_CONFIG_PATH" "${pkgconfigpath}"
+   make::common::__add_env_flag "CC" "${c_compiler}"
+   make::common::__add_env_flag "CXX" "${cxx_compiler}"
+   make::common::__add_env_flag "CPPFLAGS" "${cppflags}"
+   make::common::__add_env_flag "CFLAGS" "${cflags}"
+   make::common::__add_env_flag "CXXFLAGS" "${cxxflags}"
+   make::common::__add_env_flag "LDFLAGS" "${ldflags}"
+   make::common::__add_env_flag "PKG_CONFIG_PATH" "${pkgconfigpath}"
 
    # always pass at least a trailing :
 
@@ -137,9 +137,9 @@ make::common::r_env_std_flags()
 # local _cxxflags
 # local _ldflags
 # local _pkgconfigpath
-make::common::_std_flags()
+make::common::__std_flags()
 {
-   log_entry "make::common::_std_flags" "$@"
+   log_entry "make::common::__std_flags" "$@"
 
    [ $# -ge 3 ] || _internal_fail "API mismatch"
 
@@ -238,9 +238,9 @@ make::common::_std_flags()
 
 # local _absprojectdir
 # local _projectdir
-make::common::_project_directories()
+make::common::__project_directories()
 {
-   log_entry "make::common::_project_directories" "$@"
+   log_entry "make::common::__project_directories" "$@"
 
    local projectfile="$1"
 

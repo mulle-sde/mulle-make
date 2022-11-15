@@ -72,7 +72,7 @@ make::plugin::configure::build()
    local _ldflags
    local _pkgconfigpath
 
-   make::common::_std_flags "${sdk}" "${platform}" "${configuration}"
+   make::common::__std_flags "${sdk}" "${platform}" "${configuration}"
 
    local c_compiler="${_c_compiler}"
    local cxx_compiler="${_cxx_compiler}"
@@ -154,7 +154,7 @@ make::plugin::configure::build()
    local _absprojectdir
    local _projectdir
 
-   make::common::_project_directories "${projectfile}"
+   make::common::__project_directories "${projectfile}"
 
    local absprojectdir="${_absprojectdir}"
    local projectdir="${_projectdir}"
