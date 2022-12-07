@@ -1,3 +1,4 @@
 --backend ninja
 --buildtype release
+05-meson-build
 build

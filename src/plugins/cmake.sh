@@ -71,9 +71,11 @@ make::plugin::cmake::r_platform_cmake_generator()
 }
 
 
-make::plugin::cmake::r_find_cmake()
+make::plugin::cmake::tools_environment()
 {
-   log_entry "make::plugin::cmake::r_find_cmake" "$@"
+   log_entry "make::plugin::cmake::tools_environment" "$@"
+
+   make::common::tools_environment
 
    local toolname
    local tooldefaultname
@@ -81,28 +83,21 @@ make::plugin::cmake::r_find_cmake()
    tooldefaultname="cmake${MULLE_EXE_EXTENSION}"
    toolname="${DEFINITION_CMAKE:-${CMAKE:-${tooldefaultname}}}"
    make::command::r_verify_binary "${toolname}" "cmake" "${tooldefaultname}"
-}
+   CMAKE="${RVAL}"
 
+#   make::common::r_make_for_plugin "cmake" ""
+#   MAKE="${RVAL}"
 
-make::plugin::cmake::tools_environment()
-{
-   log_entry "make::plugin::cmake::tools_environment" "$@"
-
-   make::common::tools_environment
+   # used for running tests
+   CMAKE1="${DEFINITION_CMAKE1:-${CMAKE}}"
+   CMAKE2="${DEFINITION_CMAKE2:-${CMAKE1}}"
 
    local defaultgenerator
 
-   make::plugin::cmake::r_find_cmake
-   CMAKE="${RVAL}"
-
-   make::common::r_make_for_plugin "cmake" ""
-   MAKE="${RVAL}"
-
-   make::plugin::cmake::r_platform_cmake_generator "${MAKE}"
-   defaultgenerator="${RVAL}"
-
-   CMAKE_GENERATOR="${DEFINITION_CMAKE_GENERATOR:-${defaultgenerator}}"
-
+#   make::plugin::cmake::r_platform_cmake_generator "${MAKE}"
+#   defaultgenerator="${RVAL}"
+#
+#   CMAKE_GENERATOR="${DEFINITION_CMAKE_GENERATOR}" # :-${defaultgenerator}}"
 }
 
 
@@ -232,9 +227,8 @@ make::plugin::cmake::cmake_files_are_newer_than_makefile()
    local arguments
    local location
 
-   IFS=':'
-   for location in ${MULLE_MATCH_PATH}
-   do
+   .foreachpath location in ${MULLE_MATCH_PATH}
+   .do
       [ -z "${location}" ] && fail "Environment variable \
 MULLE_MATCH_PATH must not contain empty paths"
 
@@ -247,8 +241,7 @@ MULLE_MATCH_PATH must not contain empty paths"
          r_concat "${arguments}" "${location}"
          arguments="${RVAL}"
       fi
-   done
-   IFS="${DEFAULT_IFS}"
+   .done
 
    if [ -z "${arguments}" ]
    then
@@ -356,39 +349,36 @@ make::plugin::cmake::r_userdefined_definitions()
    local value
    local cmakevalue
    local cmakeflags
-   local escaped_value
 
    .foreachline key in ${keys}
    .do
       r_shell_indirect_expand "${key}"
       value="${RVAL}"
 
-      r_escaped_shell_string "${value}"
-      escaped_value="${RVAL}"
-
       # change to cmake separator
       # on MINGW though, this will prohibit escaping so we have to do it manually
-      case "${escaped_value}" in
+      case "${value}" in
          *:*)
             case "${key}" in
                *_PATH|*_FILES|*_DIRS)
                   case "${MULLE_UNAME}" in 
                      mingw|windows)
-                        make::common::r_translated_path "${escaped_value}" ";"
+                        make::common::r_translated_path "${value}" ";"
                         cmakevalue="${RVAL}"
                      ;;
 
                      *)
-                        cmakevalue="${escaped_value//:/;}"
+                        cmakevalue="${value//:/;}"
                      ;;
                   esac
                   log_debug "Change ${key} value \"${value}\" to \"${cmakevalue}\""
-                  escaped_value="${cmakevalue}"
+                  value="${cmakevalue}"
                ;;
             esac
          ;;
       esac
-      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "${key#DEFINITION_}" "${escaped_value}"
+
+      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "${key#DEFINITION_}" "${value}"
       cmakeflags="${RVAL}"
    .done
 
@@ -397,6 +387,34 @@ make::plugin::cmake::r_userdefined_definitions()
    log_debug "User cmake definition: ${RVAL}"
 }
 
+
+make::plugin::cmake::r_cmakeflags_add_definition()
+{
+   log_entry "make::plugin::cmake::r_cmakeflags_add_definition" "$@"
+
+   local cmakeflags="$1"
+   local key="$2"
+   local value="$3"
+
+   local definition_key
+
+   definition_key="DEFINITION_${key%:*}"
+
+   r_shell_indirect_expand "${definition_key}"
+   if [ ! -z "${RVAL}" ]
+   then
+      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "${key}" "${RVAL}"
+      cmakeflags="${RVAL}"
+   else
+      if [ ! -z "${value}" ]
+      then
+         make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "${key}" "${value}"
+         cmakeflags="${RVAL}"
+      fi
+   fi
+
+   RVAL="${cmakeflags}"
+}
 
 #
 # remove old kitchendir, create a new one
@@ -507,27 +525,34 @@ make::plugin::cmake::build()
 
    cmakeflags="${DEFINITION_CMAKEFLAGS}"
 
+   if [ ! -z "${DEFINITION_CMAKE_GENERATOR}" ]
+   then
+      make::plugin::cmake::r_cmakeflags_add "${cmakeflags}" "-G"
+      make::plugin::cmake::r_cmakeflags_add "${RVAL}" "${DEFINITION_CMAKE_GENERATOR}"
+      cmakeflags="${RVAL}"
+   fi
+
    log_setting "PREFIX:        ${dstdir}"
    log_setting "PHASE:         ${OPTION_PHASE}"
    log_setting "CMAKEFLAGS:    ${DEFINITION_CMAKEFLAGS}"
-   log_setting "MAKEFLAGS:     ${DEFINITION_MAKEFLAGS}"
+#   log_setting "MAKEFLAGS:     ${DEFINITION_MAKEFLAGS}"
    log_setting "ENV CMAKEFLAGS:${CMAKEFLAGS}"
-   log_setting "ENV MAKEFLAGS: ${MAKEFLAGS}"
+#   log_setting "ENV MAKEFLAGS: ${MAKEFLAGS}"
 
-   # TODO:
-   # weird CLion related bug work around. Why is MAKEFLAGS containing a "s "
-   #       prefix ?
-   #       Why are we using make instead of ninja ?
-   #
-   case "${MAKEFLAGS}" in
-      "s -"*)
-         r_basename "${projectdir}"
-         if [ "${projectdir}" != "s" ]
-         then
-            MAKEFLAGS="${MAKEFLAGS:2}"
-         fi
-      ;;
-   esac
+#   # TODO:
+#   # weird CLion related bug work around. Why is MAKEFLAGS containing a "s "
+#   #       prefix ?
+#   #       Why are we using make instead of ninja ?
+#   #
+#   case "${MAKEFLAGS}" in
+#      "s -"*)
+#         r_basename "${projectdir}"
+#         if [ "${projectdir}" != "s" ]
+#         then
+#            MAKEFLAGS="${MAKEFLAGS:2}"
+#         fi
+#      ;;
+#   esac
 
    #
    # this should export a compile_commands.json command, which
@@ -593,7 +618,7 @@ make::plugin::cmake::build()
       cmakeflags="${RVAL}"
    fi
 
-   case "${DEFINITION_LIBRARY_STYLE}" in
+   case "${DEFINITION_LIBRARY_STYLE:-${DEFINITION_PREFERRED_LIBRARY_STYLE}}" in
       standalone)
          make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "STANDALONE:BOOL" "ON"
          cmakeflags="${RVAL}"
@@ -642,59 +667,20 @@ make::plugin::cmake::build()
    fi
 
    # this is now necessary, though undocumented apparently
-   if [ ! -z "${DEFINITION_CMAKE_LINKER}" ]
-   then
-      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_LINKER:PATH" "${DEFINITION_CMAKE_LINKER}"
-      cmakeflags="${RVAL}"
-   fi
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_LINKER:PATH"
+   cmakeflags="${RVAL}"
 
-   if [ ! -z "${CMAKE_C_FLAGS}" ]
-   then
-      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_C_FLAGS" "${value}"
-      cmakeflags="${RVAL}"
-   else
-      if [ ! -z "${cflags}" ]
-      then
-         make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_C_FLAGS" "${cflags}"
-         cmakeflags="${RVAL}"
-      fi
-   fi
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_C_FLAGS" "${cflags}"
+   cmakeflags="${RVAL}"
 
-   if [ ! -z "${DEFINITION_CMAKE_CXX_FLAGS}" ]
-   then
-      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "DEFINITION_CMAKE_CXX_FLAGS" "${value}"
-      cmakeflags="${RVAL}"
-   else
-      if [ ! -z "${cxxflags}" ]
-      then
-         make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_CXX_FLAGS" "${cxxflags}"
-         cmakeflags="${RVAL}"
-      fi
-   fi
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_CXX_FLAGS" "${cxxflags}"
+   cmakeflags="${RVAL}"
 
-   if [ ! -z "${DEFINITION_CMAKE_SHARED_LINKER_FLAGS}" ]
-   then
-      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_SHARED_LINKER_FLAGS" "${DEFINITION_CMAKE_SHARED_LINKER_FLAGS}"
-      cmakeflags="${RVAL}"
-   else
-      if [ ! -z "${ldflags}" ]
-      then
-         make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_SHARED_LINKER_FLAGS" "${ldflags}"
-         cmakeflags="${RVAL}"
-      fi
-   fi
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_SHARED_LINKER_FLAGS" "${ldflags}"
+   cmakeflags="${RVAL}"
 
-   if [ ! -z "${DEFINITION_CMAKE_EXE_LINKER_FLAGS}" ]
-   then
-      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_EXE_LINKER_FLAGS" "${DEFINITION_CMAKE_EXE_LINKER_FLAGS}"
-      cmakeflags="${RVAL}"
-   else
-      if [ ! -z "${ldflags}" ]
-      then
-         make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_EXE_LINKER_FLAGS" "${ldflags}"
-         cmakeflags="${RVAL}"
-      fi
-   fi
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_EXE_LINKER_FLAGS" "${ldflags}"
+   cmakeflags="${RVAL}"
 
    #
    # CMAKE_INCLUDE_PATH doesn't really do what one expects it would
@@ -720,7 +706,7 @@ make::plugin::cmake::build()
    value=${DEFINITION_CMAKE_LIBRARY_PATH:-${DEFINITION_LIB_PATH}}
    if [ ! -z "${DEFINITION_CMAKE_LIBRARY_PATH:-${DEFINITION_LIB_PATH}}" ]
    then
-      if [ -z "${DEFINITION_CMAKE_LIBRARY_PATH}"  ]
+      if [ -z "${DEFINITION_CMAKE_LIBRARY_PATH}" ] || make::definition::is_plus_key "CMAKE_LIBRARY_PATH"
       then
          make::common::r_translated_path "${DEFINITION_LIB_PATH}" ";"
          r_concat "${DEFINITION_CMAKE_LIBRARY_PATH}" "${RVAL}" ";"
@@ -931,9 +917,8 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
       then
          if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                   "${env_common}" \
-                  "'${CMAKE}'" -G "'${CMAKE_GENERATOR}'" \
-                                  "${CMAKEFLAGS}" \
-                                  "${cmakeflags}" \
+                  "'${CMAKE}'" "${CMAKEFLAGS}" \
+                               "${cmakeflags}" \
                                -S "'${translated_projectdir}'" \
                                -B "'${translated_kitchendir}'" | ${grepper}
          then
@@ -960,7 +945,7 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
 
       if ! logging_tee_eval_exekutor "${logfile2}" "${teefile2}" \
                "${env_common}" \
-               "'${CMAKE}'" --build "'${translated_kitchendir}'" \
+               "'${CMAKE1}'" --build "'${translated_kitchendir}'" \
                             "${cmaketarget}" \
                             "${cmakeflags2}" | ${grepper}
       then
@@ -971,7 +956,7 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
       then
          if ! logging_tee_eval_exekutor "${logfile3}" "${teefile3}" \
                   "${env_common}" \
-                  "'${CMAKE}'" --install "'${translated_kitchendir}'" \
+                  "'${CMAKE2}'" --install "'${translated_kitchendir}'" \
                                "${cmakeflags3}" | ${grepper}
          then
             make::common::build_fail "${logfile3}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
@@ -1018,10 +1003,10 @@ make::plugin::cmake::r_test()
       return 1
    fi
 
-   if [ -z "${MAKE}" ]
-   then
-      fail "No make available"
-   fi
+#   if [ -z "${MAKE}" ]
+#   then
+#      fail "No make available"
+#   fi
 
    log_verbose "Found cmake project \"${projectfile#"${MULLE_USER_PWD}/"}\""
 

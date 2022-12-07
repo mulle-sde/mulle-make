@@ -1,3 +1,4 @@
 [CFLAGS=-DSTRING=\"a string\" -isystem /usr/my\ disk/include]
-[CPPFLAGS=-I/usr/my\ disk/include -I/usr/include -F/Network/Library/Frameworks -F/Library/Frameworks]
+[CPPFLAGS=-isystem /usr/my\ disk/include -isystem /usr/include -F/Network/Library/Frameworks -F/Library/Frameworks]
 [LDFLAGS=-L/usr/local/lib -L/usr/lib -F/Network/Library/Frameworks -F/Library/Frameworks]
+[PKG_CONFIG_PATH=/usr/local/lib /usr/lib/pkgconfig]

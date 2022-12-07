@@ -102,10 +102,10 @@ run_test()
    MULLE_TMP_DIR="${directory}" \
    MULLE_TEST_DIR="${PWD}" \
    CMAKE_REDIRECT_FILE="${directory}/cmake-args.txt" \
-   MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
+   CMAKE1_REDIRECT_FILE="${directory}/cmake1-args.txt" \
       run_mulle_make ${MULLE_MAKE_FLAGS} project --build-dir "${directory}/build" \
                           -DCMAKE="${PWD}/../mock-cmake" \
-                          -DMAKE="${PWD}/../mock-make" \
+                          -DCMAKE1="${PWD}/../mock-cmake1" \
                           "$@"
 
    if [ "$?" -ne 0 ]
@@ -114,10 +114,10 @@ run_test()
    fi
 
    expect_content "${directory}/cmake-args.txt" "${cmake_expect}"
-   expect_content "${directory}/make-args.txt" "${make_expect}"
+   expect_content "${directory}/cmake1-args.txt" "${make_expect}"
 
    remove_file_if_present "${directory}/cmake-args.txt"
-   remove_file_if_present "${directory}/make-args.txt"
+   remove_file_if_present "${directory}/cmake1-args.txt"
    rmdir_safer "${directory}/build"
 }
 
@@ -162,8 +162,8 @@ main()
    # check -I -L -F
    #
    run_test	"${directory}" "paths_cmake.txt" "make.txt" -I /usr/local/include:/usr/include \
-                                         -L /usr/local/lib:/usr/lib \
-                                         -F /Network/Library/Frameworks:/Library/Frameworks
+                                                        -L /usr/local/lib:/usr/lib \
+                                                        -F /Network/Library/Frameworks:/Library/Frameworks
    log_verbose "----- #8 PASSED -----"
 
    log_info "----- ALL PASSED -----"

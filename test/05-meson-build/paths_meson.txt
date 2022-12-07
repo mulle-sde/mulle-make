@@ -1,5 +1,7 @@
 --backend ninja
 --buildtype release
-[CPPFLAGS=-I/usr/local/include -I/usr/include]
+05-meson-build
+[CPPFLAGS=-isystem /usr/local/include -isystem /usr/include]
 [LDFLAGS=-L/usr/local/lib -L/usr/lib]
+[PKG_CONFIG_PATH=/usr/local/lib /usr/lib/pkgconfig]
 build

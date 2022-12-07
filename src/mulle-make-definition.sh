@@ -225,42 +225,46 @@ KNOWN_GENERAL_DEFINITIONS="\
 DEFINITION_BUILD_DIR
 DEFINITION_BUILD_SCRIPT
 DEFINITION_CC
-DEFINITION_SELECT_CC
 DEFINITION_CFLAGS
 DEFINITION_CLEAN_BEFORE_BUILD
+DEFINITION_CMAKE
+DEFINITION_CMAKE1
+DEFINITION_COBJC
 DEFINITION_CONFIGURATION
 DEFINITION_CPPFLAGS
 DEFINITION_CXX
-DEFINITION_SELECT_CXX
 DEFINITION_CXXFLAGS
-DEFINITION_COBJC
-DEFINITION_SELECT_COBJC
-DEFINITION_OBJCFLAGS
 DEFINITION_DETERMINE_SDK
 DEFINITION_FRAMEWORKS_PATH
 DEFINITION_GCC_PREPROCESSOR_DEFINITIONS
 DEFINITION_INCLUDE_PATH
 DEFINITION_LDFLAGS
 DEFINITION_LIB_PATH
+DEFINITION_LIBRARY_STYLE
 DEFINITION_LOG_DIR
 DEFINITION_MAKE
-DEFINITION_NINJA
 DEFINITION_MAKETARGET
+DEFINITION_NINJA
+DEFINITION_OBJCFLAGS
 DEFINITION_OTHER_CFLAGS
-DEFINITION_OTHER_OBJCFLAGS
 DEFINITION_OTHER_CPPFLAGS
 DEFINITION_OTHER_CXXFLAGS
 DEFINITION_OTHER_LDFLAGS
+DEFINITION_OTHER_OBJCFLAGS
 DEFINITION_PLATFORM
 DEFINITION_PLUGIN_PREFERENCES
-DEFINITION_PREFIX
 DEFINITION_PREFER_XCODEBUILD
+DEFINITION_PREFERRED_LIBRARY_STYLE
+DEFINITION_PREFIX
 DEFINITION_PROJECT_DIALECT
 DEFINITION_PROJECT_FILE
 DEFINITION_PROJECT_LANGUAGE
 DEFINITION_PROJECT_NAME
 DEFINITION_SCHEMES
 DEFINITION_SDK
+DEFINITION_SELECT_CC
+DEFINITION_SELECT_COBJC
+DEFINITION_SELECT_CXX
 DEFINITION_TARGETS
 DEFINITION_USE_NINJA
 DEFINITION_WARNING_CFLAGS"
@@ -318,27 +322,75 @@ make::definition::handle_definition_options()
 }
 
 
+make::definition::compgen()
+{
+   if [ ${ZSH_VERSION+x} ]
+   then
+      set | sed -n -e 's/\([^=]*\)=.*/\1/p'
+   else
+      compgen -v
+   fi
+}
+
+
+make::definition::all_definition_keys()
+{
+   log_entry "make::definition::all_definition_keys" "$@"
+
+   if [ -z "${DEFINED_PLUS_DEFINITIONS}" ]
+   then
+      make::definition::compgen | egrep '^DEFINITION_'
+      return $?
+   fi
+
+   local pattern
+
+   pattern="${DEFINED_PLUS_DEFINITIONS//$'\n'/|}"
+   pattern="${pattern%%|}"
+
+   make::definition::compgen \
+   | egrep '^DEFINITION_' \
+   | egrep -v -x "${pattern}"
+}
+
+
+make::definition::clear_all_definition_keys()
+{
+   log_entry "make::definition::clear_all_definition_keys" "$@"
+
+   local key
+
+   .foreachline key in `compgen -v | egrep '^DEFINITION_' | sort -u`
+   .do
+      unset "${key}"
+   .done
+}
+
+
 #
 #
 make::definition::all_userdefined_unknown_keys()
 {
    log_entry "make::definition::all_userdefined_unknown_keys" "$@"
 
-   if [ -z "${DEFINED_SET_DEFINITIONS}" ]
+   if [ -z "${KNOWN_DEFINITIONS}" ]
    then
+      make::definition::all_definition_keys
       return
    fi
 
    local pattern
 
-   pattern="$(tr '\012' '|' <<< "${KNOWN_DEFINITIONS}")"
-   pattern="$(sed 's/\(.*\)|$/\1/g' <<< "${pattern}")"
+   pattern="${KNOWN_DEFINITIONS//$'\n'/|}"
+   pattern="${pattern%%|}"
 
-   log_debug "${DEFINED_SET_DEFINITIONS}"
-   egrep -v -x "${pattern}" <<< "${DEFINED_SET_DEFINITIONS}"
+   make::definition::all_definition_keys | egrep -v -x "${pattern}"
 }
 
 
+#
+# plus keys can't happen because of the environment
+#
 make::definition::all_userdefined_unknown_plus_keys()
 {
    log_entry "make::definition::all_userdefined_unknown_plus_keys" "$@"
@@ -350,8 +402,8 @@ make::definition::all_userdefined_unknown_plus_keys()
 
    local pattern
 
-   pattern="$(tr '\012' '|' <<< "${KNOWN_DEFINITIONS}")"
-   pattern="$(sed 's/\(.*\)|$/\1/g' <<< "${pattern}")"
+   pattern="${KNOWN_DEFINITIONS//$'\n'/|}"
+   pattern="${pattern%%|}"
 
    log_debug "${DEFINED_PLUS_DEFINITIONS}"
    egrep -v -x "${pattern}" <<< "${DEFINED_PLUS_DEFINITIONS}"
@@ -404,7 +456,9 @@ make::definition::r_print()
       r_shell_indirect_expand "${key}"
       value="${RVAL}"
 
-      r_concat "${s}" "${prefix}${key#DEFINITION_}${plussep}${quote}${pluspref}${value}${quote}" "${concatsep}"
+      # memo changed this back from plussep to sep, to match test
+      # this is for xcodebuild anyway and I never use it now AFAIK
+      r_concat "${s}" "${prefix}${key#DEFINITION_}${sep}${quote}${pluspref}${value}${quote}" "${concatsep}"
       s="${RVAL}"
    .done
 

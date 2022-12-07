@@ -40,9 +40,8 @@ make::plugin::main()
    local pluginpath
    local pluginname
 
-   IFS=$'\n'
-   for pluginpath in `exekutor ls -1 "${MULLE_MAKE_LIBEXEC_DIR}/plugins/"*.sh`
-   do
+   .foreachline pluginpath in `dir_list_files "${MULLE_MAKE_LIBEXEC_DIR}/plugins" "*.sh"`
+   .do
       r_extensionless_basename "${pluginpath}"
       pluginname="${RVAL}"
 
@@ -54,16 +53,14 @@ make::plugin::main()
          *)
             case "${pluginname}" in
                xcodebuild)
-                  continue
+                  .continue
                ;;
             esac
          ;;
       esac
 
       printf "%s\n" "${pluginname}"
-   done
-
-   IFS="${DEFAULT_IFS}"
+   .done
 }
 
 

@@ -86,7 +86,8 @@ make::common::__add_env_flag()
    local envkey="$1"
    local value="$2"
 
-   if [ "${value}" != "${!envkey}" ]
+   r_shell_indirect_expand "${envkey}"
+   if [ "${value}" != "${RVAL}" ]
    then
       r_concat "${_env_flags}" "${envkey}='${value}'"
       _env_flags="${RVAL}"
@@ -1033,17 +1034,11 @@ make::common::r_find_nearest_matching_pattern()
 
    #
    # don't go too deep in search
-   #
-   IFS=$'\n'
-
-   #
    # error redirection on find to squelch broken symbolic links like
    # find: ‘/home/src/srcM/mulle-cloud/mnt/Assets’: Datei oder Verzeichnis nicht gefunden
    #
-   for i in `rexekutor find -L "${directory}" -maxdepth 2 -name "${pattern}" -print 2> /dev/null`
-   do
-      IFS="${DEFAULT_IFS}"
-
+   .foreachline i in `rexekutor find -L "${directory}" -maxdepth 2 -name "${pattern}" -print 2> /dev/null`
+   .do
       if [ "${i}" = "${expectation}" ]
       then
          log_fluff "\"${RVAL}\" found as complete match"
@@ -1067,8 +1062,7 @@ make::common::r_find_nearest_matching_pattern()
          found="$i"
          depth="${new_depth}"
       fi
-   done
-   IFS="${DEFAULT_IFS}"
+   .done
 
    if [ ! -z "${found}" ]
    then
@@ -1104,14 +1098,8 @@ make::common::r_projectdir_relative_to_builddir()
 
 make::common::initialize()
 {
-   if [ -z "${MULLE_STRING_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || return 1
-   fi
-   if [ -z "${MULLE_PATH_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || return 1
-   fi
+   include "string"
+   include "path"
 }
 
 make::common::initialize

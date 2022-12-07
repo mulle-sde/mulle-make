@@ -34,7 +34,7 @@
 [ "${MULLE_MAKE_DUMP_ENV:-}" = 'YES' ] && env | sort >&2
 
 
-MULLE_EXECUTABLE_VERSION=2.0.0
+MULLE_EXECUTABLE_VERSION=3.0.0
 #
 # Determine location of own libexec directory. Which is `src` in development
 # and ../libexec when deployed. MULLE_EXECUTABLE needs to be defined for this.
@@ -83,6 +83,7 @@ make::print_flags()
    cat <<EOF
    -f            : force operation
    --args <file> : read the commandline from <file>. Must be only option.
+   --clear       : clear all DEFINITION_ variables defined in environment
 EOF
 
    options_technical_flags_usage "         : "
@@ -169,22 +170,7 @@ make::r_consume_arguments()
 
 make::_main()
 {
-   local MULLE_FLAG_MAGNUM_FORCE='NO'
-   local MULLE_FLAG_IGNORE_GRAVEYARD='NO'
-
-   # technical flags
-   local MULLE_TRACE
-   local MULLE_FLAG_EXEKUTOR_DRY_RUN='NO'
-   local MULLE_FLAG_LOG_LOCAL='NO'
-   local MULLE_FLAG_LOG_DEBUG='NO'
-   local MULLE_FLAG_LOG_EXEKUTOR='NO'
-   local MULLE_FLAG_LOG_FLUFF='NO'
-   local MULLE_FLAG_LOG_SCRIPTS='NO'
-   local MULLE_FLAG_LOG_SETTINGS='NO'
-   local MULLE_FLAG_LOG_VERBOSE='NO'
-   local MULLE_FLAG_LOG_MERGE='NO'
-   local MULLE_TRACE_POSTPONE='NO'
-   local MULLE_FLAG_VERBOSE_MAKE='NO'
+   local OPTION_CLEAR_GLOBAL_DEFINITIONS='DEFAULT'
 
    #
    # simple option handling
@@ -213,6 +199,14 @@ make::_main()
             exit 0
          ;;
 
+         --clear|--clear-global-definitions)
+            OPTION_CLEAR_GLOBAL_DEFINITIONS='YES'
+         ;;
+
+         --no-clear|--no-clear-global-definitions)
+            OPTION_CLEAR_GLOBAL_DEFINITIONS='NO'
+         ;;
+
          -*)
             cmd="make"
             break
@@ -233,6 +227,14 @@ make::_main()
    then
       cmd="${argument:-make}"
       argument=
+   fi
+
+   if [ "${OPTION_CLEAR_GLOBAL_DEFINITIONS}" = 'YES' ]
+   then
+      include "make::definition"
+
+      # wipe environment off all DEFINITION_ keys
+      make::definition::clear_all_definition_keys
    fi
 
    case "${cmd}" in
@@ -333,15 +335,16 @@ make::main()
       filename="$2"
       case "${filename}" in
          ""|"-")
+            args="`cat`"
             filename=""
          ;;
 
          *)
             [ -f "${filename}" ] || fail "file \"${filename}\" not found"
+            args="`cat "${filename}" `"
          ;;
       esac
 
-      args="`cat "${filename}" `"
    else
       args="`make::print_arguments "$@" `"
    fi

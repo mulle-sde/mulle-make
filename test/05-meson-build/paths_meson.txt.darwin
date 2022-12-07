@@ -1,5 +1,7 @@
 --backend ninja
 --buildtype release
-[CPPFLAGS=-I/usr/local/include -I/usr/include -F/Network/Library/Frameworks -F/Library/Frameworks]
+05-meson-build
+[CPPFLAGS=-isystem /usr/local/include -isystem /usr/include -F/Network/Library/Frameworks -F/Library/Frameworks]
 [LDFLAGS=-L/usr/local/lib -L/usr/lib -F/Network/Library/Frameworks -F/Library/Frameworks]
+[PKG_CONFIG_PATH=/usr/local/lib /usr/lib/pkgconfig]
 build

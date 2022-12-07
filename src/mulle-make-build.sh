@@ -282,12 +282,23 @@ make::build::__build_with_preference_if_possible()
 
       local blurb
       local conftext
+      local prettykitchendir
+      local escaped
+
+      prettykitchendir="${kitchendir#"${MULLE_USER_PWD}/"}"
+      if [ "${prettykitchendir#"${HOME}/"}" != "${prettykitchendir}" ]
+      then
+         prettykitchendir="~/${prettykitchendir#"${HOME}/"}"
+      fi
 
       conftext="${configuration}"
-      DEFINITION_LIBRARY_STYLE="${DEFINITION_LIBRARY_STYLE:-${DEFINITION_PREFERRED_LIBRARY_STYLE}}"
-      if [ ! -z "${DEFINITION_LIBRARY_STYLE}" ]
+
+      local style
+
+      style="${DEFINITION_LIBRARY_STYLE:-${DEFINITION_PREFERRED_LIBRARY_STYLE}}"
+      if [ ! -z "${style}" ]
       then
-         conftext="${conftext}/${DEFINITION_LIBRARY_STYLE}"
+         conftext="${conftext}/${style}"
       fi
 
       blurb="Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
@@ -298,7 +309,7 @@ ${C_MAGENTA}${C_BOLD}${conftext}${C_INFO} build"
       fi
       blurb="${blurb} of \
 ${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
-${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${kitchendir#${PWD}/}\" ..."
+${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${prettykitchendir}\" ..."
       log_info "${blurb}"
 
       if ! "make::plugin::${preference}::build" "${cmd}" \
@@ -640,6 +651,51 @@ ${C_RESET_BOLD}   mulle-sde environment --global set --add MULLE_CRAFT_USE_SCRIP
    fi
 
 
+   #
+   # filter preferences for command line options and "convenient"
+   # definitions
+   #
+   local tmp
+
+   if [ "${DEFINITION_USE_AUTOCONF}" = 'NO' ]
+   then
+      tmp=":${DEFINITION_PLUGIN_PREFERENCES}"
+      DEFINITION_PLUGIN_PREFERENCES="${tmp//:autoconf/}"
+   fi
+   if [ "${DEFINITION_USE_CMAKE}" = 'NO' ]
+   then
+      tmp=":${DEFINITION_PLUGIN_PREFERENCES}"
+      DEFINITION_PLUGIN_PREFERENCES="${tmp//:cmake/}"
+   fi
+   if [ "${DEFINITION_USE_CONFIGURE}" = 'NO' ]
+   then
+      tmp=":${DEFINITION_PLUGIN_PREFERENCES}"
+      DEFINITION_PLUGIN_PREFERENCES="${tmp//:configure/}"
+   fi
+   if [ "${DEFINITION_USE_MAKE}" = 'NO' ]
+   then
+      tmp=":${DEFINITION_PLUGIN_PREFERENCES}"
+      DEFINITION_PLUGIN_PREFERENCES="${tmp//:make/}"
+   fi
+   if [ "${DEFINITION_USE_MESON}" = 'NO' ]
+   then
+      tmp=":${DEFINITION_PLUGIN_PREFERENCES}"
+      DEFINITION_PLUGIN_PREFERENCES="${tmp//:meson/}"
+   fi
+   if [ "${DEFINITION_USE_SCRIPT}" = 'NO' ]
+   then
+      tmp=":${DEFINITION_PLUGIN_PREFERENCES}"
+      DEFINITION_PLUGIN_PREFERENCES="${tmp//:script/}"
+   fi
+   if [ "${DEFINITION_USE_XCODEBUILD}" = 'NO' ]
+   then
+      tmp=":${DEFINITION_PLUGIN_PREFERENCES}"
+      DEFINITION_PLUGIN_PREFERENCES="${tmp//:xcodebuild/}"
+   fi
+
+   DEFINITION_PLUGIN_PREFERENCES="${DEFINITION_PLUGIN_PREFERENCES##:}"
+   DEFINITION_PLUGIN_PREFERENCES="${DEFINITION_PLUGIN_PREFERENCES%%:}"
+
    # used to receive values from make::plugin::loads
    local preferences
 
@@ -708,10 +764,7 @@ make::build::common()
 
    [ -z "${DEFAULT_IFS}" ] && _internal_fail "IFS fail"
 
-   if [ -z "${MULLE_PARALLEL_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-parallel.sh" || return 1
-   fi
+   include "parallel"
 
    # will set MULLE_CORES
    r_get_core_count
@@ -721,20 +774,23 @@ make::build::common()
    #     
    local OPTION_ALLOW_UNKNOWN_OPTION
 
-   local DEFINITION_CLEAN_BEFORE_BUILD
-   local DEFINITION_CONFIGURATION
-   local DEFINITION_DETERMINE_SDK
-   local DEFINITION_SDK
-   local DEFINITION_USE_NINJA
-   local DEFINITION_PLATFORM
-   local DEFINITION_LIBRARY_STYLE
-   local DEFINITION_PREFERRED_LIBRARY_STYLE
-   local DEFINITION_TARGET
-
-   # why are these definitions ?
-   local DEFINITION_BUILD_DIR
-   local DEFINITION_LOG_DIR
-   local DEFINITION_PREFIX
+   #
+   # TODO: these definitions should not be local
+   #
+   #   local DEFINITION_CLEAN_BEFORE_BUILD
+   #   local DEFINITION_CONFIGURATION
+   #   local DEFINITION_DETERMINE_SDK
+   #   local DEFINITION_SDK
+   #   local DEFINITION_USE_NINJA
+   #   local DEFINITION_PLATFORM
+   #   local DEFINITION_LIBRARY_STYLE
+   #   local DEFINITION_PREFERRED_LIBRARY_STYLE
+   #   local DEFINITION_TARGET
+   #
+   #   # why are these definitions ?
+   #   local DEFINITION_BUILD_DIR
+   #   local DEFINITION_LOG_DIR
+   #   local DEFINITION_PREFIX
 
    local OPTION_ALLOW_SCRIPTS
    local OPTION_ANALYZE
@@ -833,6 +889,26 @@ make::build::common()
 
          --no-ninja)
             DEFINITION_USE_NINJA='NO'
+         ;;
+
+         --no-make)
+            DEFINITION_USE_MAKE='NO'
+         ;;
+
+         --no-autoconf)
+            DEFINITION_USE_AUTOCONF='NO'
+         ;;
+
+         --no-configure)
+            DEFINITION_USE_CONFIGURE='NO'
+         ;;
+
+         --no-cmake)
+            DEFINITION_USE_CMAKE='NO'
+         ;;
+
+         --no-xcodebuild)
+            DEFINITION_USE_XCODEBUILD='NO'
          ;;
 
          --determine-sdk)
