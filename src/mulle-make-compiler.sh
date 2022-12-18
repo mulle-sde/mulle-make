@@ -515,8 +515,6 @@ make::compiler::r_c_dialect_compiler()
          RVAL=
          case "${dialect}" in
             'objc'|'obj-c'|'objective-c'|'objectivec')
-               local selection
-
                selection="${DEFINITION_SELECT_COBJC:-environment,definition}"
                log_debug "selection: ${selection}"
 
