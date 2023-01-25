@@ -66,7 +66,7 @@ make::plugin::xcodebuild::tools_environment()
 #
 #    local key=$1; shift
 #
-#    _xcode_get_setting "$@" | egrep "^[ ]*${key}" | sed 's/^[^=]*=[ ]*\(.*\)/\1/'
+#    _xcode_get_setting "$@" | grep -E "^[ ]*${key}" | sed 's/^[^=]*=[ ]*\(.*\)/\1/'
 #
 #    return 0
 # }

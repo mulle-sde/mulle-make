@@ -55,6 +55,12 @@ filter_darwin()
 }
 
 
+filter_android()
+{
+   sed -e 's|^\(.*=\).*/tmp/run-test-[^-]*-[^-]*-[^-]*-[^-]*-[^-]*/|\1/tmp/|g'
+}
+
+
 emit_args()
 {
    local key
@@ -120,7 +126,7 @@ main()
    [ -z "${__MULLE_MAKE_ENV_ARGS}" ] && \
       fail "not called by mulle-make (__MULLE_MAKE_ENV_ARGS is missing)"
 
-   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z]'`_REDIRECT_FILE"
+   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[:lower:]-' '[:upper:]_'`_REDIRECT_FILE"
    if [ ${ZSH_VERSION+x} ]
    then
       filename="${(P)envvar}"
@@ -130,9 +136,9 @@ main()
    if [ ! -z "${filename}"  ]
    then
       log_info "${MULLE_EXECUTABLE_NAME}: Writing defines to \"${filename}\""
-      emit_env_and_args "$@" | filter_darwin | LC_ALL=C sort > "${filename}"
+      emit_env_and_args "$@" | filter_darwin | filter_android | LC_ALL=C sort > "${filename}"
    else
-      emit_env_and_args "$@" | filter_darwin | LC_ALL=C sort
+      emit_env_and_args "$@" | filter_darwin | filter_android | LC_ALL=C sort
    fi
 }
 

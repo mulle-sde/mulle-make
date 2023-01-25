@@ -301,7 +301,7 @@ ${C_RESET_BOLD}mulle-sde dependency mark <name> singlephase"
    fi
 
    case "${MULLE_UNAME}" in
-      mingw*)
+      'mingw')
          include "platform::mingw"
          platform::mingw::setup_buildenvironment
       ;;

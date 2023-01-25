@@ -2,6 +2,8 @@
 #
 # (c) 2015, coded by Nat!, Mulle KybernetiK
 #
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
 if [ "${MULLE_NO_COLOR}" != 'YES' ]
 then
    # Escape sequence and resets
@@ -151,7 +153,7 @@ main()
 
    if [ -z "${prefix}" ] || [ -z "${mode}" ]
    then
-      installer_fail "usage: install.sh [prefix] [mode]"
+      installer_fail "usage: installer [prefix] [mode]"
    fi
 
    r_installer_install_prefix "${prefix}"
@@ -162,7 +164,7 @@ main()
    libexec="${prefix}/libexec/mulle-make"
 
    mkdir -p "${bin}" || installer_fail "could not create ${bin}"
-   mkdir -p "${share}" || installer_fail "could not create ${share}"
+   # mkdir -p "${share}" || installer_fail "could not create ${share}"
    mkdir -p "${libexec}" || installer_fail "could not create ${libexec}"
 
    install -m "${mode}" "mulle-make" "${bin}/mulle-make" || exit 1

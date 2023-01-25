@@ -110,7 +110,7 @@ main()
    local exename
 
    # remove mock- prefix , convert to uppercase, append _REDIRECT_FILE
-   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr 'a-z' 'A-Z'`_REDIRECT_FILE"
+   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[:lower:]-' '[:upper:]_'`_REDIRECT_FILE"
    if [ ${ZSH_VERSION+x} ]
    then
       filename="${(P)envvar}"

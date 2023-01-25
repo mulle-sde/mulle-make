@@ -251,7 +251,7 @@ make::common::__project_directories()
    _absprojectdir="${RVAL}"
 
    case "${MULLE_UNAME}" in
-      mingw*)
+      mingw)
          _projectdir="${_absprojectdir}"
       ;;
 
@@ -685,18 +685,21 @@ make::common::r_headerpath_preprocessor_flags()
    if [ -z "${compiler}" ]
    then
       case "${MULLE_UNAME}" in
-         darwin|linux|freebsd)
-            compiler=gcc
+         'windows'|'mingw')
+            compiler="cl"
          ;;
 
-         windows)
-            compiler="cl"
+         *)
+            compiler=gcc
+         ;;
       esac
    fi
 
+   log_debug "compiler: ${compiler}"
+
    case "${compiler}" in
       *cl)
-         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" "YES" "-external:I "
+         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" "NO" "-external:I "
          headersearchpaths="${RVAL}"
       ;;
 
@@ -736,10 +739,10 @@ make::common::r_librarypath_linker_flags()
    local frameworksearchpaths
 
    case "${MULLE_UNAME}" in
-      windows)
+      'windows'|'mingw')
          case "${LD:-ld.exe}" in 
             *.exe)
-               make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" "YES" "-LIBPATH:"
+               make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" "NO" "-LIBPATH:"
                librarysearchpaths="${RVAL}"
             ;;
 
@@ -803,13 +806,24 @@ make::common::r_pkg_config_path()
    local pkg_config_path
 
    RVAL=""
-   if [ ! -z "${DEFINITION_LIB_PATH}" ]
+   if [ -z "${DEFINITION_LIB_PATH}" ]
    then
-      make::common::r_translated_path "${DEFINITION_LIB_PATH}/pkgconfig" "${sep}" "YES" ""
-      pkg_config_path="${RVAL}"
-
-      log_setting "PKG_CONFIG_PATH:   ${pkg_config_path}"
+      return
    fi
+
+   local quote
+
+   quote='YES'
+   case "${MULLE_UNAME}" in
+      'windows'|'mingw'|'msys')
+         quote='NO'
+      ;;
+   esac
+
+   make::common::r_translated_path "${DEFINITION_LIB_PATH}/pkgconfig" "${sep}" "${quote}" ""
+   pkg_config_path="${RVAL}"
+
+   log_setting "PKG_CONFIG_PATH:   ${pkg_config_path}"
 }
 
 
@@ -866,7 +880,15 @@ make::common::build_fail()
    if [ "${greplog}" = 'YES' ] && [ -f "${logfile}" ]
    then
       printf "${C_RED}"
-      egrep -B1 -A5 -w "[Ee]rror|FAILED:" "${logfile}" >&2
+      case "${MULLE_UNAME}" in
+         sunos)
+            grep -E "[Ee]rror|FAILED:" "${logfile}" >&2
+         ;;
+
+         *)
+            grep -E -B1 -A5 -w "[Ee]rror|FAILED:" "${logfile}" >&2
+         ;;
+      esac
       printf "${C_RESET}"
 
       if [ "$MULLE_TRACE" != "1848" ]
@@ -976,27 +998,42 @@ make::common::add_path_if_exists()
 
 make::common::r_safe_tty()
 {
-   local tty
+   log_entry "make::common::r_safe_tty" "$@"
 
-   TTY="`command -v tty`"
-   if [ ! -z "${TTY}" ]
+   RVAL="${SSH_TTY}"
+   if [ -w "${RVAL}" ]
+   then
+      log_fluff "Use ssh tty ${SSH_TTY}"
+      return
+   fi
+
+   local TTY
+
+   if TTY="`PATH="/usr/sbin:/sbin:/usr/bin:/bin:$PATH" command -v tty`"
    then
       RVAL="`${TTY}`"
 	   case "${RVAL}" in
-	      *\ *) # not a tty or so
-	         RVAL="/dev/stderr"
+	      *\ *) # "not a tty" or so
 	      ;;
+
+         *)
+            log_fluff "Use ${RVAL}"
+            return
+         ;;
 	   esac
-   else
-      RVAL="/dev/stderr"
    fi
 
-   # can happen if sued to another user id
-   if [ ! -w "${RVAL}" ]
-   then
-      log_warning "Can't write to console. Direct output unvailable, see logs."
-   	RVAL="/dev/null"
-   fi
+   for RVAL in '/dev/stderr' '/proc/self/fd/2' '/dev/console'
+   do
+      if [ -w "${RVAL}" ]
+      then
+         log_fluff "Use ${RVAL}"
+         return
+      fi
+   done
+
+   log_warning "Can't write to console. Direct output unavailable, see logs."
+	RVAL="/dev/null"
 }
 
 #
@@ -1010,6 +1047,8 @@ make::common::r_find_nearest_matching_pattern()
    local directory="$1"
    local pattern="$2"
    local expectation="$3"
+
+   [ -z "${pattern}" ] && _internal_fail "pattern is empty"
 
    if [ ! -d "${directory}" ]
    then
@@ -1037,7 +1076,22 @@ make::common::r_find_nearest_matching_pattern()
    # error redirection on find to squelch broken symbolic links like
    # find: ‘/home/src/srcM/mulle-cloud/mnt/Assets’: Datei oder Verzeichnis nicht gefunden
    #
-   .foreachline i in `rexekutor find -L "${directory}" -maxdepth 2 -name "${pattern}" -print 2> /dev/null`
+   local entries
+
+   case "${MULLE_UNAME}" in
+      'sunos')
+         entries="`ls -1 "${directory}"/${pattern} "${directory}"/*/${pattern} 2> /dev/null`"
+      ;;
+
+      *)
+         entries="`rexekutor find -L "${directory}"     \
+                                     -maxdepth 2        \
+                                     -name "${pattern}" \
+                                     -print 2> /dev/null`"
+      ;;
+   esac
+
+   .foreachline i in ${entries}
    .do
       if [ "${i}" = "${expectation}" ]
       then

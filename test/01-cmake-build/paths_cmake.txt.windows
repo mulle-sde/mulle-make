@@ -1,0 +1,9 @@
+CMAKE_BUILD_TYPE=Release
+CMAKE_CXX_FLAGS=-external:I /usr/local/include -external:I /usr/include
+CMAKE_C_FLAGS=-external:I /usr/local/include -external:I /usr/include
+CMAKE_EXE_LINKER_FLAGS=-LIBPATH:/usr/local/lib -LIBPATH:/usr/lib
+CMAKE_EXPORT_COMPILE_COMMANDS=ON
+CMAKE_FRAMEWORK_PATH=/Network/Library/Frameworks;/Library/Frameworks
+CMAKE_INCLUDE_PATH=/usr/local/include;/usr/include
+CMAKE_LIBRARY_PATH=/usr/local/lib;/usr/lib
+CMAKE_SHARED_LINKER_FLAGS=-LIBPATH:/usr/local/lib -LIBPATH:/usr/lib

@@ -56,7 +56,7 @@ Options:
 Commands:
    list       : list available build logs
    clean      : remove all build logs
-   <tool> ... : use cat, egrep ack to execute on the logfiles
+   <tool> ... : use cat, grep -E ack to execute on the logfiles
 
 EOF
   exit 1

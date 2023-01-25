@@ -140,7 +140,7 @@ main()
    [ -z "${__MULLE_MAKE_ENV_ARGS}" ] &&
       fail "not called by mulle-make (__MULLE_MAKE_ENV_ARGS is missing)"
 
-   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[a-z]' '[A-Z]'`_REDIRECT_FILE"
+   envvar="`basename -- "$0" | sed 's/^[A-Za-z]*-\(.*\)/\1/' | tr '[:lower:]-' '[:upper:]_'`_REDIRECT_FILE"
    if [ ${ZSH_VERSION+x} ]
    then
       filename="${(P)envvar}"

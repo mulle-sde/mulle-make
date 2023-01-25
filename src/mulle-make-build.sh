@@ -57,7 +57,7 @@ EOF
    --verbose-make              : verbose make output
 EOF
    case "${MULLE_UNAME}" in
-      mingw*)
+      mingw)
       ;;
 
       darwin)
@@ -372,7 +372,7 @@ make::build::__determine_directories()
       then
          kitchendir="${srcdir}/build"
       else
-         kitchendir="`egrep -v '^#' "${markerfile}" 2> /dev/null`"
+         kitchendir="`grep -E -v '^#' "${markerfile}" 2> /dev/null`"
 
          if [ -z "${kitchendir}" ]
          then
@@ -386,7 +386,8 @@ make::build::__determine_directories()
 
             while :
             do
-               uuid="`uuidgen`" || _internal_fail "uuidgen failed"
+               r_uuidgen
+               uuid="${RVAL}"
                kitchendir="${srcdir}/build-${uuid:0:${len}}"
                if [ ! -d "${kitchendir}" ]
                then
@@ -727,7 +728,7 @@ There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_P
          local pluginstring
 
          pluginstring="`sort <<< "${preferences}" | tr '\n' ',' `"
-         fail "Don't know how to build \"${srcdir}\" with plugins ${pluginstring%%,}"
+         fail "Don't know how to build \"${srcdir}\" with plugins ${pluginstring%%,} in \"${srcdir}\""
       ;;
 
       *)

@@ -179,7 +179,7 @@ EOF
 
 #
 # grep through project to get the options:_
-# egrep -h -o -w 'DEFINITION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | LC_ALL=C sort -u
+# grep -E -h -o -w 'DEFINITION_[A-Z0-9_]*[A-Z0-9]' src/*.sh src/plugins/*.sh | LC_ALL=C sort -u
 #
 KNOWN_AUTOCONF_PLUGIN_DEFINITIONS="\
 DEFINITION_AUTOCONF
@@ -244,6 +244,7 @@ DEFINITION_LIBRARY_STYLE
 DEFINITION_LOG_DIR
 DEFINITION_MAKE
 DEFINITION_MAKETARGET
+DEFINITION_MULLE_SDK_PATH
 DEFINITION_NINJA
 DEFINITION_OBJCFLAGS
 DEFINITION_OTHER_CFLAGS
@@ -339,7 +340,7 @@ make::definition::all_definition_keys()
 
    if [ -z "${DEFINED_PLUS_DEFINITIONS}" ]
    then
-      make::definition::compgen | egrep '^DEFINITION_'
+      make::definition::compgen | grep -E '^DEFINITION_'
       return $?
    fi
 
@@ -349,8 +350,8 @@ make::definition::all_definition_keys()
    pattern="${pattern%%|}"
 
    make::definition::compgen \
-   | egrep '^DEFINITION_' \
-   | egrep -v -x "${pattern}"
+   | grep -E '^DEFINITION_' \
+   | grep -E -v -x "${pattern}"
 }
 
 
@@ -360,7 +361,7 @@ make::definition::clear_all_definition_keys()
 
    local key
 
-   .foreachline key in `compgen -v | egrep '^DEFINITION_' | sort -u`
+   .foreachline key in `compgen -v | grep -E '^DEFINITION_' | sort -u`
    .do
       unset "${key}"
    .done
@@ -384,7 +385,7 @@ make::definition::all_userdefined_unknown_keys()
    pattern="${KNOWN_DEFINITIONS//$'\n'/|}"
    pattern="${pattern%%|}"
 
-   make::definition::all_definition_keys | egrep -v -x "${pattern}"
+   make::definition::all_definition_keys | grep -E -v -x "${pattern}"
 }
 
 
@@ -406,7 +407,7 @@ make::definition::all_userdefined_unknown_plus_keys()
    pattern="${pattern%%|}"
 
    log_debug "${DEFINED_PLUS_DEFINITIONS}"
-   egrep -v -x "${pattern}" <<< "${DEFINED_PLUS_DEFINITIONS}"
+   grep -E -v -x "${pattern}" <<< "${DEFINED_PLUS_DEFINITIONS}"
 }
 
 
@@ -414,7 +415,15 @@ make::definition::is_plus_key()
 {
    log_entry "make::definition::is_plus_key" "$@"
 
-   fgrep -q -F -x -e "$1" <<< "${DEFINED_PLUS_DEFINITIONS}"
+   case "${MULLE_UNAME}" in
+      sunos)
+         grep -F -q -x -e "$1" <<< "${DEFINED_PLUS_DEFINITIONS}"
+      ;;
+
+      *)
+         grep -F -q -F -x -e "$1" <<< "${DEFINED_PLUS_DEFINITIONS}"
+      ;;
+   esac
 }
 
 
@@ -667,7 +676,7 @@ make::definition::make_define_option()
    # ensure append doesn't duplicate
    case "${DEFINED_SET_DEFINITIONS}" in
       "DEFINITION_${key}")
-         DEFINED_SET_DEFINITIONS="`fgrep -v -x "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
+         DEFINED_SET_DEFINITIONS="`grep -F -v -x "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
       ;;
    esac
 
@@ -684,8 +693,8 @@ make::definition::make_undefine_option()
 
    unset "DEFINITION_${key}"
 
-   DEFINED_SET_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
-   DEFINED_PLUS_DEFINITIONS="`fgrep -v -x -e "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
+   DEFINED_SET_DEFINITIONS="`grep -F -v -x -e "DEFINITION_${key}" <<< "${DEFINED_SET_DEFINITIONS}" `"
+   DEFINED_PLUS_DEFINITIONS="`grep -F -v -x -e "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
 }
 
 
@@ -703,7 +712,7 @@ make::definition::make_define_plusoption()
    # ensure append doesn't duplicate
    case "${DEFINED_PLUS_DEFINITIONS}" in
       "DEFINITION_${key}")
-         DEFINED_PLUS_DEFINITIONS="`fgrep -v -x "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
+         DEFINED_PLUS_DEFINITIONS="`grep -F -v -x "DEFINITION_${key}" <<< "${DEFINED_PLUS_DEFINITIONS}" `"
       ;;
    esac
 
@@ -806,7 +815,7 @@ make::definition::read_defines_dir()
       # key="${RVAL}"
 
       # multiple lines coalesced with space
-      read_value="`egrep -v '^#' "${filename}" | tr '\n' ' '`"
+      read_value="`grep -E -v '^#' "${filename}" | tr '\n' ' '`"
       r_trim_whitespace "${read_value}"
       read_value="${RVAL}"
 #      if [ -z "${value}" ]

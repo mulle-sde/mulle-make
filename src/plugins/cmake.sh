@@ -56,7 +56,7 @@ make::plugin::cmake::r_platform_cmake_generator()
 
       *)
          case "${MULLE_UNAME}" in
-            mingw*)
+            'mingw')
                RVAL="MSYS Makefiles"
             ;;
 
@@ -362,7 +362,7 @@ make::plugin::cmake::r_userdefined_definitions()
             case "${key}" in
                *_PATH|*_FILES|*_DIRS)
                   case "${MULLE_UNAME}" in 
-                     mingw|windows)
+                     'mingw'|'msys'|'windows')
                         make::common::r_translated_path "${value}" ";"
                         cmakevalue="${RVAL}"
                      ;;
@@ -415,6 +415,42 @@ make::plugin::cmake::r_cmakeflags_add_definition()
 
    RVAL="${cmakeflags}"
 }
+
+make::plugin::cmake::get_default_generator()
+{
+   rexekutor cmake -G 2>&1 \
+   rexekutor sed -n 's/^\*[[:space:]]*\([^=]*\)[[:space:]]*=.*/\1/p'
+}
+
+
+make::plugin::cmake::r_makefile()
+{
+   log_entry "make::plugin::cmake::r_makefile" "$@"
+
+   local absbuilddir="$1"
+
+   local makeflags
+   local makefile
+
+   local generator
+
+   generator="`make::plugin::cmake::get_default_generator`"
+   case "${generator}" in
+      *'Unix Makefiles')
+         make::common::r_build_makefile "make" "${absbuilddir}"
+         return
+      ;;
+
+      *'Ninja')
+         make::common::r_build_makefile "ninja" "${absbuilddir}"
+         return
+      ;;
+   esac
+
+   RVAL=""
+   return 1
+}
+
 
 #
 # remove old kitchendir, create a new one
@@ -753,22 +789,29 @@ make::plugin::cmake::build()
 
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
-      cmakeflags2="-- VERBOSE=1"
-      cmakeflags3="-v"
+      case "${MULLE_UNAME}" in
+         'mingw'|'windows')
+            # for some reason this happened with cmake version 3.24.202208181-MSVC_2
+            # "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" ALL_BUILD.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m VERBOSE=1“
+         ;;
+
+         *)
+            cmakeflags2="-- VERBOSE=1"
+         ;;
+      esac
+      local version
+
+      version="`cmake --version | head -1`"
+      version="${version##cmake version }"
+
+      include "version"
+
+      if is_compatible_version "${version}" 3.15
+      then
+         cmakeflags3="-v"
+      fi
    fi
 
-#   local makeflags
-#   local makefile
-#   local native_kitchendir
-#
-#   make::plugin::cmake::r_convert_path_to_native "${absbuilddir}"
-#   native_kitchendir="${RVAL}"
-#
-#   make::common::r_build_makefile "${MAKE}" "${native_kitchendir}"
-#   makefile="${RVAL}"
-#
-#   make::common::r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"
-#   makeflags="${RVAL}"
 
    local run
 
@@ -792,7 +835,7 @@ make::plugin::cmake::build()
       then
          local oldphase
 
-         oldphase="`rexekutor egrep -v '^#' "${kitchendir}/.phase" 2> /dev/null `"
+         oldphase="`rexekutor grep -E -v '^#' "${kitchendir}/.phase" 2> /dev/null `"
          if [ -z "${oldphase}" ]
          then
             run="${OPTION_RERUN_CMAKE:-DEFAULT}"
@@ -804,13 +847,18 @@ make::plugin::cmake::build()
 
          if [ "${run}" = 'DEFAULT' ]
          then
-            if ! make::plugin::cmake::cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
+            run='YES'
+            if make::plugin::cmake::r_makefile "${absbuilddir}"
             then
-               run='NO'
-               _log_fluff "cmake skipped, as no changes to cmake files have been \
+               local makefile
+
+               makefile="${RVAL}"
+               if ! make::plugin::cmake::cmake_files_are_newer_than_makefile "${absprojectdir}" "${makefile}"
+               then
+                  run='NO'
+                  _log_fluff "cmake skipped, as no changes to cmake files have been \
 found in \"${absprojectdir#"${MULLE_USER_PWD}/"}\""
-            else
-               run='YES'
+               fi
             fi
          fi
       fi
@@ -934,7 +982,7 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
          then
             if [ -e "${kitchendir}/build.ninja" -a -e "${kitchendir}/cmake_install.cmake" ]
             then
-               if ! rexekutor egrep -q ' *cmake_install.cmake$' "${kitchendir}/build.ninja"
+               if ! rexekutor grep -E -q ' *cmake_install.cmake$' "${kitchendir}/build.ninja"
                then
                   log_verbose "No headers to install. Skipping build."
                   return 0
@@ -954,10 +1002,12 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
 
       if [ "${cmd}" = "install" ]
       then
+         # --build / --target install is more backwards compatible than --install
          if ! logging_tee_eval_exekutor "${logfile3}" "${teefile3}" \
                   "${env_common}" \
-                  "'${CMAKE2}'" --install "'${translated_kitchendir}'" \
-                               "${cmakeflags3}" | ${grepper}
+                  "'${CMAKE2}'" --build "'${translated_kitchendir}'" \
+                                --target install \
+                                "${cmakeflags3}" | ${grepper}
          then
             make::common::build_fail "${logfile3}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
@@ -989,7 +1039,7 @@ make::plugin::cmake::r_test()
    projectfile="${RVAL}"
 
    case "${MULLE_UNAME}" in
-      mingw*)
+      'mingw')
          include "platform::mingw"
          platform::mingw::setup_buildenvironment
       ;;
@@ -1020,18 +1070,9 @@ make::plugin::cmake::initialize()
 {
    log_entry "make::plugin::cmake::initialize"
 
-   if [ -z "${MULLE_STRING_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || return 1
-   fi
-   if [ -z "${MULLE_PATH_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || return 1
-   fi
-   if [ -z "${MULLE_FILE_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" || return 1
-   fi
+   include "string"
+   include "path"
+   include "file"
 }
 
 make::plugin::cmake::initialize

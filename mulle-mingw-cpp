@@ -33,13 +33,15 @@
 if [ -z "${MULLE_PLATFORM_MINGW_SH}" ]
 then
    MULLE_PLATFORM_LIBEXEC_DIR="`mulle-platform libexec-dir`"
-   . "${MULLE_PLATFORM_LIBEXEC_DIR:-mulle-platform not in PATH}/mulle-platform-mingw.sh"
+   . "${MULLE_PLATFORM_LIBEXEC_DIR:-mulle-platform not in PATH}/mulle-platform-mingwbourne.sh"
 fi
 
 #
 # fake up a cpp exe for configure scripts in MINGW
 #
-compiler="`platform::mingw::find_msvc_executable "cl.exe" "compiler"`"
+r_mingw_find_msvc_executable "cl.exe" "compiler"
+compiler="${RVAL}"
+
 if [ -z "${compiler}" ]
 then
 	fail "Could not find cl.exe in PATH"

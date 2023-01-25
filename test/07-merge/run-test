@@ -77,7 +77,7 @@ main()
 
    local directory
 
-   r_make_tmp_directory || exit 1
+   r_make_tmp_directory || _internal_fail "no tmp dir"
    directory="${RVAL}"
 
    run_mulle_make definition -DA+=X write "${directory}/definition1"
@@ -98,6 +98,8 @@ main()
 
    expect="Y"
    expect_content "${directory}/definition3/set/clobber/B" "${expect}"
+    
+   log_info "----- ALL PASSED -----"
 }
 
 

@@ -57,7 +57,7 @@ expect_content()
       # fix for mingw
       if [ `wc -l <<< "${diffs}"` -eq 2 ]
       then
-         if egrep -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
+         if grep -E -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
          then
             return 0
          fi
@@ -111,7 +111,7 @@ main()
    fi
 
    case "${MULLE_UNAME}" in
-      mingw)
+      'mingw'|'msys')
          [ -x "${dstdir}/bin/myexe.exe" ]   || fail "myexe.exe failed"
          [ -f "${dstdir}/lib/mylib.lib" ]   || fail "mylib.lib failed"
          [ -f "${dstdir}/include/mylib.h" ] || fail "mylib.h failed"
@@ -127,7 +127,7 @@ main()
    log_verbose "----- #1 PASSED -----"
 
    log_info "----- ALL PASSED -----"
-
+   cd ..
    rmdir_safer "${directory}"
 }
 

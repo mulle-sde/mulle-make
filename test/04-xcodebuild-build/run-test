@@ -51,13 +51,13 @@ expect_content()
 
    local diffs
 
-   diffs="`diff -b "${output}" "${expect}"`"
+   diffs="`diff -b <( sed -e '/^$/d' "${output}" ) <( sed -e '/^$/d' "${expect}" )`"
    if [ $? -ne 0 ]
    then
       # fix for mingw
       if [ `wc -l <<< "${diffs}"` -eq 2 ]
       then
-         if egrep -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
+         if grep -E -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
          then
             return 0
          fi
@@ -162,7 +162,7 @@ main()
    log_verbose "----- #8 PASSED -----"
 
    log_info "----- ALL PASSED -----"
-
+   cd ..
    rmdir_safer "${directory}"
 }
 

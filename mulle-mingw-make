@@ -33,9 +33,9 @@
 if [ -z "${MULLE_PLATFORM_MINGW_SH}" ]
 then
    MULLE_PLATFORM_LIBEXEC_DIR="`mulle-platform libexec-dir`"
-   . "${MULLE_PLATFORM_LIBEXEC_DIR:-mulle-platform not in PATH}/mulle-platform-mingw.sh"
+   . "${MULLE_PLATFORM_LIBEXEC_DIR:-mulle-platform not in PATH}/mulle-platform-mingwnbourne.sh"
 fi
 
 
 
-PATH="`platform::mingw::buildpath "${PATH}"`" mingw32-make.exe "$@"
+PATH="`mingw_buildpath "${PATH}"`" mingw32-make.exe "$@"

@@ -1,0 +1,4 @@
+[CFLAGS=-DSTRING=\"a string\" -isystem /usr/my\ disk/include]
+[CPPFLAGS=-external:I /usr/my disk/include -external:I /usr/include]
+[LDFLAGS=-LIBPATH:/usr/local/lib -LIBPATH:/usr/lib]
+[PKG_CONFIG_PATH=/usr/local/lib /usr/lib/pkgconfig]
