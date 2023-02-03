@@ -28,7 +28,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_PLUGIN_CMAKE_SH="included"
+MULLE_MAKE_PLUGIN_CMAKE_SH='included'
 
 
 make::plugin::cmake::r_platform_cmake_generator()
@@ -515,7 +515,7 @@ make::plugin::cmake::build()
    local _ldflags
    local _pkgconfigpath
 
-   make::common::__std_flags "${sdk}" "${platform}" "${configuration}" "NO"
+   make::common::__std_flags "${sdk}" "${platform}" "${configuration}" 'NO'
 
    local c_compiler="${_c_compiler}"
    local cxx_compiler="${_cxx_compiler}"

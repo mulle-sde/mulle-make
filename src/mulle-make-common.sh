@@ -28,7 +28,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_COMMON_SH="included"
+MULLE_MAKE_COMMON_SH='included'
 
 
 make::common::log_delete_all()
@@ -699,25 +699,25 @@ make::common::r_headerpath_preprocessor_flags()
 
    case "${compiler}" in
       *cl)
-         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" "NO" "-external:I "
+         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" 'NO' "-external:I "
          headersearchpaths="${RVAL}"
       ;;
 
       *clang|*gcc)
-         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" "YES" "-isystem "
+         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" 'YES' "-isystem "
          headersearchpaths="${RVAL}"
       ;;
 
       *)
          # assume most compilers can't do -isystem
-         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" "YES" "-${MULLE_MAKE_ISYSTEM_FLAG:-I}"
+         make::common::r_translated_path "${DEFINITION_INCLUDE_PATH}" "${sep}" 'YES' "-${MULLE_MAKE_ISYSTEM_FLAG:-I}"
          headersearchpaths="${RVAL}"
       ;;
    esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         make::common::r_translated_path "${DEFINITION_FRAMEWORKS_PATH}" "${sep}" "YES" "-F"
+         make::common::r_translated_path "${DEFINITION_FRAMEWORKS_PATH}" "${sep}" 'YES' "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac
@@ -742,26 +742,26 @@ make::common::r_librarypath_linker_flags()
       'windows'|'mingw')
          case "${LD:-ld.exe}" in 
             *.exe)
-               make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" "NO" "-LIBPATH:"
+               make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" 'NO' "-LIBPATH:"
                librarysearchpaths="${RVAL}"
             ;;
 
             *)
-               make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" "YES" "-L"
+               make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" 'YES' "-L"
                librarysearchpaths="${RVAL}"
             ;;
          esac
       ;;
 
       *)
-         make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" "YES" "-L"
+         make::common::r_translated_path "${DEFINITION_LIB_PATH}" "${sep}" 'YES' "-L"
          librarysearchpaths="${RVAL}"
       ;;
    esac
 
    case "${MULLE_UNAME}" in
       darwin)
-         make::common::r_translated_path "${DEFINITION_FRAMEWORKS_PATH}" "${sep}" "YES" "-F"
+         make::common::r_translated_path "${DEFINITION_FRAMEWORKS_PATH}" "${sep}" 'YES' "-F"
          frameworksearchpaths="${RVAL}"
       ;;
    esac

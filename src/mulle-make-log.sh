@@ -32,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_LOG_SH="included"
+MULLE_MAKE_LOG_SH='included'
 
 
 make::log::usage()
@@ -216,7 +216,7 @@ make::log::main()
    include "mulle-make::build"
 
    srcdir="${PWD}"
-   if ! make::build::__determine_directories "NO"
+   if ! make::build::__determine_directories 'NO'
    then
       log_info "No log files found"
       return 0

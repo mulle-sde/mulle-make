@@ -28,7 +28,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_PLUGIN_MAKE_SH="included"
+MULLE_MAKE_PLUGIN_MAKE_SH='included'
 
 
 #
@@ -191,7 +191,7 @@ make::plugin::make::build()
       make::common::r_safe_tty
       teefile1="${RVAL}"
       grepper="make::common::log_delete_all"
-      greplog="NO"
+      greplog='NO'
    fi
 
    mkdir_if_missing "${kitchendir}"

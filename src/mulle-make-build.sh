@@ -28,7 +28,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_BUILD_SH="included"
+MULLE_MAKE_BUILD_SH='included'
 
 
 make::build::emit_common_options()
@@ -207,7 +207,14 @@ make::build::list_usage()
 Usage:
    ${MULLE_USAGE_NAME} list [options]
 
-   Do not build anything but list definitions as defined.
+   Do not build anything but list definitions as defined. With this command
+   you can investigate how various set flags like '--clobber' affect the
+   composition of the final value.
+
+Example:
+      ${MULLE_USAGE_NAME} definition --definition-dir a set FOO a
+      ${MULLE_USAGE_NAME} definition --definition-dir b set --append0 FOO b
+      ${MULLE_USAGE_NAME} list --definition-dir a --definition-dir b
 
 Options:
 EOF
@@ -742,6 +749,15 @@ make::build::list()
 {
    log_info "Definitions"
 
+   local definitiondirs="$1"
+
+   local definitiondir
+
+   .foreachline definitiondir in ${definitiondirs}
+   .do
+      make::definition::read "${definitiondir}"
+   .done
+
    make::definition::r_print "${DEFINED_SET_DEFINITIONS}" \
                              "${DEFINED_PLUS_DEFINITIONS}" \
                              "" \
@@ -920,18 +936,6 @@ make::build::common()
             DEFINITION_DETERMINE_SDK='NO'
          ;;
 
-         --name|--project-name)
-            read -r DEFINITION_PROJECT_NAME || fail "missing argument to \"${argument}\""
-         ;;
-
-         --language|--project-language)
-            read -r DEFINITION_PROJECT_LANGUAGE || fail "missing argument to \"${argument}\""
-         ;;
-
-         --dialect|--project-dialect)
-            read -r DEFINITION_PROJECT_DIALECT || fail "missing argument to \"${argument}\""
-         ;;
-
          --plugins|--plugin-preferences|--tools|--tool-preferences)
             read -r value || fail "missing argument to \"${argument}\""
 
@@ -940,6 +944,18 @@ make::build::common()
             then
                DEFINITION_PLUGIN_PREFERENCES="${value}"
             fi
+         ;;
+
+         --project-name|--name)
+            read -r DEFINITION_PROJECT_NAME || fail "missing argument to \"${argument}\""
+         ;;
+
+         --project-language|--language)
+            read -r DEFINITION_PROJECT_LANGUAGE || fail "missing argument to \"${argument}\""
+         ;;
+
+         --project-dialect|--dialect)
+            read -r DEFINITION_PROJECT_DIALECT || fail "missing argument to \"${argument}\""
          ;;
 
          --xcode-config-file)
@@ -1127,8 +1143,8 @@ Maybe repair with:
       ;;
    esac
 
-   case "${OPTION_INFO_DIRS:-Default}" in
-      'Default')
+   case "${OPTION_INFO_DIRS:-DEFAULT}" in
+      'DEFAULT')
          if [ -d "${srcdir}/.mulle/etc/craft/definition" ]
          then
             OPTION_INFO_DIRS="${srcdir}/.mulle/etc/craft/definition"
@@ -1149,7 +1165,7 @@ Maybe repair with:
             log_error "Superflous argument \"${argument}\""
             make::build::list_usage
          fi
-         make::build::list
+         make::build::list "${OPTION_INFO_DIRS}"
       ;;
 
       project)

@@ -28,7 +28,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_DEFINITION_SH="included"
+MULLE_MAKE_DEFINITION_SH='included'
 
 
 make::definition::usage()
@@ -127,17 +127,26 @@ Usage:
    a build setting like CFLAGS "append" may be a better choice, if you add
    preprocessor definitions for example.
 
-Example:
-   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set FOO bar
-   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set FOO foo
+   The --append flag appends over multiple definitions. The value you set
+   here still clobbers the old value.
 
-   will produce -DFOO="bar foo"
+Example:
+      ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set FOO foo
+      ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set --concat FOO bar
+
+   will produce -DFOO="foo bar", but --append only appends at runtime so:
+
+      ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set --append FOO bar
+
+   will now produce -DFOO="bar"
 
 Options:
    -+        : create an additive setting += instead of = (for xcodebuild)
-   --append  : append the value to an existing value for that key 
+   --concat  : append value to a previous value now
+   --concat0 : like concat but without space separation
+   --append  : append value to a previous setting at make time (default)
    --append0 : like append but without space separation
-   --clobber : clobber any existing previous value (default)
+   --clobber : clobber any existing previous value at make time
    --ifempty : only set if no value exists yet
 
 EOF
@@ -295,6 +304,10 @@ make::definition::handle_definition_options()
 
       '-D'*)
          make::definition::make_define_set_keyvalue "${argument:2}" 
+      ;;
+
+      '--concat'|'--concat0')
+         fail "Concat can only be used with the set command"
       ;;
 
       '--ifempty'|'--append'|'--append0'|'--remove')
@@ -612,6 +625,7 @@ make::definition::_make::definition::make_define_option()
    r_shell_indirect_expand "${optkey}"
    oldvalue="${RVAL}"
 
+   # this is runtime expansion
    case "${option}" in
       'ifempty')
          if [ ! -z "${oldvalue}" ]
@@ -635,6 +649,10 @@ make::definition::_make::definition::make_define_option()
          then
             log_debug "Unset did not do anything"
          fi
+      ;;
+
+      'concat'|'concat0')
+         fail "Concat can only be used with the set command."
       ;;
 
       'append')
@@ -857,6 +875,25 @@ make::definition::read()
       return
    fi
 
+   #
+   # due to our append scheme, reading the same definition dir twice
+   # is disastrous
+   #
+
+   local varkey
+
+   r_identifier "${directory}"
+   varkey="HASH_${RVAL}"
+
+   r_shell_indirect_expand "${varkey}"
+   if [ ! -z "${RVAL}" ]
+   then
+      log_debug "Did not read directory \"${directory}\" again"
+      return
+   fi
+   printf -v "${varkey}" "READ"
+
+
    log_verbose "Read definition ${C_RESET_BOLD}${directory#"${MULLE_USER_PWD}/"}${C_VERBOSE}"
 
    directory="${directory}"
@@ -1019,6 +1056,8 @@ make::definition::set_main()
 
    local argument
    local OPTION_MODIFIER='set'
+   local OPTION_OPERATION
+   local OPTION_CONCAT
 
    while read -r argument
    do
@@ -1031,8 +1070,20 @@ make::definition::set_main()
             OPTION_MODIFIER='plus'
          ;;
 
-         --append|--append0|--ifempty|--remove|--unset|--clobber)
-            OPTION_MODIFIER="${argument:2}"
+         --concat)
+            OPTION_CONCAT='CONCAT'
+         ;;
+
+         --concat0)
+            OPTION_CONCAT='CONCAT0'
+         ;;
+
+         --append)
+            OPTION_OPERATION=
+         ;;
+
+         --append0|--ifempty|--remove|--unset|--clobber)
+            OPTION_OPERATION="${argument:2}"
          ;;
 
          -*)
@@ -1076,10 +1127,30 @@ make::definition::set_main()
 
    make::definition::check_option_key_without_prefix "${key}"
 
+   if [ ! -z "${OPTION_CONCAT}" ]
+   then
+      local varkey
+      local previous
+
+      varkey="DEFINITION_${key}"
+      r_shell_indirect_expand "${varkey}"
+      previous="${RVAL}"
+
+      case "${OPTION_CONCAT}" in
+         'CONCAT')
+            r_concat "${previous}" "${value}" "${sep}"
+            value="${RVAL}"
+         ;;
+
+         'CONCAT0')
+            value="${previous}${value}"
+         ;;
+      esac
+   fi
 
    local finaldirectory
 
-   r_filepath_concat "${directory}" "${OPTION_MODIFIER}"
+   r_filepath_concat "${directory}" "${OPTION_MODIFIER}" "${OPTION_OPERATION}"
    finaldirectory="${RVAL}"
 
    # remove all possible old settings
@@ -1146,7 +1217,6 @@ make::definition::get_main()
    then
       make::definition::get_usage "Superflous argument \"${argument}\""
    fi
-
 
    local directory
 

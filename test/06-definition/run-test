@@ -82,7 +82,6 @@ run_test()
 }
 
 
-
 main()
 {
    MULLE_MAKE_FLAGS="$@"

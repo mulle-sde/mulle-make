@@ -28,7 +28,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_PLUGIN_CONFIGURE_SH="included"
+MULLE_MAKE_PLUGIN_CONFIGURE_SH='included'
 
 
 #
@@ -200,7 +200,7 @@ make::plugin::configure::build()
       teefile1="${RVAL}"
       teefile2="${logfile1}"
       grepper="make::common::log_delete_all"
-      greplog="NO"
+      greplog='NO'
    fi
 
    (

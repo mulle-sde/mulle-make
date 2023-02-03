@@ -64,6 +64,8 @@ make::print_commands()
 
    HIDDEN_COMMANDS="\
    libexec-dir   : print path to ${MULLE_USAGE_NAME} libexec
+   list          : list definitions values at build time
+   log           : show build log (if run standalone)
    show          : show available buildtools
    uname         : ${MULLE_USAGE_NAME}'s simplified uname(1)
    version       : print mulle-make version"

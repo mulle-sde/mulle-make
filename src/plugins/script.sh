@@ -28,7 +28,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_MAKE_PLUGIN_SCRIPT_SH="included"
+MULLE_MAKE_PLUGIN_SCRIPT_SH='included'
 
 
 make::plugin::script::r_build_script_absolutepath()
@@ -167,7 +167,7 @@ make::plugin::script::build()
 
    teefile1="/dev/null"
    grepper="make::common::log_grep_warning_error"
-   greplog="YES"
+   greplog='YES'
 
    if [ "$MULLE_FLAG_EXEKUTOR_DRY_RUN" = 'YES' ]
    then
@@ -181,8 +181,12 @@ make::plugin::script::build()
       make::common::r_safe_tty
       teefile1="${RVAL}"
       grepper="make::common::log_delete_all"
-      greplog="NO"
+      greplog='NO'
    fi
+
+   local root_dir
+
+   root_dir="$PWD"
 
    (
       exekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
@@ -204,6 +208,7 @@ make::plugin::script::build()
                      --logfile "${logfile1}" \
                      --teefile "${teefile1}" \
                      --build-dir "'${kitchendir}'" \
+                     --root-dir "'${root_dir}'" \
                      --configuration "'${configuration}'" \
                      --install-dir "'${dstdir}'" \
                      --platform "'${platform}'" \
