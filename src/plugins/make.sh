@@ -297,18 +297,9 @@ make::plugin::make::initialize()
 {
    log_entry "make::plugin::make::initialize"
 
-   if [ -z "${MULLE_STRING_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || return 1
-   fi
-   if [ -z "${MULLE_PATH_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || return 1
-   fi
-   if [ -z "${MULLE_FILE_SH}" ]
-   then
-      . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" || return 1
-   fi
+   include "string"
+   include "path"
+   include "file"
 }
 
 make::plugin::make::initialize

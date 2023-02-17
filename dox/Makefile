@@ -1,9 +1,9 @@
 
-PIX=overview.png \
-mulle-sde-overview.png
+PIX=overview.svg \
+mulle-sde-overview.svg
 
-%.png: %.dot
-	dot -Tpng -o $*.png $<
+%.svg: %.dot
+	dot -Tsvg -o $*.svg $<
 
 
 all: $(PIX)

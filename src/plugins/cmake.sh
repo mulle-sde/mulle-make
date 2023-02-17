@@ -85,19 +85,12 @@ make::plugin::cmake::tools_environment()
    make::command::r_verify_binary "${toolname}" "cmake" "${tooldefaultname}"
    CMAKE="${RVAL}"
 
-#   make::common::r_make_for_plugin "cmake" ""
-#   MAKE="${RVAL}"
+   make::common::r_make_for_plugin "cmake" ""
+   MAKE="${RVAL}"
 
    # used for running tests
    CMAKE1="${DEFINITION_CMAKE1:-${CMAKE}}"
    CMAKE2="${DEFINITION_CMAKE2:-${CMAKE1}}"
-
-   local defaultgenerator
-
-#   make::plugin::cmake::r_platform_cmake_generator "${MAKE}"
-#   defaultgenerator="${RVAL}"
-#
-#   CMAKE_GENERATOR="${DEFINITION_CMAKE_GENERATOR}" # :-${defaultgenerator}}"
 }
 
 
@@ -561,10 +554,21 @@ make::plugin::cmake::build()
 
    cmakeflags="${DEFINITION_CMAKEFLAGS}"
 
-   if [ ! -z "${DEFINITION_CMAKE_GENERATOR}" ]
+
+   local generator
+
+   generator="${DEFINITION_CMAKE_GENERATOR}"
+   if [ -z "${generator}" ]
+   then
+      make::plugin::cmake::r_platform_cmake_generator "${MAKE}"
+      generator="${RVAL}"
+   fi
+
+   # CMAKE_GENERATOR has been sez by
+   if [ ! -z "${generator}" ]
    then
       make::plugin::cmake::r_cmakeflags_add "${cmakeflags}" "-G"
-      make::plugin::cmake::r_cmakeflags_add "${RVAL}" "${DEFINITION_CMAKE_GENERATOR}"
+      make::plugin::cmake::r_cmakeflags_add "${RVAL}" "${generator}"
       cmakeflags="${RVAL}"
    fi
 
@@ -766,6 +770,13 @@ make::plugin::cmake::build()
       cmakeflags="${RVAL}"
    fi
 
+   if [ ! -z "${MULLE_TECHNICAL_FLAGS}" ]
+   then
+      value="${MULLE_TECHNICAL_FLAGS// /;}"
+      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "MULLE_TECHNICAL_FLAGS" "${value}"
+      cmakeflags="${RVAL}"
+   fi
+
    #
    # the userdefined definitions must be quoted properly already
    #
@@ -784,32 +795,65 @@ make::plugin::cmake::build()
    make::plugin::cmake::r_cmaketarget "${cmd}" "${DEFINITION_TARGETS}"
    cmaketarget="${RVAL}"
 
-   local cmakeflags2
-   local cmakeflags3
+   local cmake_is_3_15_or_later
 
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   cmake_is_3_15_or_later='UNKNOWN'
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' -o "${cmd}" = "install" ]
    then
-      case "${MULLE_UNAME}" in
-         'mingw'|'windows')
-            # for some reason this happened with cmake version 3.24.202208181-MSVC_2
-            # "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" ALL_BUILD.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m VERBOSE=1“
-         ;;
 
-         *)
-            cmakeflags2="-- VERBOSE=1"
-         ;;
-      esac
       local version
 
-      version="`cmake --version | head -1`"
+      version="`"${CMAKE2}" --version | head -1`"
       version="${version##cmake version }"
 
       include "version"
 
       if is_compatible_version "${version}" 3.15
       then
-         cmakeflags3="-v"
+         cmake_is_3_15_or_later='YES'
       fi
+   fi
+
+   local cmakeflags2
+   local cmakeflags3
+
+   case "${MULLE_UNAME}" in
+      'mingw'|'msys'|'windows')
+         # for some reason this happened with cmake version 3.24.202208181-MSVC_2
+         # "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" ALL_BUILD.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:m VERBOSE=1“
+      ;;
+
+      *)
+         case "${generator}" in
+            ''|'Unix Make'*)
+               include "parallel"
+
+               r_get_core_count
+
+               r_concat "${cmakeflags2}" "-j ${MULLE_CORES}"
+               cmakeflags2="-j ${RVAL}"
+
+               if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+               then
+                  r_concat "${cmakeflags2}" "-- VERBOSE=1"
+                  cmakeflags2="${RVAL}"
+               fi
+
+            ;;
+
+            "Ninja")
+               if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+               then
+                  cmakeflags2="-- -v"
+               fi
+            ;;
+         esac
+      ;;
+   esac
+
+   if [ "${cmake_is_3_15_or_later}" = 'YES' -a  "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      cmakeflags3="-v"
    fi
 
 
@@ -892,7 +936,7 @@ found in \"${absprojectdir#"${MULLE_USER_PWD}/"}\""
 
 #   log_setting "makeflags:     ${makeflags}"
    log_setting "cmakeflags:    ${cmakeflags}"
-   log_setting "cmakeflags2:   ${cmakeflags3}"
+   log_setting "cmakeflags2:   ${cmakeflags2}"
    log_setting "cmakeflags3:   ${cmakeflags3}"
    log_setting "env_common:    ${env_common}"
 
@@ -1002,14 +1046,26 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
 
       if [ "${cmd}" = "install" ]
       then
-         # --build / --target install is more backwards compatible than --install
-         if ! logging_tee_eval_exekutor "${logfile3}" "${teefile3}" \
-                  "${env_common}" \
-                  "'${CMAKE2}'" --build "'${translated_kitchendir}'" \
-                                --target install \
-                                "${cmakeflags3}" | ${grepper}
+         if [ "${cmake_is_3_15_or_later}" = 'YES' ]
          then
-            make::common::build_fail "${logfile3}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
+            # --build / --target install is more backwards compatible than --install
+            if ! logging_tee_eval_exekutor "${logfile3}" "${teefile3}" \
+                     "${env_common}" \
+                     "'${CMAKE2}'" --install "'${translated_kitchendir}'" \
+                                   "${cmakeflags3}" | ${grepper}
+            then
+               make::common::build_fail "${logfile3}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
+            fi
+         else
+            # --build / --target install is more backwards compatible than --install
+            if ! logging_tee_eval_exekutor "${logfile3}" "${teefile3}" \
+                     "${env_common}" \
+                     "'${CMAKE2}'" --build "'${translated_kitchendir}'" \
+                                   --target install \
+                                   "${cmakeflags3}" | ${grepper}
+            then
+               make::common::build_fail "${logfile3}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
+            fi
          fi
       fi
    ) || exit 1

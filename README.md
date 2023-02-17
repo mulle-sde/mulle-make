@@ -1,27 +1,16 @@
-# mulle-make
+# 💄 Build projects with tools like cmake, meson, autoconf
 
-🤖 Build projects uniformly with a variety of build systems
-
-![Last version](https://img.shields.io/github/tag/mulle-sde/mulle-make.svg)
-
-... for Linux, OS X, FreeBSD, Windows
+... for Android, BSDs, Linux, macOS, SunOS, Windows (MinGW, WSL)
 
 **mulle-make** will determine if the project needs to
 be build via `configure`, `autoconf`, `cmake` or some other build tool.
 It will then proceed to build the project using that tool.
 
-![](dox/mulle-sde-overview.png)
+| Release Version                                       | Release Notes
+|-------------------------------------------------------|--------------
+| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-sde/mulle-make.svg?branch=release) | [RELEASENOTES](RELEASENOTES.md) |
 
 
-Executable   | Description
--------------|--------------------------------
-`mulle-make` | Build a single project
-
-
-## Install
-
-See [mulle-sde-developer](//github.com/mulle-sde/mulle-sde-developer) how
-to install mulle-sde.
 
 
 ## What **mulle-make** does
@@ -34,6 +23,15 @@ cd build
 cmake ..
 ninja
 ```
+
+## Project structure
+
+The next picture gives an overview of `mulle-make` default project structure
+and how to customize it:
+
+![](dox/overview.svg)
+
+
 
 ## Example
 
@@ -64,16 +62,31 @@ $ mulle-make log
 ```
 
 
-## Project structure
 
-The next picture gives an overview of `mulle-make` default project structure
-and how to customize it:
 
-![](dox/overview.png)
+## You are here
+
+![](dox/mulle-sde-overview.svg)
+
+
+
+
+## Install
+
+See [mulle-sde-developer](//github.com/mulle-sde/mulle-sde-developer) how to
+install mulle-sde, which will also install mulle-make and required
+dependencies.
+
+The command to install only the latest mulle-make into
+`/usr/local` (with **sudo**) is:
+
+``` bash
+curl -L 'https://github.com/mulle-sde/mulle-make/archive/latest.tar.gz' \
+ | tar xfz - && cd 'mulle-make-latest' && sudo ./bin/installer /usr/local
+```
+
 
 
 ## Author
 
-[Nat!](//www.mulle-kybernetik.com/weblog) for
-[Mulle kybernetiK](//www.mulle-kybernetik.com) and
-[Codeon GmbH](//www.codeon.de)
+[Nat!](https://mulle-kybernetik.com/weblog) for Mulle kybernetiK

@@ -353,10 +353,8 @@ make::common::r_use_ninja_instead_of_make()
 
    local ninjaexe
    local ninjaversion
-   local flag
 
-   flag="${DEFINITION_USE_NINJA:-YES}"
-   case "${flag}" in
+   case "${DEFINITION_USE_NINJA:-YES}" in
       'YES')
          ninjaexe="`command -v ninja${extension}`"
          if [ ! -z "${ninjaexe}" ]
@@ -368,13 +366,16 @@ make::common::r_use_ninja_instead_of_make()
                # https://github.com/ninja-build/ninja/pull/1996
                   if [ "${DEFINITION_USE_NINJA}" = 'YES' ]
                   then
-                     log_warning "Ninja is too old (< 1.11.0) to use"
+                     log_warning "Ninja ${ninjaversion} is too old (< 1.11.0)"
+                  else
+                     log_fluff "Ninja ${ninjaversion} is too old (< 1.11.0)"
                   fi
                   RVAL=
                   return 1
                ;;
 
                *)
+                  log_fluff "Found ninja${extension} >= 1.11.0"
                   RVAL="ninja${extension}"
                   return 0
                ;;
@@ -385,11 +386,11 @@ make::common::r_use_ninja_instead_of_make()
          then
             fail "ninja${extension} not found"
          fi
-         log_debug "ninja${extension} not in PATH"
+         log_fluff "ninja${extension} not in PATH"
       ;;
 
       'NO')
-         log_debug "Not searching for ninja"
+         log_fluff "Not searching for ninja as DEFINITION_USE_NINJA is NO"
       ;;
 
       *)

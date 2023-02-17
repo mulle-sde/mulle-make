@@ -122,7 +122,7 @@ make::plugin::script::build()
    [ $# -ge 9 ] || _internal_fail "api error"
 
    local cmd="$1"
-   local projectfile="$2"
+   local projectinfo="$2"
    local sdk="$3"
    local platform="$4"
    local configuration="$5"
@@ -255,6 +255,7 @@ make::plugin::script::r_test()
    fi
 
    log_verbose "Found build script \"${scriptfile#"${MULLE_USER_PWD}/"}\""
+   MAKE=
 
    RVAL="${scriptfile};${srcdir}"
 

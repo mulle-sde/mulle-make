@@ -1,0 +1,12 @@
+{
+   project =
+   {
+      description="💄 Build projects with tools like cmake, meson, autoconf";
+      domain="github";
+      name="mulle-make";
+      username="mulle-sde";
+      reponame="mulle-make";
+      homepage="https://github.com/mulle-sde/mulle-make";
+      license="BSD-3-Clause"
+   };
+}

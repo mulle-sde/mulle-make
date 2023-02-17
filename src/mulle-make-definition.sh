@@ -253,7 +253,6 @@ DEFINITION_LIBRARY_STYLE
 DEFINITION_LOG_DIR
 DEFINITION_MAKE
 DEFINITION_MAKETARGET
-DEFINITION_MULLE_SDK_PATH
 DEFINITION_NINJA
 DEFINITION_OBJCFLAGS
 DEFINITION_OTHER_CFLAGS
@@ -286,6 +285,9 @@ ${KNOWN_CONFIGURE_PLUGIN_DEFINITIONS}
 ${KNOWN_MESON_PLUGIN_DEFINITIONS}
 ${KNOWN_XCODEBUILD_PLUGIN_DEFINITIONS}"
 
+NO_WARN_DEFINITIONS="${KNOWN_DEFINITIONS}
+DEFINITION_MULLE_SDK_PATH
+DEFINITION_MULLE_SDK_SUBDIR"
 
 make::definition::handle_definition_options()
 {
@@ -563,7 +565,7 @@ make::definition::check_option_key_without_prefix()
       fail "\"${key}\" is not a proper upcase identifier. Suggestion: \"${identifier}\""
    fi
 
-   if ! find_line "${KNOWN_DEFINITIONS}" "DEFINITION_${key}"
+   if ! find_line "${NO_WARN_DEFINITIONS}" "DEFINITION_${key}"
    then
       local message
       local hint

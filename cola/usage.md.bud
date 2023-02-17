@@ -1,0 +1,19 @@
+## What **mulle-make** does
+
+Essentially, **mulle-make** does (for cmake projects):
+
+``` sh
+mkdir build
+cd build
+cmake ..
+ninja
+```
+
+## Project structure
+
+The next picture gives an overview of `mulle-make` default project structure
+and how to customize it:
+
+![](dox/overview.svg)
+
+

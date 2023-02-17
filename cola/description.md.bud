@@ -1,0 +1,3 @@
+**mulle-make** will determine if the project needs to
+be build via `configure`, `autoconf`, `cmake` or some other build tool.
+It will then proceed to build the project using that tool.

@@ -308,7 +308,14 @@ make::build::__build_with_preference_if_possible()
          conftext="${conftext}/${style}"
       fi
 
-      blurb="Let ${C_RESET_BOLD}${TOOLNAME}${C_INFO} do a \
+      blurb="Let ${C_RESET_BOLD}${TOOLNAME}"
+      if [ ! -z "${MAKE}" ]
+      then
+         r_extensionless_basename "${MAKE}"
+         blurb="${blurb}${C_INFO}/${C_RESET_BOLD}${RVAL}"
+      fi
+
+      blurb="${blurb}${C_INFO} do a \
 ${C_MAGENTA}${C_BOLD}${conftext}${C_INFO} build"
       if [ ! -z "${OPTION_PHASE}" ]
       then
@@ -647,9 +654,10 @@ make::build::build()
       if [ "${ok}" != 'YES' ]
       then
          fail "No permission to run script \"${DEFINITION_BUILD_SCRIPT}\".
-${C_INFO}Use --allow-build-script \"${DEFINITION_BUILD_SCRIPT}\" option or enable
-script permanently with:
-${C_RESET_BOLD}   mulle-sde environment --global set --add MULLE_CRAFT_USE_SCRIPTS ${DEFINITION_BUILD_SCRIPT}"
+${C_INFO}Use \"--allow-build-script ${DEFINITION_BUILD_SCRIPT}\" option or enable the
+script permanently:
+${C_RESET_BOLD}   mulle-sde environment --global set --concat MULLE_CRAFT_USE_SCRIPTS ${DEFINITION_BUILD_SCRIPT}
+${C_RESET_BOLD}   mulle-sde craft --build-style ${configuration} --allow-build-script ${DEFINITION_BUILD_SCRIPT}"
       fi
 
       DEFINITION_PLUGIN_PREFERENCES="script"

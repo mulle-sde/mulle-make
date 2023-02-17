@@ -67,6 +67,7 @@ make::plugin::meson::tools_environment()
 
    make::plugin::meson::r_platform_backend
    NINJA="${RVAL}"
+   MAKE="ninja"
 
    r_basename "${RVAL}"
    backend="${RVAL#mock-}"
