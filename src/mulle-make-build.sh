@@ -38,23 +38,23 @@ make::build::emit_common_options()
    if [ "${marks}" = "common-prefix" ]
    then
       cat <<EOF
-   --prefix <prefix>           : prefix to use for build products e.g. /usr/local
+   --prefix <prefix>          : prefix to use for build products e.g. /usr/local
 EOF
    fi
 
       cat <<EOF
-   -D<key>=<value>             : set the definition named key to value
-   -D<key>+=<value>            : append a += definition for the buildtool
-   --build-dir <dir>           : specify build directory
-   --debug                     : build with configuration "Debug"
-   --include-path <path>       : specify header search PATH, separated by :
-   --definition-dir <path>     : specify definition directories (multi-use)
-   --dynamic                   : prefer dynamic library output
-   --library-path <path>       : specify library search PATH, separated by :
-   --no-ninja                  : prefer make over ninja
-   --release                   : build with configuration "Release" (Default)
-   --mulle-test                : build for mulle-test
-   --verbose-make              : verbose make output
+   -D<key>=<value>            : set the definition named key to value
+   -D<key>+=<value>           : append a += definition for the buildtool
+   --build-dir <dir>          : specify build directory
+   --debug                    : build with configuration "Debug"
+   --include-path <path>      : specify header search PATH, separated by :
+   --definition-dir <path>    : specify definition directories (multi-use)
+   --dynamic                  : prefer dynamic library output
+   --library-path <path>      : specify library search PATH, separated by :
+   --no-ninja                 : prefer make over ninja
+   --release                  : build with configuration "Release" (Default)
+   --mulle-test               : build for mulle-test
+   --verbose-make             : verbose make output
 EOF
    case "${MULLE_UNAME}" in
       mingw)
@@ -62,14 +62,14 @@ EOF
 
       darwin)
          cat <<EOF
-   --frameworks-path <path>    : specify Frameworks search PATH, separated by :
-   -j <cores>                  : number of cores parameter for make (${MULLE_CORES})
+   --frameworks-path <path>   : specify Frameworks search PATH, separated by :
+   -j <cores>                 : number of cores parameter for make (${MULLE_CORES})
 EOF
       ;;
 
       *)
          cat <<EOF
-   -j <cores>                  : number of cores parameter for make (${MULLE_CORES})
+   -j <cores>                 : number of cores parameter for make (${MULLE_CORES})
 EOF
       ;;
    esac
@@ -271,7 +271,6 @@ make::build::__build_with_preference_if_possible()
 
    (
       local TOOLNAME="${preference}"
-      local AUX_INFO
 
       local projectinfo
 
@@ -301,6 +300,12 @@ make::build::__build_with_preference_if_possible()
       conftext="${configuration}"
 
       local style
+      local underline
+
+      if [ "${OPTION_UNDERLINE}" = 'YES' ]
+      then
+         underline="${C_UNDERLINE}"
+      fi
 
       style="${DEFINITION_LIBRARY_STYLE:-${DEFINITION_PREFERRED_LIBRARY_STYLE}}"
       if [ ! -z "${style}" ]
@@ -308,22 +313,35 @@ make::build::__build_with_preference_if_possible()
          conftext="${conftext}/${style}"
       fi
 
-      blurb="Let ${C_RESET_BOLD}${TOOLNAME}"
+      blurb="${underline}Let ${C_RESET_BOLD}${underline}${TOOLNAME}"
       if [ ! -z "${MAKE}" ]
       then
          r_extensionless_basename "${MAKE}"
-         blurb="${blurb}${C_INFO}/${C_RESET_BOLD}${RVAL}"
+         blurb="${blurb}${C_INFO}${underline}/${C_RESET_BOLD}${underline}${RVAL}"
       fi
 
-      blurb="${blurb}${C_INFO} do a \
-${C_MAGENTA}${C_BOLD}${conftext}${C_INFO} build"
+      blurb="${blurb}${C_INFO}${underline} do a \
+${C_MAGENTA}${C_BOLD}${underline}${conftext}${C_INFO}${underline} build"
       if [ ! -z "${OPTION_PHASE}" ]
       then
-         blurb="${blurb} ${C_MAGENTA}${C_BOLD}${OPTION_PHASE}${C_INFO} phase"
+         blurb="${blurb} ${C_MAGENTA}${C_BOLD}${OPTION_PHASE}${C_INFO}${underline} phase"
       fi
-      blurb="${blurb} of \
-${C_MAGENTA}${C_BOLD}${name}${C_INFO} for SDK \
-${C_MAGENTA}${C_BOLD}${sdk}${C_INFO}${AUX_INFO} in \"${prettykitchendir}\" ..."
+      blurb="${blurb}${underline} of \
+${C_MAGENTA}${C_BOLD}${underline}${name}${C_INFO}"
+
+      if [ "${sdk}" != "Default" -o "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+      then
+         blurb="${blurb}${underline} for SDK \
+${C_MAGENTA}${C_BOLD}${underline}${sdk}${C_INFO}"
+      fi
+
+      if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+      then
+         blurb="${blurb}${underline} in \"${prettykitchendir}\" ..."
+      fi
+      blurb="${blurb}${underline} ..."
+
+
       log_info "${blurb}"
 
       if ! "make::plugin::${preference}::build" "${cmd}" \
@@ -1093,6 +1111,10 @@ make::build::common()
          # as in /usr/lib:/usr/local/lib
          -L|--lib-path|--library-path)
             read -r DEFINITION_LIB_PATH || fail "missing argument to \"${argument}\""
+         ;;
+
+         --underline)
+            OPTION_UNDERLINE='YES'
          ;;
 
          -*)

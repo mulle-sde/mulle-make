@@ -821,11 +821,11 @@ make::definition::read_defines_dir()
 
       # ignore files with an extension
       r_identifier "${key}"
-      r_uppercase "${RVAL}"
+#      r_uppercase "${RVAL}"  # can't do this
 
       if [ "${key}" != "${RVAL}" ]
       then
-         log_debug "${filename} ignored because it's not an identifier"
+         log_verbose "${filename} ignored because it's not an identifier"
          .continue
       fi
 

@@ -831,7 +831,7 @@ make::plugin::cmake::build()
                r_get_core_count
 
                r_concat "${cmakeflags2}" "-j ${MULLE_CORES}"
-               cmakeflags2="-j ${RVAL}"
+               cmakeflags2="${RVAL}"
 
                if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
                then

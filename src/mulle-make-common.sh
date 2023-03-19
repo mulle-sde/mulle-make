@@ -54,7 +54,7 @@ make::common::log_grep_warning_error()
       while IFS=$'\n' read -r line
       do
          case "${line}" in
-            make:*|error:*|warning:*|*:[0-9]*:*error:*|*:[0-9]*:*warning:*|*undefined*reference*)
+            make:*|error:*|warning:*|*:[0-9]*:*error:*|*:[0-9]*:*warning:*|*undefined\ reference*)
                capture='YES'
             ;;
 
