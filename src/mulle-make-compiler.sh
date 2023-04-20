@@ -478,6 +478,12 @@ make::compiler::r_c_compiler()
       ;;
    esac
 
+   case "${RVAL}" in
+      *zig\ cc*)
+         log_warning "Use \"zig;cc\" not \"zig cc\" to specify zig as the C compiler"
+      ;;
+   esac
+
    log_fluff "C compiler set to ${RVAL:-system default cc}"
 }
 
