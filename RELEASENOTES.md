@@ -1,3 +1,16 @@
+## 2.1.0
+
+* new option --underline to output the build info with an underline on participating terminals
+* reenable ninja default code, but check for newest version 1.11 (nice performance gains)
+* cmake -B also gets the -j option now, so make projects will benefit too
+* `MULLE_TECHNICAL_FLAGS` are now passed to build scripts, which makes debugging easier (but could conceivably break things)
+* output the chosen build tool for cmake (like ninja or make), which makes unexpected regressions to make more visible
+* fix definition set command. Added --concat0 and --concat to definition set, mainly to clarify what append does and does not
+* script invocation now sends over the --root-dir
+* fix cross-platform bugs
+* split mingw code into a bourneshell part for external scripts and a bash part for internal callers
+
+
 # 2.0.0
 
 * allow mulle-make to pick up `DEFINITION_...` values from the environment (can be disabled with --clear)
