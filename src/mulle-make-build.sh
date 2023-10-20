@@ -934,12 +934,40 @@ make::build::common()
             DEFINITION_USE_NINJA='NO'
          ;;
 
+         --make)
+            DEFINITION_USE_MAKE='YES'
+
+            DEFINITION_USE_AUTOCONF='NO'
+            DEFINITION_USE_CONFIGURE='NO'
+            DEFINITION_USE_CMAKE='NO'
+            DEFINITION_USE_MESON='NO'
+            DEFINITION_USE_XCODEBUILD='NO'
+         ;;
+
          --no-make)
             DEFINITION_USE_MAKE='NO'
          ;;
 
+         --autoconf)
+            DEFINITION_USE_AUTOCONF='YES'
+            # keep CONFIGURE ALIVE THOUGH
+            DEFINITION_USE_CMAKE='NO'
+            DEFINITION_USE_MAKE='NO'
+            DEFINITION_USE_MESON='NO'
+            DEFINITION_USE_XCODEBUILD='NO'
+         ;;
+
          --no-autoconf)
             DEFINITION_USE_AUTOCONF='NO'
+         ;;
+
+         --configure)
+            DEFINITION_USE_AUTOCONF='NO'
+            DEFINITION_USE_CONFIGURE='YES'
+            DEFINITION_USE_CMAKE='NO'
+            DEFINITION_USE_MAKE='NO'
+            DEFINITION_USE_MESON='NO'
+            DEFINITION_USE_XCODEBUILD='NO'
          ;;
 
          --no-configure)
@@ -948,6 +976,16 @@ make::build::common()
 
          --no-cmake)
             DEFINITION_USE_CMAKE='NO'
+         ;;
+
+         --xcodebuild)
+            DEFINITION_USE_XCODEBUILD='YES'
+            DEFINITION_USE_AUTOCONF='NO'
+            DEFINITION_USE_CONFIGURE='NO'
+            DEFINITION_USE_CMAKE='NO'
+            DEFINITION_USE_MAKE='NO'
+            DEFINITION_USE_MESON='NO'
+            DEFINITION_USE_XCODEBUILD='NO'
          ;;
 
          --no-xcodebuild)

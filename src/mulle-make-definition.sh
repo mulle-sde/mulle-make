@@ -309,7 +309,7 @@ make::definition::handle_definition_options()
       ;;
 
       '--concat'|'--concat0')
-         fail "Concat can only be used with the set command"
+         fail "'Concat' can only be used with the set command"
       ;;
 
       '--ifempty'|'--append'|'--append0'|'--remove')

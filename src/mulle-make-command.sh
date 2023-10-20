@@ -127,13 +127,27 @@ make::command::r_binary_name()
 }
 
 
-make::command::which_binary()
+make::command::r_which_binary()
 {
-   log_entry "make::command::which_binary" "$@"
+   log_entry "make::command::r_which_binary" "$@"
 
    local binary="$1"
+   local result
 
-   command -v "${binary}" 2> /dev/null
+   if RVAL="`command -v "${binary}" 2> /dev/null`"
+   then
+      return 0
+   fi
+
+   #
+   # if recently installed, relink to get rid of bad link
+   #
+   if mudo -f which "${binary}"
+   then
+      rexekutor mulle-env tool link
+   fi
+
+   RVAL="`command -v "${binary}" 2> /dev/null`"
 }
 
 
@@ -172,7 +186,8 @@ make::command::r_verify_binary()
       ;;
 
       *)
-         filepath="`make::command::which_binary "${binary}"`"
+         make::command::r_which_binary "${binary}"
+         filepath="${RVAL}"
       ;;
    esac
 
@@ -201,7 +216,7 @@ ${C_RESET}${C_BOLD}   `make::command::suggest_binary_install "${binary}"`"
    else
       log_fluff "${toolfamily} named \"${binary}\" not found in PATH"
    fi
-
+   RVAL=
    return 1
 }
 

@@ -54,7 +54,7 @@ make::common::log_grep_warning_error()
       while IFS=$'\n' read -r line
       do
          case "${line}" in
-            make:*|error:*|warning:*|*:[0-9]*:*error:*|*:[0-9]*:*warning:*|*undefined\ reference*)
+            make:*|[Ee]rror:*|[Ww]arning:*|*[:\ ][Ee]rror:*|*[:\ ][Ww]arning:*|*:[0-9]*:*[Ee]rror:*|*:[0-9]*:*[Ww]arning:*|*undefined\ reference*)
                capture='YES'
             ;;
 
@@ -927,7 +927,7 @@ ${C_INFO}(${logfile#"${MULLE_USER_PWD}/"})"
             fail "${C_RESET_BOLD}${command}${C_ERROR} is apparently not in PATH ($PATH)"
          fi
 
-         if [ -z `mudo which "${command}"` ]
+         if [ -z `mudo -f which "${command}"` ]
          then
             fail "${C_RESET_BOLD}${command}${C_ERROR} is not installed in PATH ($PATH)"
          fi
@@ -935,6 +935,10 @@ ${C_INFO}(${logfile#"${MULLE_USER_PWD}/"})"
          fail "${C_RESET_BOLD}${command}${C_ERROR} is not available.
 ${C_INFO}You may want to add it with
 ${C_RESET_BOLD}   mulle-sde tool --global add --optional ${command}"
+      ;;
+
+      '')
+         fail "${C_RESET_BOLD}${command}${C_ERROR} failed"
       ;;
 
       *)

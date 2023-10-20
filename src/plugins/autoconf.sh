@@ -192,8 +192,9 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\""
                                                       "${env_common}" \
                                                       "./${bootstrapper}" | ${grepper}
          then
+            rval="${PIPESTATUS[ 0]}"
             make::plugin::autoconf::set_needs_rerun "${projectfile}"
-            make::common::build_fail "${logfile1}" "${bootstrapper}" "${greplog}"
+            make::common::build_fail "${logfile1}" "${bootstrapper}" "${rval}" "${greplog}"
          fi
       else
          if ! [ -f "aclocal4.am" ]

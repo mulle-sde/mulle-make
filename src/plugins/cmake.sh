@@ -554,6 +554,7 @@ make::plugin::cmake::build()
 
    cmakeflags="${DEFINITION_CMAKEFLAGS}"
 
+   log_setting "CMAKEFLAGS:    ${DEFINITION_CMAKEFLAGS}"
 
    local generator
 
@@ -574,7 +575,6 @@ make::plugin::cmake::build()
 
    log_setting "PREFIX:        ${dstdir}"
    log_setting "PHASE:         ${OPTION_PHASE}"
-   log_setting "CMAKEFLAGS:    ${DEFINITION_CMAKEFLAGS}"
 #   log_setting "MAKEFLAGS:     ${DEFINITION_MAKEFLAGS}"
    log_setting "ENV CMAKEFLAGS:${CMAKEFLAGS}"
 #   log_setting "ENV MAKEFLAGS: ${MAKEFLAGS}"
