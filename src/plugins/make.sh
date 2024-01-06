@@ -95,6 +95,12 @@ make::plugin::make::build()
       fi
 
       arguments="PREFIX='${dstdir}' DESTDIR='${dstdir}' INSTALLFLAGS='${installflags}'"
+   else
+      # for "regular" builds, which hardcode the install path (ugly)
+      if [ ! -z "${DEFINITION_PREFIX}" ]
+      then
+         arguments="PREFIX='${DEFINITION_PREFIX}'"
+      fi
    fi
 
    local libsuffix
@@ -123,8 +129,6 @@ make::plugin::make::build()
       ;;
    esac
 
-   local env_flags
-
    make::common::r_env_std_flags "${c_compiler}" \
                                  "${cxx_compiler}" \
                                  "${cppflags}" \
@@ -133,17 +137,19 @@ make::plugin::make::build()
                                  "${ldflags}" \
                                  "${pkgconfigpath}"
 
-   env_flags="${RVAL}"
-
+   r_concat "${arguments}" "${RVAL}"
+   arguments="${RVAL}"
 
    make::common::r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"
    r_concat "${arguments}" "${RVAL}"
    arguments="${RVAL}"
 
+
    # plus-settings don't work for make
    local other_buildsettings
 
-   other_buildsettings="`make::definition::emit_userdefined "-D" "=" "=" "" "'"`"
+   # user defined settings don't have -D ahead
+   other_buildsettings="`make::definition::emit_userdefined "" "=" "=" "" "'"`"
    r_concat "${arguments}" "${other_buildsettings}"
    arguments="${RVAL}"
 

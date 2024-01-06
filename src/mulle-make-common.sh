@@ -54,7 +54,8 @@ make::common::log_grep_warning_error()
       while IFS=$'\n' read -r line
       do
          case "${line}" in
-            make:*|[Ee]rror:*|[Ww]arning:*|*[:\ ][Ee]rror:*|*[:\ ][Ww]arning:*|*:[0-9]*:*[Ee]rror:*|*:[0-9]*:*[Ww]arning:*|*undefined\ reference*)
+            make:*|[Ee]rror:*|[Ww]arning:*|*[:\ ][Ee]rror:*|*[:\ ][Ww]arning:*\
+|*:[0-9]*:*[Ee]rror:*|*:[0-9]*:*[Ww]arning:*|*:[0-9]*:*[Nn]ote:*|*undefined\ reference*)
                capture='YES'
             ;;
 
@@ -493,11 +494,6 @@ make::common::r_build_makefile()
 
    local make="$1"
    local kitchendir="$2"
-
-   local make_verbose_flags
-   local cores
-
-   cores="${OPTION_CORES}"
 
    case "${make}" in
       *ninja*)

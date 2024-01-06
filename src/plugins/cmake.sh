@@ -856,6 +856,13 @@ make::plugin::cmake::build()
       cmakeflags3="-v"
    fi
 
+   if [ ! -z "${OPTION_CORES}" ]
+   then
+      cmakeflags2="${cmakeflags2} -j ${OPTION_CORES}"
+      # cmake install can't take -j 1 apparently...
+      # cmakeflags3="${cmakeflags3} -j ${OPTION_CORES}"
+   fi
+
 
    local run
 

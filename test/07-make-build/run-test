@@ -1,0 +1,156 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+
+run_mulle_make()
+{
+   log_fluff "####################################"
+   log_fluff ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@" --no-ninja
+   log_fluff "####################################"
+
+   exekutor ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@" --no-ninja
+}
+
+
+expect_content()
+{
+   local output="$1"
+   local expect="$2"
+
+   if [ ! -f "${output}" ]
+   then
+      if [ -z "${expect}" ]
+      then
+         return
+      fi
+      fail "Did not produce \"${output}\" as expected"
+   else
+      if [ -z "${expect}" ]
+      then
+         fail "Did produce \"${output}\" unexpectedly. Nothing was expected"
+      fi
+   fi
+
+   if [ -f "${expect}.${MULLE_UNAME}" ]
+   then
+      expect="${expect}.${MULLE_UNAME}"
+   fi
+
+   if [ ! -f "${expect}" ]
+   then
+      _internal_fail "\"${expect}\" is missing from test"
+   fi
+
+   local diffs
+
+   diffs="`diff -b <( sed -e '/^$/d' "${output}" ) <( sed -e '/^$/d' "${expect}" )`"
+   if [ $? -ne 0 ]
+   then
+      # fix for mingw
+      if [ `wc -l <<< "${diffs}"` -eq 2 ]
+      then
+         if grep -E -q 'CMAKE_LINKER:PATH=' <<< "${diffs}"
+         then
+            return 0
+         fi
+      fi
+
+
+      log_error "Unexpected output generated"
+      cat <<EOF >&2
+----------------
+Output: ($output)
+----------------
+`cat "${output}"`
+----------------
+Expected: ($expect)
+----------------
+`cat "${expect}"`
+----------------
+Diff:
+----------------
+${diffs}
+----------------
+EOF
+      exit 1
+   fi
+}
+
+
+run_test()
+{
+   local directory="$1"; shift
+   local make_expect="$1"; shift
+
+   MULLE_TMP_DIR="${directory}" \
+   MULLE_TEST_DIR="${PWD}" \
+   MAKE_REDIRECT_FILE="${directory}/make-args.txt" \
+      run_mulle_make make --build-dir "${directory}/build" \
+                          -DMAKE="${PWD}/../mock-make" \
+                          "$@"
+
+   if [ "$?" -ne 0 ]
+   then
+      exit 1
+   fi
+
+   expect_content "${directory}/make-args.txt" "${make_expect}"
+   remove_file_if_present "${directory}/make-args.txt"
+   rmdir_safer "${directory}/build"
+}
+
+
+main()
+{
+   MULLE_MAKE_FLAGS="$@"
+
+   _options_mini_main "$@" && set -x
+
+   local directory
+
+   r_make_tmp_directory || exit 1
+   directory="${RVAL}"
+
+   #
+   # Default is release
+   #
+   run_test	"${directory}" "make-1.txt"
+   log_verbose "----- #1 PASSED -----"
+
+   run_test	"${directory}" "make-2.txt" --prefix "${directory}/foo" -DUSER_DEFINED=1848
+   log_verbose "----- #2 PASSED -----"
+
+   run_test	"${directory}" "make-3.txt" -DDETERMINE_SDK='NO' \
+                                        -DUSER_DEFINED=1848 \
+                                        -DCFLAGS='-DSTRING=\"a string\" -isystem /usr/my\ disk/include' \
+                                        -I /usr/my\ disk/include:/usr/include \
+                                        -L /usr/local/lib:/usr/lib \
+                                        -F /Network/Library/Frameworks:/Library/Frameworks
+   log_verbose "----- #3 PASSED -----"
+
+
+   log_info "----- ALL PASSED -----"
+   cd ..
+   rmdir_safer "${directory}"
+}
+
+
+
+init()
+{
+   MULLE_MAKE="${MULLE_MAKE:-${PWD}/../../mulle-make}"
+}
+
+
+
+init "$@"
+main "$@"
+

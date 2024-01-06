@@ -1,0 +1,6 @@
+BUILD_DIR=${MULLE_TMP_DIR}/build
+CFLAGS=-DSTRING=\"a string\" -isystem /usr/my\ disk/include
+CPPFLAGS=-isystem /usr/my\ disk/include -isystem /usr/include
+LDFLAGS=-L/usr/local/lib -L/usr/lib
+PKG_CONFIG_PATH=/usr/local/lib /usr/lib/pkgconfig
+USER_DEFINED=1848

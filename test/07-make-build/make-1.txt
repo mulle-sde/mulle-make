@@ -1,0 +1,1 @@
+BUILD_DIR=${MULLE_TMP_DIR}/build

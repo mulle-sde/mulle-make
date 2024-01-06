@@ -188,7 +188,7 @@ Usage:
 
    Build the project in the directory src. Then the build results are
    installed in dst.  If dst is omitted '/tmp' is used. If --prefix is 
-   specified during options, do not specify dst as well.
+   specified in options then do not specify dst as well.
 
 Example:
    ${MULLE_USAGE_NAME} install "${HOME}/src/mulle-buffer" /tmp/usr
@@ -1074,6 +1074,10 @@ make::build::common()
             DEFINITION_PREFERRED_LIBRARY_STYLE="dynamic"
          ;;
 
+         --platform)
+            read -r DEFINITION_PLATFORM || fail "missing argument to \"${argument}\""
+         ;;
+
          --preferred-library-style|--library-style)
             read -r DEFINITION_PREFERRED_LIBRARY_STYLE || fail "missing argument to \"${argument}\""
          ;;
@@ -1100,24 +1104,12 @@ make::build::common()
             read -r OPTION_PATH || fail "missing argument to \"${argument}\""
          ;;
 
-         --platform)
-            read -r DEFINITION_PLATFORM || fail "missing argument to \"${argument}\""
-         ;;
-
          --phase)
             read -r OPTION_PHASE || fail "missing argument to \"${argument}\""
          ;;
 
-         --prefix)
-            read -r DEFINITION_PREFIX || fail "missing argument to \"${argument}\""
-            case "${DEFINITION_PREFIX}" in
-               ""|/*)
-               ;;
-
-               *)
-                  fail "--prefix \"${DEFINITION_PREFIX}\", prefix must be absolute or empty"
-               ;;
-            esac
+         -s|--sdk)
+            read -r DEFINITION_SDK || fail "missing argument to \"${argument}\""
          ;;
 
          --prefer-xcodebuild)
@@ -1128,12 +1120,27 @@ make::build::common()
             OPTION_RERUN_CMAKE='YES'
          ;;
 
-         -s|--sdk)
-            read -r DEFINITION_SDK || fail "missing argument to \"${argument}\""
-         ;;
-
          --target|--targets)
             read -r DEFINITION_TARGETS || fail "missing argument to \"${argument}\""
+         ;;
+
+         --underline)
+            OPTION_UNDERLINE='YES'
+         ;;
+
+         #
+         # some special stuff separate from the rest for no good reason
+         #
+         --prefix)
+            read -r DEFINITION_PREFIX || fail "missing argument to \"${argument}\""
+            case "${DEFINITION_PREFIX}" in
+               ""|/*)
+               ;;
+
+               *)
+                  fail "--prefix \"${DEFINITION_PREFIX}\", prefix must be absolute or empty"
+               ;;
+            esac
          ;;
 
          # as in /Library/Frameworks:Frameworks etc.
@@ -1149,10 +1156,6 @@ make::build::common()
          # as in /usr/lib:/usr/local/lib
          -L|--lib-path|--library-path)
             read -r DEFINITION_LIB_PATH || fail "missing argument to \"${argument}\""
-         ;;
-
-         --underline)
-            OPTION_UNDERLINE='YES'
          ;;
 
          -*)

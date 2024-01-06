@@ -60,24 +60,11 @@ _emit_defines()
    while [ "$#" -ne 0 ]
    do
       case "$1" in
-         -D)
-            shift
+         VERBOSE*|MULLE_MAKE_VERSION*)
+         ;;
+
+         [A-Z]*)
             printf "%s\n" "$1"
-         ;;
-
-         -D*)
-            cut -c3- <<< "${1}"
-         ;;
-
-         -I)
-         ;;
-
-         -I*)
-            shift
-         ;;
-
-         -W|-o|-l|-j|-C)
-            shift
          ;;
       esac
 
