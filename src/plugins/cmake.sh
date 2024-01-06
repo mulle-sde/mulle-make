@@ -817,6 +817,11 @@ make::plugin::cmake::build()
    local cmakeflags2
    local cmakeflags3
 
+   local cores
+
+   # cmake install can't take -j 1 apparently... build does though
+
+
    case "${MULLE_UNAME}" in
       'mingw'|'msys'|'windows')
          # for some reason this happened with cmake version 3.24.202208181-MSVC_2
@@ -826,12 +831,13 @@ make::plugin::cmake::build()
       *)
          case "${generator}" in
             ''|'Unix Make'*)
-               include "parallel"
+               if [ -z "${OPTION_CORES}" ]
+               then
+                  include "parallel"
 
-               r_get_core_count
-
-               r_concat "${cmakeflags2}" "-j ${MULLE_CORES}"
-               cmakeflags2="${RVAL}"
+                  r_get_core_count
+                  cores=${MULLE_CORES}
+               fi
 
                if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
                then
@@ -856,13 +862,11 @@ make::plugin::cmake::build()
       cmakeflags3="-v"
    fi
 
-   if [ ! -z "${OPTION_CORES}" ]
+   if [ ${cores:-${OPTION_CORES:-0}} -gt 0 ]
    then
-      cmakeflags2="${cmakeflags2} -j ${OPTION_CORES}"
-      # cmake install can't take -j 1 apparently...
-      # cmakeflags3="${cmakeflags3} -j ${OPTION_CORES}"
+      r_concat "${cmakeflags2}" "-j ${cores}"
+      cmakeflags2="${RVAL}"
    fi
-
 
    local run
 

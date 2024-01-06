@@ -149,6 +149,14 @@ make::plugin::script::build()
    make::build::r_env_flags
    env_common="${RVAL}"
 
+   local arguments
+
+   if [ "${OPTION_CORES:-0}" -eq 1 ]
+   then
+      r_concat "${arguments}" "--serial"
+      arguments="${RVAL}"
+   fi
+
    mkdir_if_missing "${kitchendir}"
 
    # CMAKE_CPP_FLAGS does not exist in cmake
@@ -199,7 +207,10 @@ make::plugin::script::build()
          env | sort >&2
       fi
 
-       # use absolute paths for configure, safer (and easier to read IMO)
+      #
+      # use absolute paths for configure, safer (and easier to read IMO)
+      # if you need to pass more stuff, use environment variables as
+      #
       if ! logging_tee_eval_exekutor \
                      "${logfile1}" "${teefile1}" \
                      "${env_common}" \
@@ -213,6 +224,7 @@ make::plugin::script::build()
                      --install-dir "'${dstdir}'" \
                      --platform "'${platform}'" \
                      --sdk "'${sdk}'" \
+                     "${arguments}" \
                      "'${cmd}'"  | ${grepper}
       then
          make::common::build_fail "${logfile1}" "${scriptname}" "${PIPESTATUS[ 0]}" "${greplog}"

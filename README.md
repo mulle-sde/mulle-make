@@ -8,7 +8,8 @@ It will then proceed to build the project using that tool.
 
 | Release Version                                       | Release Notes
 |-------------------------------------------------------|--------------
-| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-sde/mulle-make.svg?branch=release) | [RELEASENOTES](RELEASENOTES.md) |
+| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-sde/mulle-make.svg?branch=release)  | [RELEASENOTES](RELEASENOTES.md) |
+
 
 
 
@@ -64,6 +65,7 @@ $ mulle-make log
 
 
 
+
 ## You are here
 
 ![](dox/mulle-sde-overview.svg)
@@ -74,7 +76,7 @@ $ mulle-make log
 ## Install
 
 See [mulle-sde-developer](//github.com/mulle-sde/mulle-sde-developer) how to
-install mulle-sde, which will also install mulle-make and required
+install mulle-sde, which will also install mulle-make with required
 dependencies.
 
 The command to install only the latest mulle-make into
@@ -90,3 +92,5 @@ curl -L 'https://github.com/mulle-sde/mulle-make/archive/latest.tar.gz' \
 ## Author
 
 [Nat!](https://mulle-kybernetik.com/weblog) for Mulle kybernetiK
+
+

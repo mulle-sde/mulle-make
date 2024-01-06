@@ -153,10 +153,29 @@ make::plugin::make::build()
    r_concat "${arguments}" "${other_buildsettings}"
    arguments="${RVAL}"
 
+   local cores
+
+   if [ ! -z "${OPTION_CORES}" ]
+   then
+      include "parallel"
+
+      r_get_core_count
+      cores=${MULLE_CORES}
+   else
+      cores="${OPTION_CORES}"
+   fi
+
+   if [ "${cores:-0}" -gt 0 ]
+   then
+      r_concat "${arguments}" "-j ${cores}"
+      arguments="${RVAL}"
+   fi
+
    local maketarget
 
    make::common::r_maketarget "${cmd}" "${DEFINITION_TARGETS}"
    maketarget="${RVAL}"
+
 
    local _absprojectdir
    local _projectdir
