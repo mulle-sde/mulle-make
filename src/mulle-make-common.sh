@@ -934,11 +934,11 @@ ${C_RESET_BOLD}   mulle-sde tool --global add --optional ${command}"
       ;;
 
       '')
-         fail "${C_RESET_BOLD}${command}${C_ERROR} failed"
+         fail "${C_RESET_BOLD}${command}${C_ERROR} failed (${PWD#${MULLE_USER_PWD}/})"
       ;;
 
       *)
-         fail "${C_RESET_BOLD}${command}${C_ERROR} failed with $rval"
+         fail "${C_RESET_BOLD}${command}${C_ERROR} failed with $rval (${PWD#${MULLE_USER_PWD}/})"
       ;;
    esac
 }

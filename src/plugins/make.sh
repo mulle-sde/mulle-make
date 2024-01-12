@@ -223,7 +223,11 @@ make::plugin::make::build()
 
    (
       # make doesn't work in kitchendir
-      exekutor cd "${absprojectdir}" || fail "failed to enter ${absprojectdir}"
+      rexekutor cd "${absprojectdir}" || fail "failed to enter ${absprojectdir}"
+
+      # redirecting exekutors operate in a subshell!
+      logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+         echo cd "${absprojectdir}"
 
       r_concat "${arguments}" "BUILD_DIR='${kitchendir}'"
       arguments="${RVAL}"
@@ -263,7 +267,7 @@ make::plugin::make::build()
       then
          make::common::build_fail "${logfile1}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
       fi
-
+      log_fluff "Make done ($PWD#${MULLE_USER_PWD}/})"
    ) || exit 1
 }
 

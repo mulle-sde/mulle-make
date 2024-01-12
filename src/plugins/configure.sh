@@ -204,7 +204,11 @@ make::plugin::configure::build()
    fi
 
    (
-      exekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
+      rexekutor cd "${kitchendir}" || fail "failed to enter ${kitchendir}"
+
+      # redirecting exekutors operate in a subshell!
+      logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+         echo cd "${kitchendir}"
 
       PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"

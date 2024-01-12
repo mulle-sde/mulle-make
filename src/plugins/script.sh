@@ -197,7 +197,11 @@ make::plugin::script::build()
    root_dir="$PWD"
 
    (
-      exekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
+      rexekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
+
+      # redirecting exekutors operate in a subshell!
+      logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+         echo cd "${projectdir}"
 
       PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"

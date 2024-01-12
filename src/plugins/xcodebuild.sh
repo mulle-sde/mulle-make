@@ -378,7 +378,11 @@ EOF
    (
       shell_disable_glob  # prevent bash from expanding glob
 
-      exekutor cd "${projectdir}" || exit 1
+      rexekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
+
+      # redirecting exekutors operate in a subshell!
+      logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+         echo cd "${projectdir}"
 
       # DONT READ CONFIG SETTING IN THIS INDENT ?
 
