@@ -110,6 +110,8 @@ run_test()
 
 main()
 {
+   # because of this -lT doesnt work well
+   
    MULLE_MAKE_FLAGS="$@"
 
    _options_mini_main "$@" && set -x
@@ -118,7 +120,9 @@ main()
 
    r_make_tmp_directory || exit 1
    directory="${RVAL}"
-
+   
+   r_physicalpath "${directory}"
+   directory="${RVAL}"
    #
    # Default is release
    #
