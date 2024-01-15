@@ -226,7 +226,7 @@ make::plugin::make::build()
       rexekutor cd "${absprojectdir}" || fail "failed to enter ${absprojectdir}"
 
       # redirecting exekutors operate in a subshell!
-      logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
+      logging_redirekt_exekutor "${logfile1}" \
          echo cd "${absprojectdir}"
 
       r_concat "${arguments}" "BUILD_DIR='${kitchendir}'"

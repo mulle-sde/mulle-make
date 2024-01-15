@@ -162,8 +162,8 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\""
       rexekutor cd "${projectdir}" || fail "failed to enter ${projectdir}"
 
       # redirecting exekutors operate in a subshell!
-      logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
-         echo cd "${projectdir}"
+      logging_redirekt_exekutor "${logfile1}" \
+         echo cd "${kitchendir}"
 
       PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"

@@ -55,7 +55,8 @@ make::common::log_grep_warning_error()
       do
          case "${line}" in
             make:*|[Ee]rror:*|[Ww]arning:*|*[:\ ][Ee]rror:*|*[:\ ][Ww]arning:*\
-|*:[0-9]*:*[Ee]rror:*|*:[0-9]*:*[Ww]arning:*|*:[0-9]*:*[Nn]ote:*|*undefined\ reference*)
+|*:[0-9]*:*[Ee]rror:*|*:[0-9]*:*[Ww]arning:*|*:[0-9]*:*[Nn]ote:*|*undefined\ reference*\
+|*:[0-9]*:*\*\*\**)
                capture='YES'
             ;;
 
