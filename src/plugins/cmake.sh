@@ -862,7 +862,8 @@ make::plugin::cmake::build()
       cmakeflags3="-v"
    fi
 
-   if [ ${cores:-${OPTION_CORES:-0}} -gt 0 ]
+   cores="${cores:-${OPTION_CORES:-0}}"
+   if [ ${cores} -gt 0 ]
    then
       r_concat "${cmakeflags2}" "-j ${cores}"
       cmakeflags2="${RVAL}"

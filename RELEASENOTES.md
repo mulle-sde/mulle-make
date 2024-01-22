@@ -1,3 +1,7 @@
+### 2.2.1
+
+* fix that -j flag for cmake one more time
+
 ## 2.1.0
 
 * new option --underline to output the build info with an underline on participating terminals
