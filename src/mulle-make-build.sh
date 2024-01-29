@@ -742,7 +742,7 @@ ${C_RESET_BOLD}   mulle-sde craft --build-style ${configuration} --allow-build-s
 There are no plugins available for requested tools \"`echo ${DEFINITION_PLUGIN_PREFERENCES}`\""
    fi
 
-   log_fluff "Available mulle-make plugins for ${MULLE_UNAME} are: `echo "${preferences}"`"
+   log_debug "Available mulle-make plugins for ${MULLE_UNAME} are: `echo "${preferences}"`"
 
 
    make::build::build_with_sdk_platform_configuration_preferences "${cmd}" \

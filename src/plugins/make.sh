@@ -89,7 +89,7 @@ make::plugin::make::build()
    dstdir="${dstdir}"
    if [ ! -z "${dstdir}" ]
    then
-      if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+      if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
       then
          installflags="${installflags} -v"
       fi

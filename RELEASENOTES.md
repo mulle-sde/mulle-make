@@ -1,3 +1,7 @@
+### 2.2.2
+
+* reduce verbosity for -v and -vv
+
 ### 2.2.1
 
 * fix that -j flag for cmake one more time
