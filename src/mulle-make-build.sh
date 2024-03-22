@@ -397,7 +397,7 @@ make::build::__determine_directories()
 
    if [ -z "${kitchendir}" ]
    then
-      markerfile="${MULLE_MAKE_VAR_DIR}/build-dir"
+      markerfile="${MULLE_MAKE_ETC_DIR}/build-dir"
 
       # always prefer "build", if available
       if [ ! -d "${srcdir}/build" ]
@@ -932,6 +932,11 @@ make::build::common()
 
          --no-ninja)
             DEFINITION_USE_NINJA='NO'
+         ;;
+
+         --ccache)
+            read -r DEFINITION_C_COMPILER_CACHE || fail "missing argument to \"${argument}\""
+            DEFINITION_CXX_COMPILER_CACHE="${DEFINITION_C_COMPILER_CACHE}"
          ;;
 
          --make)

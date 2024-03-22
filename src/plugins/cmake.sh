@@ -450,6 +450,8 @@ make::plugin::cmake::r_makefile()
 # depending on configuration cmake with flags
 # build stuff into dependencies
 # TODO: cache commandline in a file $ and emit instead of rebuilding it every time
+# What makes it tricky on windows is, that the CMAKE path variables are using
+# forward slashes. MULLE_SDK_PATH is fixed in Environment.cmake...
 #
 make::plugin::cmake::build()
 {
@@ -704,6 +706,21 @@ make::plugin::cmake::build()
          make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_CXX_COMPILER" "${cxx_compiler}"
          cmakeflags="${RVAL}"
       fi
+   fi
+
+   #
+   # this for sccache (tested) an ccache
+   #
+   if [ ! -z "${DEFINITION_C_COMPILER_CACHE}" ]
+   then
+      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_C_COMPILER_LAUNCHER" "${DEFINITION_C_COMPILER_CACHE}"
+      cmakeflags="${RVAL}"
+   fi
+
+   if [ ! -z "${DEFINITION_CXX_COMPILER_CACHE}" ]
+   then
+      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_CXX_COMPILER_LAUNCHER" "${DEFINITION_CXX_COMPILER_CACHE}"
+      cmakeflags="${RVAL}"
    fi
 
    # this is now necessary, though undocumented apparently
