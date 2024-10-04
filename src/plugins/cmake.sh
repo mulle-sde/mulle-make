@@ -338,6 +338,8 @@ make::plugin::cmake::r_userdefined_definitions()
    #
    keys="`make::definition::all_userdefined_unknown_keys`"
 
+   log_debug "User defined unknown keys: ${keys}"
+
    local key
    local value
    local cmakevalue
@@ -377,6 +379,7 @@ make::plugin::cmake::r_userdefined_definitions()
 
    RVAL="${cmakeflags}"
 
+   set +x 
    log_debug "User cmake definition: ${RVAL}"
 }
 
@@ -492,9 +495,9 @@ make::plugin::cmake::build()
    then
       log_info "Using CC=${CC} and CXX=${CXX} from environment for analyzer run"
 
-      DEFINITION_SELECT_CC=environment
-      DEFINITION_SELECT_COBJC=environment
-      DEFINITION_SELECT_CXX=environment
+      DEFINITION_SELECT_CC='environment'
+      DEFINITION_SELECT_COBJC='environment'
+      DEFINITION_SELECT_CXX='environment'
 
 #      if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
 #      then
@@ -514,10 +517,10 @@ make::plugin::cmake::build()
 
    local c_compiler="${_c_compiler}"
    local cxx_compiler="${_cxx_compiler}"
-   local cppflags="${_cppflags}"
-   local cflags="${_cflags}"
-   local cxxflags="${_cxxflags}"
-   local ldflags="${_ldflags}"
+   local cpp_flags="${_cppflags}"
+   local c_flags="${_cflags}"
+   local cxx_flags="${_cxxflags}"
+   local ld_flags="${_ldflags}"
    local pkgconfigpath="${_pkgconfigpath}"
 
    #
@@ -529,20 +532,20 @@ make::plugin::cmake::build()
    #
    # cmake has no CMAKE_CPP_FLAGS so we have to merge them into CMAKE_C_CFLAGS
 
-   if [ ! -z "${cppflags}" ]
+   if [ ! -z "${cpp_flags}" ]
    then
-      r_concat "${cflags}" "${cppflags}"
-      cflags="${RVAL}"
+      r_concat "${c_flags}" "${cpp_flags}"
+      c_flags="${RVAL}"
 
       if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
       then
-         r_concat "${cxxflags}" "${cppflags}"
-         cxxflags="${RVAL}"
+         r_concat "${cxx_flags}" "${cpp_flags}"
+         cxx_flags="${RVAL}"
       fi
    fi
 
-   log_setting "cflags:        ${cflags}"
-   log_setting "cxxflags:      ${cxxflags}"
+   log_setting "c_flags:        ${c_flags}"
+   log_setting "cxx_flags:      ${cxx_flags}"
 
    local _absprojectdir
    local _projectdir
@@ -556,7 +559,7 @@ make::plugin::cmake::build()
 
    cmakeflags="${DEFINITION_CMAKEFLAGS}"
 
-   log_setting "CMAKEFLAGS:    ${DEFINITION_CMAKEFLAGS}"
+   log_setting "CMAKEFLAGS:    ${cmakeflags}"
 
    local generator
 
@@ -727,16 +730,16 @@ make::plugin::cmake::build()
    make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_LINKER:PATH"
    cmakeflags="${RVAL}"
 
-   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_C_FLAGS" "${cflags}"
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_C_FLAGS" "${c_flags}"
    cmakeflags="${RVAL}"
 
-   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_CXX_FLAGS" "${cxxflags}"
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_CXX_FLAGS" "${cxx_flags}"
    cmakeflags="${RVAL}"
 
-   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_SHARED_LINKER_FLAGS" "${ldflags}"
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_SHARED_LINKER_FLAGS" "${ld_flags}"
    cmakeflags="${RVAL}"
 
-   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_EXE_LINKER_FLAGS" "${ldflags}"
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_EXE_LINKER_FLAGS" "${ld_flags}"
    cmakeflags="${RVAL}"
 
    #

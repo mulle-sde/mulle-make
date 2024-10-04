@@ -142,24 +142,24 @@ make::plugin::meson::build()
 
    local c_compiler="${_c_compiler}"
    local cxx_compiler="${_cxx_compiler}"
-   local cppflags="${_cppflags}"
-   local cflags="${_cflags}"
-   local cxxflags="${_cxxflags}"
-   local ldflags="${_ldflags}"
+   local cpp_flags="${_cppflags}"
+   local c_flags="${_cflags}"
+   local cxx_flags="${_cxxflags}"
+   local ld_flags="${_ldflags}"
    local pkgconfigpath="${_pkgconfigpath}"
    #
    # not really sure about what MESON wants, assume its like configure
    # and does CPPFLAGS
 
-   # if [ ! -z "${cppflags}" ]
+   # if [ ! -z "${cpp_flags}" ]
    # then
-   #    r_concat "${cflags}" "${cppflags}"
-   #    cflags="${RVAL}"
+   #    r_concat "${c_flags}" "${cpp_flags}"
+   #    c_flags="${RVAL}"
    #
    #    if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
    #    then
-   #       r_concat "${cxxflags}" "${cppflags}"
-   #       cxxflags="${RVAL}"
+   #       r_concat "${cxx_flags}" "${cpp_flags}"
+   #       cxx_flags="${RVAL}"
    #    fi
    # fi
 
@@ -222,18 +222,18 @@ make::plugin::meson::build()
 #
 #   if [ ! -z "${sdkparameter}" ]
 #   then
-#      r_concat "${cppflags}" "${sdkparameter}"
-#      cppflags="${RVAL}"
+#      r_concat "${cpp_flags}" "${sdkparameter}"
+#      cpp_flags="${RVAL}"
 #   fi
 
    local meson_env
 
    make::common::r_env_std_flags "${c_compiler}" \
                                  "${cxx_compiler}" \
-                                 "${cppflags}" \
-                                 "${cflags}" \
-                                 "${cxxflags}" \
-                                 "${ldflags}" \
+                                 "${cpp_flags}" \
+                                 "${c_flags}" \
+                                 "${cxx_flags}" \
+                                 "${ld_flags}" \
                                  "${pkgconfigpath}"
 
    meson_env="${RVAL}"

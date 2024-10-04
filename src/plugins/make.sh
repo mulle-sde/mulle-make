@@ -78,10 +78,10 @@ make::plugin::make::build()
 
    local c_compiler="${_c_compiler}"
    local cxx_compiler="${_cxx_compiler}"
-   local cppflags="${_cppflags}"
-   local cflags="${_cflags}"
-   local cxxflags="${_cxxflags}"
-   local ldflags="${_ldflags}"
+   local cpp_flags="${_cppflags}"
+   local c_flags="${_cflags}"
+   local cxx_flags="${_cxxflags}"
+   local ld_flags="${_ldflags}"
    local pkgconfigpath="${_pkgconfigpath}"
 
    local arguments
@@ -124,17 +124,17 @@ make::plugin::make::build()
       static)
          libsuffix=.a  # hackage
 
-         r_concat "${cppflags}" --static
-         cppflags="${RVAL}"
+         r_concat "${cpp_flags}" --static
+         cpp_flags="${RVAL}"
       ;;
    esac
 
    make::common::r_env_std_flags "${c_compiler}" \
                                  "${cxx_compiler}" \
-                                 "${cppflags}" \
-                                 "${cflags}" \
-                                 "${cxxflags}" \
-                                 "${ldflags}" \
+                                 "${cpp_flags}" \
+                                 "${c_flags}" \
+                                 "${cxx_flags}" \
+                                 "${ld_flags}" \
                                  "${pkgconfigpath}"
 
    r_concat "${arguments}" "${RVAL}"

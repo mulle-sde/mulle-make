@@ -100,6 +100,7 @@ EOF
    --project-name <name>      : explicitly set project name
    --project-language <c|cpp> : set project language
    --remove<key>[+]=<value>   : like -D,but removes value from a previous value
+   --set-is-plus              : all definitions are force to be +=
    --sdk <name>               : SDK to use (Default)
    --tool-preferences <list>  : tool preference order. Tools are separated by ','
    -U<key>                    : undefine a definition or += definition
@@ -558,6 +559,7 @@ make::build::build()
    local srcdir="$2"
    local dstdir="$3"
    local definitiondirs="$4"
+   local set_is_plus="${5:-}"
 
    #
    # need these three defined before read_info_dir
@@ -575,7 +577,7 @@ make::build::build()
 
    .foreachline definitiondir in ${definitiondirs}
    .do
-      make::definition::read "${definitiondir}"
+      make::definition::read "${definitiondir}" "${set_is_plus}"
    .done
 
    local sdk
@@ -841,6 +843,7 @@ make::build::common()
    local OPTION_INFO_DIRS
    local OPTION_LOAD
    local OPTION_RERUN_CMAKE
+   local OPTION_SET_IS_PLUS
    local OPTION_TARGET
 
    local state
@@ -1129,6 +1132,10 @@ make::build::common()
             read -r DEFINITION_TARGETS || fail "missing argument to \"${argument}\""
          ;;
 
+         --set-is-plus)
+            OPTION_SET_IS_PLUS='YES'
+         ;;
+
          --underline)
             OPTION_UNDERLINE='YES'
          ;;
@@ -1254,7 +1261,8 @@ Maybe repair with:
          make::build::build "build" \
                             "${srcdir}" \
                             "" \
-                            "${OPTION_INFO_DIRS}"
+                            "${OPTION_INFO_DIRS}" \
+                            "${OPTION_SET_IS_PLUS}"
       ;;
 
       install)
@@ -1283,7 +1291,8 @@ Maybe repair with:
          make::build::build "install" \
                             "${srcdir}" \
                             "${dstdir}" \
-                            "${OPTION_INFO_DIRS}"
+                            "${OPTION_INFO_DIRS}" \
+                            "${OPTION_SET_IS_PLUS}"
       ;;
    esac
 }

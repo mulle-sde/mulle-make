@@ -106,10 +106,10 @@ make::common::r_env_std_flags()
 
    local c_compiler="$1"
    local cxx_compiler="$2"
-   local cppflags="$3"
-   local cflags="$4"
-   local cxxflags="$5"
-   local ldflags="$6"
+   local cpp_flags="$3"
+   local c_flags="$4"
+   local cxx_flags="$5"
+   local ld_flags="$6"
    local pkgconfigpath="$7"
 
    local _env_flags
@@ -121,10 +121,10 @@ make::common::r_env_std_flags()
 
    make::common::__add_env_flag "CC" "${c_compiler}"
    make::common::__add_env_flag "CXX" "${cxx_compiler}"
-   make::common::__add_env_flag "CPPFLAGS" "${cppflags}"
-   make::common::__add_env_flag "CFLAGS" "${cflags}"
-   make::common::__add_env_flag "CXXFLAGS" "${cxxflags}"
-   make::common::__add_env_flag "LDFLAGS" "${ldflags}"
+   make::common::__add_env_flag "CPPFLAGS" "${cpp_flags}"
+   make::common::__add_env_flag "CFLAGS" "${c_flags}"
+   make::common::__add_env_flag "CXXFLAGS" "${cxx_flags}"
+   make::common::__add_env_flag "LDFLAGS" "${ld_flags}"
    make::common::__add_env_flag "PKG_CONFIG_PATH" "${pkgconfigpath}"
 
    # always pass at least a trailing :
@@ -191,7 +191,7 @@ make::common::__std_flags()
 
    esac
 
-   # hackish! changes cflags and friends to possibly add dependency dir ?
+   # hackish! changes c_flags and friends to possibly add dependency dir ?
 
    case "${MULLE_UNAME}" in
       darwin)
@@ -231,10 +231,10 @@ make::common::__std_flags()
 
    log_setting "c_compiler:      ${_c_compiler}"
    log_setting "cxx_compiler:    ${_cxx_compiler}"
-   log_setting "cflags:          ${_cflags}"
-   log_setting "cppflags:        ${_cppflags}"
-   log_setting "cxxflags:        ${_cxxflags}"
-   log_setting "ldflags:         ${_ldflags}"
+   log_setting "c_flags:          ${_cflags}"
+   log_setting "cpp_flags:        ${_cppflags}"
+   log_setting "cxx_flags:        ${_cxxflags}"
+   log_setting "ld_flags:         ${_ldflags}"
    log_setting "pkgconfigpath:   ${_pkgconfigpath}"
 }
 
@@ -663,7 +663,7 @@ make::common::r_translated_path()
 }
 
 #
-# preprocessor flags are added to cflags. cflags will be passed via environment
+# preprocessor flags are added to c_flags. c_flags will be passed via environment
 # or as CMAKE_C_FLAGS. So there will be a single quote around everything eventually
 #
 make::common::r_headerpath_preprocessor_flags()

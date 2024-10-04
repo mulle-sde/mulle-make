@@ -120,8 +120,12 @@ Usage:
    ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set [option] <key> <value>
 
    Set a build setting. There are two different types of build settings.
-   Additive and non-additive. An additive setting will be emitted with a +=,
-   where as a non-addtive setting will be emitted as ?.
+   Additive and non-additive. An additive setting will be added to environment
+   values and may be emitted as a += setting. A non-additive setting will
+   ignore the environment and will be emitted as =. For many build
+   settings like CFLAGS additive settings are often preferred, as it lets you
+   stack flags (like -m32, -fpic), therefore additive is the default.
+
    Previous values of the same key can be either appended to or clobbered.
    You would want to "clobber" a value for a build setting like "CC". For
    a build setting like CFLAGS "append" may be a better choice, if you add
@@ -141,13 +145,13 @@ Example:
    will now produce -DFOO="bar"
 
 Options:
-   -+        : create an additive setting += instead of = (for xcodebuild)
-   --concat  : append value to a previous value now
-   --concat0 : like concat but without space separation
-   --append  : append value to a previous setting at make time (default)
-   --append0 : like append but without space separation
-   --clobber : clobber any existing previous value at make time
-   --ifempty : only set if no value exists yet
+   --non-additive : create a non-additive setting
+   --concat       : append value to a previous value now
+   --concat0      : like concat but without space separation
+   --append       : append value to a previous setting at make time (default)
+   --append0      : like append but without space separation
+   --clobber      : clobber any existing previous value at make time
+   --ifempty      : only set if no value exists yet
 
 EOF
    exit 1
@@ -359,6 +363,9 @@ make::definition::all_definition_keys()
       return $?
    fi
 
+   #
+   # Why are all plus definitions removed ?
+   #
    local pattern
 
    pattern="${DEFINED_PLUS_DEFINITIONS//$'\n'/|}"
@@ -400,7 +407,8 @@ make::definition::all_userdefined_unknown_keys()
    pattern="${KNOWN_DEFINITIONS//$'\n'/|}"
    pattern="${pattern%%|}"
 
-   make::definition::all_definition_keys | grep -E -v -x "${pattern}"
+   make::definition::all_definition_keys \
+   | grep -E -v -x "${pattern}"
 }
 
 
@@ -468,7 +476,9 @@ make::definition::r_print()
       r_shell_indirect_expand "${key}"
       value="${RVAL}"
 
-      r_concat "${s}" "${prefix}${key#DEFINITION_}${sep}${quote}${value}${quote}" "${concatsep}"
+      r_concat "${s}" \
+               "${prefix}${key#DEFINITION_}${sep}${quote}${value}${quote}" \
+               "${concatsep}"
       s="${RVAL}"
    .done
 
@@ -482,7 +492,9 @@ make::definition::r_print()
 
       # memo changed this back from plussep to sep, to match test
       # this is for xcodebuild anyway and I never use it now AFAIK
-      r_concat "${s}" "${prefix}${key#DEFINITION_}${sep}${quote}${pluspref}${value}${quote}" "${concatsep}"
+      r_concat "${s}" \
+               "${prefix}${key#DEFINITION_}${sep}${quote}${pluspref}${value}${quote}" \
+               "${concatsep}"
       s="${RVAL}"
    .done
 
@@ -813,7 +825,11 @@ make::definition::read_defines_dir()
 
    empty='YES'
 
-   .foreachline filename in `dir_list_files "${directory}" "[A-Z_]*" "f" `
+   local files
+
+   files="`dir_list_files "${directory}" "[A-Z_]*" "f" `"
+
+   .foreachline filename in ${files}
    .do
       empty='NO'
       r_basename "${filename}"
@@ -865,6 +881,7 @@ make::definition::read()
    log_entry "make::definition::read" "$@"
 
    local directory="$1"
+   local set_is_plus="${2:-NO}"
 
    [ "${directory}" = "NONE" ] && return
 
@@ -900,23 +917,34 @@ make::definition::read()
 
    directory="${directory}"
 
-   make::definition::read_defines_dir "${directory}/set/unset"    "make::definition::make_define_option" "unset"
-# old
-   make::definition::read_defines_dir "${directory}/set/remove"   "make::definition::make_define_option" "remove"
-   make::definition::read_defines_dir "${directory}/set/clobber"  "make::definition::make_define_option"
-   make::definition::read_defines_dir "${directory}/set/ifempty"  "make::definition::make_define_option" "ifempty"
-   make::definition::read_defines_dir "${directory}/set/append"   "make::definition::make_define_option" "append"
-   make::definition::read_defines_dir "${directory}/set/append0"  "make::definition::make_define_option" "append0"
-   make::definition::read_defines_dir "${directory}/set"          "make::definition::make_define_option" "append"
+   local set_callback
+   local plus_callback
 
-   make::definition::read_defines_dir "${directory}/plus/unset"   "make::definition::make_define_plusoption" "unset"
+   set_callback="make::definition::make_define_option"
+   plus_callback="make::definition::make_define_plusoption"
+
+   if [ "${set_is_plus}" = 'YES' ]
+   then
+      set_callback="${plus_callback}"
+   fi
+
+   make::definition::read_defines_dir "${directory}/set/unset"    "${set_callback}" "unset"
 # old
-   make::definition::read_defines_dir "${directory}/plus/remove"  "make::definition::make_define_plusoption" "remove"
-   make::definition::read_defines_dir "${directory}/plus/clobber" "make::definition::make_define_plusoption"
-   make::definition::read_defines_dir "${directory}/plus/ifempty" "make::definition::make_define_plusoption" "ifempty"
-   make::definition::read_defines_dir "${directory}/plus/append"  "make::definition::make_define_plusoption" "append"
-   make::definition::read_defines_dir "${directory}/plus/append0" "make::definition::make_define_plusoption" "append0"
-   make::definition::read_defines_dir "${directory}/plus"         "make::definition::make_define_plusoption" "append"
+   make::definition::read_defines_dir "${directory}/set/remove"   "${set_callback}" "remove"
+   make::definition::read_defines_dir "${directory}/set/clobber"  "${set_callback}"
+   make::definition::read_defines_dir "${directory}/set/ifempty"  "${set_callback}" "ifempty"
+   make::definition::read_defines_dir "${directory}/set/append"   "${set_callback}" "append"
+   make::definition::read_defines_dir "${directory}/set/append0"  "${set_callback}" "append0"
+   make::definition::read_defines_dir "${directory}/set"          "${set_callback}" "append"
+
+   make::definition::read_defines_dir "${directory}/plus/unset"   "${plus_callback}" "unset"
+# old
+   make::definition::read_defines_dir "${directory}/plus/remove"  "${plus_callback}" "remove"
+   make::definition::read_defines_dir "${directory}/plus/clobber" "${plus_callback}"
+   make::definition::read_defines_dir "${directory}/plus/ifempty" "${plus_callback}" "ifempty"
+   make::definition::read_defines_dir "${directory}/plus/append"  "${plus_callback}" "append"
+   make::definition::read_defines_dir "${directory}/plus/append0" "${plus_callback}" "append0"
+   make::definition::read_defines_dir "${directory}/plus"         "${plus_callback}" "append"
 }
 
 #
@@ -983,12 +1011,17 @@ make::definition::unset_main()
    local directories="$1"
 
    local argument
+   local OPTION_SET_IS_PLUS
 
 	while read -r argument
    do
       case "${argument}" in
          -h*|--help|help)
             make::definition::unset_usage
+         ;;
+
+         --set-is-plus)
+            OPTION_SET_IS_PLUS='YES'
          ;;
 
 	      -*)
@@ -1021,7 +1054,7 @@ make::definition::unset_main()
 
       .foreachline directory in ${directories}
       .do
-         make::definition::read "${directory}"
+         make::definition::read "${directory}" "${OPTION_SET_IS_PLUS}"
          # operate only on the first
          .break
       .done
@@ -1060,6 +1093,7 @@ make::definition::set_main()
    local OPTION_MODIFIER='set'
    local OPTION_OPERATION
    local OPTION_CONCAT
+   local OPTION_SET_IS_PLUS
 
    while read -r argument
    do
@@ -1070,6 +1104,10 @@ make::definition::set_main()
 
          -+|--additive)
             OPTION_MODIFIER='plus'
+         ;;
+
+         --non-additive)
+            OPTION_MODIFIER='set'
          ;;
 
          --concat)
@@ -1086,6 +1124,11 @@ make::definition::set_main()
 
          --append0|--ifempty|--remove|--unset|--clobber)
             OPTION_OPERATION="${argument:2}"
+         ;;
+
+         # a terrible hack to make all regular defines plus defines
+         --set-is-plus)
+            OPTION_SET_IS_PLUS='YES'
          ;;
 
          -*)
@@ -1122,7 +1165,7 @@ make::definition::set_main()
 
    .foreachline directory in ${directories}
    .do
-      make::definition::read "${directory}"
+      make::definition::read "${directory}" "${OPTION_SET_IS_PLUS}"
       # operate only on the first
       .break
    .done
@@ -1185,6 +1228,7 @@ make::definition::get_main()
 
    local argument
    local OPTION_OUTPUT_KEY='NO'
+   local OPTION_SET_IS_PLUS
 
    while read -r argument
    do
@@ -1195,6 +1239,10 @@ make::definition::get_main()
 
          --output-key)
             OPTION_OUTPUT_KEY='YES'
+         ;;
+
+         --set-is-plus)
+            OPTION_SET_IS_PLUS='YES'
          ;;
 
          -*)
@@ -1224,7 +1272,7 @@ make::definition::get_main()
 
    .foreachline directory in ${directories}
    .do
-      make::definition::read "${directory}"
+      make::definition::read "${directory}" "${OPTION_SET_IS_PLUS}"
    .done
 
    local varkey
@@ -1255,12 +1303,17 @@ make::definition::list_main()
    local directories="$1"
 
    local argument
+   local OPTION_SET_IS_PLUS
 
    while read -r argument
    do
       case "${argument}" in
          -h*|--help|help)
             make::definition::list_usage
+         ;;
+
+         --set-is-plus)
+            OPTION_SET_IS_PLUS='YES'
          ;;
 
          -*)
@@ -1278,11 +1331,16 @@ make::definition::list_main()
       make::definition::list_usage "Superflous argument \"${argument}\""
    fi
 
+   if [ "${OPTION_SET_IS_PLUS}" = 'YES' ]
+   then
+      log_warning "--set-is-plus changes the output of the list command as well"
+   fi
+
    local directory
 
    .foreachline directory in ${directories}
    .do
-      make::definition::read "${directory}"
+      make::definition::read "${directory}" "${OPTION_SET_IS_PLUS}"
    .done
 
    make::definition::r_print "${DEFINED_SET_DEFINITIONS}" \
@@ -1375,6 +1433,7 @@ make::definition::write_main()
 
    local argument
    local OPTION_MODIFIER="clobber"
+   local OPTION_SET_IS_PLUS
 
    while read -r argument
    do
@@ -1385,6 +1444,10 @@ make::definition::write_main()
 
          --append|--append0|--ifempty|--remove|--unset|--clobber)
             OPTION_MODIFIER="${argument:2}"
+         ;;
+
+         --set-is-plus)
+            OPTION_SET_IS_PLUS='YES'
          ;;
 
          -*)
@@ -1417,7 +1480,7 @@ make::definition::write_main()
 
       .foreachline directory in ${directories}
       .do
-         make::definition::read "${directory}"
+         make::definition::read "${directory}" "${OPTION_SET_IS_PLUS}"
       .done
    fi
 
@@ -1487,16 +1550,12 @@ make::definition::main()
    local cmd="${argument}"
 
    case "${cmd}" in
-      cat|get|list)
+      cat|get|list|set)
          make::definition::${cmd}_main "${OPTION_INFO_DIRS}"
       ;;
 
       show|keys)
          sed -e 's/^DEFINITION_//' <<< "${KNOWN_DEFINITIONS}" | LC_ALL=C sort -u
-      ;;
-
-      set)
-         make::definition::set_main "${OPTION_INFO_DIRS}"
       ;;
 
       remove|unset)
