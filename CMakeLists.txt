@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.0)
 
-project( mulle-make NONE)
+project( mulle-make VERSION 2.3.0 LANGUAGES NONE)
 
 #
 # Primarily used for packaging on Linux
@@ -16,7 +16,7 @@ project( mulle-make NONE)
 #
 
 execute_process( COMMAND ./mulle-make version
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_VARIABLE MULLE_MAKE_VERSION
                  OUTPUT_STRIP_TRAILING_WHITESPACE)
 message( STATUS "MULLE_MAKE_VERSION is ${MULLE_MAKE_VERSION} according to mulle-make")

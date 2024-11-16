@@ -1,3 +1,31 @@
+## 2.3.0
+
+feat: improve cmake flags handling and definition exports
+
+* Enhance cmake flags handling
+  - Add `CMAKE_*_FLAGS_INIT` support for better toolchain integration
+  - Allow augmenting flags instead of overriding them
+  - Fix handling of += settings for definitions
+
+* Add definition export functionality
+  - Add new 'export' command to definition system
+  - Support exporting definitions as shell script commands
+  - Add --export-command option for custom prefix
+
+* Improve build system robustness
+  - Use `CMAKE_CURRENT_SOURCE_DIR` instead of `CMAKE_SOURCE_DIR`
+  - Fix path handling in CMake package configuration
+  - Remove debug trace output from cmake plugin
+
+* Documentation updates
+  - Add export command to usage help text
+  - Update command descriptions
+
+* improved handling of += settings, can now be forced by the commandline as well
+
+* support for sccache added added
+
+
 ### 2.2.2
 
 * reduce verbosity for -v and -vv

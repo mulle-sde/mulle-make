@@ -47,13 +47,14 @@ Usage:
    on the commandline for the "make" command.
 
 Commands:
-   cat   : show definition file contents
-   get   : get a specific value
-   list  : list defined values
-   unset : remove a key from the definitions
-   set   : set a specific value
-   show  : list all known builtin keys (excludes plugin specifics)
-   write : write current definitions inta a new definition directory
+   cat    : show definition file contents
+   export : export definition as shell script
+   get    : get a specific value
+   list   : list defined values
+   unset  : remove a key from the definitions
+   set    : set a specific value
+   show   : list all known builtin keys (excludes plugin specifics)
+   write  : write current definitions inta a new definition directory
 
 Options:
    --definition-dir <path> : add to definition directories (.mulle/etc/craft/definition)
@@ -76,6 +77,24 @@ Usage:
 EOF
    exit 1
 }
+
+make::definition::export_usage()
+{
+   [ $# -ne 0 ] && log_error "$1"
+
+   cat <<EOF >&2
+Usage:
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} export [dir]
+
+   Export build settings as mulle-make definition commands
+
+Options:
+   --export-command <prefix> : prefix to use instead of \"mulle-make definition\"
+
+EOF
+   exit 1
+}
+
 
 
 make::definition::list_usage()
@@ -947,6 +966,92 @@ make::definition::read()
    make::definition::read_defines_dir "${directory}/plus"         "${plus_callback}" "append"
 }
 
+
+make::definition::export_defines_dir()
+{
+   log_entry "make::definition::export_defines_dir" "$@"
+
+   local prefix="$1"
+   local directory="$2"
+
+   shift 2
+
+   local key
+   local value
+   local escaped_key
+   local escaped_value
+
+   if [ ! -d "${directory}" ]
+   then
+      log_debug "\"${directory}\" does not exist"
+      return
+   fi
+
+   local files
+
+   files="`dir_list_files "${directory}" "[A-Z_]*" "f" `"
+
+   .foreachline filename in ${files}
+   .do
+      r_basename "${filename}"
+      key="${RVAL}"
+
+      # ignore files with an extension
+      r_identifier "${key}"
+#      r_uppercase "${RVAL}"  # can't do this
+
+      if [ "${key}" != "${RVAL}" ]
+      then
+         log_verbose "${filename} ignored because it's not an identifier"
+         .continue
+      fi
+
+      value="`cat "${filename}"`"
+      r_escaped_singlequotes "${key}"
+      escaped_key="${RVAL}"
+      r_escaped_singlequotes "${value}"
+      escaped_value="${value}"
+
+      rexekutor printf "${prefix} $* '${escaped_key}' '${escaped_value}'\n"
+   .done
+}
+
+
+#
+# it is assumed that the caller (mulle-craft) resolved the UNAME already
+#
+make::definition::export()
+{
+   log_entry "make::definition::export" "$@"
+
+   local directory="$1"
+   local prefix="$2"
+
+   if [ ! -d "${directory}" ]
+   then
+      return
+   fi
+
+   make::definition::export_defines_dir "${prefix}" "${directory}/set/unset"   "unset"  "--non-additive"
+# old
+   make::definition::export_defines_dir "${prefix}" "${directory}/set/remove"  "unset"  "--non-additive"
+   make::definition::export_defines_dir "${prefix}" "${directory}/set/clobber" "set"    "--non-additive" "--clobber"
+   make::definition::export_defines_dir "${prefix}" "${directory}/set/ifempty" "set"    "--non-additive" "--ifempty"
+   make::definition::export_defines_dir "${prefix}" "${directory}/set/append"  "set"    "--non-additive" "--append"
+   make::definition::export_defines_dir "${prefix}" "${directory}/set/append0" "set"    "--non-additive" "--append0"
+   make::definition::export_defines_dir "${prefix}" "${directory}/set"         "set"    "--non-additive" "--append"
+
+   make::definition::export_defines_dir "${prefix}" "${directory}/plus/unset"   "unset" "--additive" "--unset"
+# old
+   make::definition::export_defines_dir "${prefix}" "${directory}/plus/remove"  "unset" "--additive" "--remove"
+   make::definition::export_defines_dir "${prefix}" "${directory}/plus/clobber" "set"   "--additive" "--clobber"
+   make::definition::export_defines_dir "${prefix}" "${directory}/plus/ifempty" "set"   "--additive" "--ifempty"
+   make::definition::export_defines_dir "${prefix}" "${directory}/plus/append"  "set"   "--additive" "--append"
+   make::definition::export_defines_dir "${prefix}" "${directory}/plus/append0" "set"   "--additive" "--append0"
+   make::definition::export_defines_dir "${prefix}" "${directory}/plus"         "set"   "--additive" "--append"
+}
+
+
 #
 # it is assumed that the caller (mulle-craft) resolved the UNAME already
 #
@@ -1356,6 +1461,52 @@ make::definition::list_main()
 }
 
 
+
+make::definition::export_main()
+{
+   log_entry "make::definition::export_main" "$@"
+
+   local directories="$1"
+
+   local argument
+   local OPTION_PREFIX="mulle-make definition"
+
+   while read -r argument
+   do
+      case "${argument}" in
+         -h*|--help|help)
+            make::definition::export_usage
+         ;;
+
+         --export-command|--prefix)
+            read -r OPTION_PREFIX ||
+               make::definition::export_usage "missing argument to \"${argument}\""
+         ;;
+
+         -*)
+            make::definition::export_usage "Unknown option \"${argument}\""
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+   done
+
+   if [ ! -z "${argument}" ]
+   then
+      make::definition::export_usage "Superflous argument \"${argument}\""
+   fi
+
+   local directory
+
+   .foreachline directory in ${directories}
+   .do
+      make::definition::export "${directory}" "${OPTION_PREFIX}"
+   .done
+}
+
+
 make::definition::cat_main()
 {
    log_entry "make::definition::cat_main" "$@"
@@ -1550,7 +1701,7 @@ make::definition::main()
    local cmd="${argument}"
 
    case "${cmd}" in
-      cat|get|list|set)
+      cat|export|get|list|set)
          make::definition::${cmd}_main "${OPTION_INFO_DIRS}"
       ;;
 
