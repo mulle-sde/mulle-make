@@ -1,9 +1,9 @@
 CMAKE_BUILD_TYPE=Release
-CMAKE_CXX_FLAGS_INIT=${CMAKE_CXX_FLAGS_INIT} -isystem /usr/local/include -isystem /usr/include
-CMAKE_C_FLAGS_INIT=${CMAKE_C_FLAGS_INIT} -isystem /usr/local/include -isystem /usr/include
-CMAKE_EXE_LINKER_FLAGS_INIT=${CMAKE_EXE_LINKER_FLAGS_INIT} -L/usr/local/lib -L/usr/lib
+CMAKE_CXX_FLAGS=-isystem /usr/local/include -isystem /usr/include
+CMAKE_C_FLAGS=-isystem /usr/local/include -isystem /usr/include
+CMAKE_EXE_LINKER_FLAGS=-L/usr/local/lib -L/usr/lib
 CMAKE_EXPORT_COMPILE_COMMANDS=ON
 CMAKE_FRAMEWORK_PATH=/Network/Library/Frameworks;/Library/Frameworks
 CMAKE_INCLUDE_PATH=/usr/local/include;/usr/include
 CMAKE_LIBRARY_PATH=/usr/local/lib;/usr/lib
-CMAKE_SHARED_LINKER_FLAGS_INIT=${CMAKE_SHARED_LINKER_FLAGS_INIT} -L/usr/local/lib -L/usr/lib
+CMAKE_SHARED_LINKER_FLAGS=-L/usr/local/lib -L/usr/lib

@@ -414,33 +414,33 @@ make::plugin::cmake::r_cmakeflags_add_definition()
 #
 #
 #
-make::plugin::cmake::r_cmakeflags_add_init_definition()
-{
-   log_entry "make::plugin::cmake::r_cmakeflags_add_init_definition" "$@"
-
-   local cmakeflags="$1"
-   local key="$2"
-   local value="$3"
-
-   local definition_key
-
-   definition_key="DEFINITION_${key%:*}"
-
-   r_shell_indirect_expand "${definition_key}"
-   if [ ! -z "${RVAL}" ]
-   then
-      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "${key}_INIT" "\${${key}_INIT} ${RVAL}" # ;\${${key}_INIT}
-      cmakeflags="${RVAL}"
-   else
-      if [ ! -z "${value}" ]
-      then
-         make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "${key}_INIT" "\${${key}_INIT} ${value}" # ;\${${key}_INIT}"
-         cmakeflags="${RVAL}"
-      fi
-   fi
-
-   RVAL="${cmakeflags}"
-}
+# make::plugin::cmake::r_cmakeflags_add_init_definition()
+# {
+#    log_entry "make::plugin::cmake::r_cmakeflags_add_init_definition" "$@"
+#
+#    local cmakeflags="$1"
+#    local key="$2"
+#    local value="$3"
+#
+#    local definition_key
+#
+#    definition_key="DEFINITION_${key%:*}"
+#
+#    r_shell_indirect_expand "${definition_key}"
+#    if [ ! -z "${RVAL}" ]
+#    then
+#       make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "${key}_INIT" "\${${key}_INIT} ${RVAL}" # ;\${${key}_INIT}
+#       cmakeflags="${RVAL}"
+#    else
+#       if [ ! -z "${value}" ]
+#       then
+#          make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "${key}_INIT" "\${${key}_INIT} ${value}" # ;\${${key}_INIT}"
+#          cmakeflags="${RVAL}"
+#       fi
+#    fi
+#
+#    RVAL="${cmakeflags}"
+# }
 
 
 make::plugin::cmake::get_default_generator()
@@ -765,19 +765,19 @@ make::plugin::cmake::build()
    #       do += like settings and make it a r_cmakeflags_add_plus_definition
    #
    # the idea is here, that we are augmenting the "toolchain" with flags, but
-   # we emit CMAKE_C_FLAGS_INIT instead of CMAKE_C_FLAGS, so this can still be
+   # we emit CMAKE_C_FLAGS instead of CMAKE_C_FLAGS, so this can still be
    # set otherwise. Not sure if this is really that useful.
    #
-   make::plugin::cmake::r_cmakeflags_add_init_definition "${cmakeflags}" "CMAKE_C_FLAGS" "${c_flags}"
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_C_FLAGS" "${c_flags}"
    cmakeflags="${RVAL}"
 
-   make::plugin::cmake::r_cmakeflags_add_init_definition "${cmakeflags}" "CMAKE_CXX_FLAGS" "${cxx_flags}"
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_CXX_FLAGS" "${cxx_flags}"
    cmakeflags="${RVAL}"
 
-   make::plugin::cmake::r_cmakeflags_add_init_definition "${cmakeflags}" "CMAKE_SHARED_LINKER_FLAGS" "${ld_flags}"
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_SHARED_LINKER_FLAGS" "${ld_flags}"
    cmakeflags="${RVAL}"
 
-   make::plugin::cmake::r_cmakeflags_add_init_definition "${cmakeflags}" "CMAKE_EXE_LINKER_FLAGS" "${ld_flags}"
+   make::plugin::cmake::r_cmakeflags_add_definition "${cmakeflags}" "CMAKE_EXE_LINKER_FLAGS" "${ld_flags}"
    cmakeflags="${RVAL}"
 
    #

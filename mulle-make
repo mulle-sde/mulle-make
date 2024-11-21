@@ -34,7 +34,7 @@
 [ "${MULLE_MAKE_DUMP_ENV:-}" = 'YES' ] && env | sort >&2
 
 
-MULLE_EXECUTABLE_VERSION="2.3.0"
+MULLE_EXECUTABLE_VERSION="2.3.1"
 #
 # Determine location of own libexec directory. Which is `src` in development
 # and ../libexec when deployed. MULLE_EXECUTABLE needs to be defined for this.

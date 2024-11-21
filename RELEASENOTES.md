@@ -1,3 +1,7 @@
+### 2.3.1
+
+* remove `CMAKE_*_FLAGS_INIT` because it was based on a wrong assumption that I could += values with cmake
+
 ## 2.3.0
 
 feat: improve cmake flags handling and definition exports
