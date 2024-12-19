@@ -185,9 +185,13 @@ make::plugin::make::build()
    local absprojectdir="${_absprojectdir}"
    local projectdir="${_projectdir}"
 
+   local make_all_target
+
+   make_all_target="${DEFINITION_MAKE_ALL_INSTALL}"
+
+   log_setting "make_all_target: ${make_all_target}"
    log_setting "maketarget:      ${maketarget}"
    log_setting "MAKEFLAGS:       ${MAKEFLAGS}"
-   log_setting "arguments:       ${arguments}"
 
    local logfile1
 
@@ -246,17 +250,20 @@ make::plugin::make::build()
 
       PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"
-      log_fluff "PATH temporarily set to $PATH"
+
+      log_setting "arguments:       ${arguments}"
+      log_setting "PATH:            $PATH"
+
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
       fi
 
       # some need all install combo
-      if [ "${maketarget}" = "install" ]
+      if [ "${maketarget}" = "install" -a "${make_all_target}" != 'NO' ]
       then
          if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
-                  "'${MAKE}'" "${MAKEFLAGS}" "${arguments}" "all"  | ${grepper}
+                  "'${MAKE}'" "${MAKEFLAGS}" "${arguments}" "${make_all_target:-all}"  | ${grepper}
          then
             make::common::build_fail "${logfile1}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
          fi

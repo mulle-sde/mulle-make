@@ -1,5 +1,6 @@
 --backend ninja
 --buildtype release
+--libdir lib
 05-meson-build
 [CPPFLAGS=-isystem /usr/local/include -isystem /usr/include]
 [LDFLAGS=-L/usr/local/lib -L/usr/lib]

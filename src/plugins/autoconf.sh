@@ -167,7 +167,8 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\""
 
       PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"
-      log_fluff "PATH temporarily set to $PATH"
+      log_setting "PATH:            $PATH"
+
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2

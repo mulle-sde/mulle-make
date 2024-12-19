@@ -208,6 +208,12 @@ make::plugin::meson::build()
       ;;
    esac
 
+   if [ "${DEFINITION_MESON_LIBDIR}" != 'DEFAULT' ]
+   then
+      r_concat "${meson_flags}" "--libdir '${DEFINITION_MESON_LIBDIR:-lib}'"
+      meson_flags="${RVAL}"
+   fi
+
    if [ ! -z "${configuration}" ]
    then
       r_lowercase "${configuration}"
@@ -308,7 +314,8 @@ make::plugin::meson::build()
    (
       PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"
-      log_fluff "PATH temporarily set to $PATH"
+      log_setting "PATH:            $PATH"
+
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2

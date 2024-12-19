@@ -1,3 +1,8 @@
+### 2.3.2
+
+* fix meson to output libaries to expected 'lib' by default, can be changed with `DEFINITIONS_MESON_LIBDIR=DEFAULT` to use meson default (or something else)
+* you can set `DEFINITION_MAKE_ALL_INSTALL` to NO to avoid the make all before make install. you can also change all to some other label
+
 ### 2.3.1
 
 * remove `CMAKE_*_FLAGS_INIT` because it was based on a wrong assumption that I could += values with cmake

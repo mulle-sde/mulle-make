@@ -1,5 +1,6 @@
 --backend ninja
 --buildtype release
+--libdir lib
 --prefix foo
 05-meson-build
 build

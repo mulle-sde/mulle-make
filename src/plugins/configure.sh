@@ -159,9 +159,14 @@ make::plugin::configure::build()
    local absprojectdir="${_absprojectdir}"
    local projectdir="${_projectdir}"
 
+   local make_all_target
+
+   make_all_target="${DEFINITION_MAKE_ALL_INSTALL}"
+
    log_setting "prefix:          ${prefix}"
    log_setting "env_flags:       ${env_flags}"
    log_setting "make_flags:      ${make_flags}"
+   log_setting "make_all_target: ${make_all_target}"
    log_setting "CONFIGUREFLAGS:  ${CONFIGUREFLAGS}"
    log_setting "configure_flags: ${configure_flags}"
    log_setting "arguments:       ${arguments}"
@@ -212,7 +217,8 @@ make::plugin::configure::build()
 
       PATH="${OPTION_PATH:-${PATH}}"
       PATH="${DEFINITION_PATH:-${PATH}}"
-      log_fluff "PATH temporarily set to $PATH"
+      log_setting "PATH:            $PATH"
+
       if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = 'YES' ]
       then
          env | sort >&2
@@ -233,10 +239,10 @@ make::plugin::configure::build()
       # mainly for glibc, where it needs to do make all before make install.
       # could parameterize this as "DEFINITION_MAKE_STEPS=all,install" or so
       #
-      if [ "${maketarget}" = "install" ]
+      if [ "${maketarget}" = "install" -a "${make_all_target}" != 'NO' ]
       then
          if ! logging_tee_eval_exekutor "${logfile2}"  "${teefile2}" \
-                  "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "all"  | ${grepper}
+                  "'${MAKE}'" "${MAKEFLAGS}" "${make_flags}" "${make_all_target:-all}"  | ${grepper}
          then
             make::common::build_fail "${logfile2}" "make" "${PIPESTATUS[ 0]}" "${greplog}"
          fi
