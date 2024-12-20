@@ -1,3 +1,8 @@
+## 2.4.0
+
+* passes now --cores `<n>` to the script
+
+
 ### 2.3.2
 
 * fix meson to output libaries to expected 'lib' by default, can be changed with `DEFINITIONS_MESON_LIBDIR=DEFAULT` to use meson default (or something else)

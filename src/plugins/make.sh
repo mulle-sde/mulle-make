@@ -159,13 +159,13 @@ make::plugin::make::build()
    then
       include "parallel"
 
-      r_get_core_count
+      r_available_core_count
       cores=${MULLE_CORES}
    else
       cores="${OPTION_CORES}"
    fi
 
-   if [ "${cores:-0}" -gt 0 ]
+   if [ "${cores:-0}" -gt 1 ]
    then
       r_concat "${arguments}" "-j ${cores}"
       arguments="${RVAL}"

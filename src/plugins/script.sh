@@ -151,9 +151,14 @@ make::plugin::script::build()
 
    local arguments
 
-   if [ "${OPTION_CORES:-0}" -eq 1 ]
+   if [ "${OPTION_CORES:-0}" -eq 0 ]
    then
-      r_concat "${arguments}" "--serial"
+      r_available_core_count
+
+      r_concat "${arguments}" "--cores ${RVAL}"
+      arguments="${RVAL}"
+   else
+      r_concat "${arguments}" "--cores ${OPTION_CORES:-1}"
       arguments="${RVAL}"
    fi
 
