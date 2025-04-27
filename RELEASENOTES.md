@@ -1,3 +1,7 @@
+### 2.4.1
+
+* need to update `cmake_minimum_required` because cmake has a weird concept of min required
+
 ## 2.4.0
 
 * passes now --cores `<n>` to the script
