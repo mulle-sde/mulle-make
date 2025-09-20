@@ -1217,7 +1217,7 @@ Maybe repair with:
       clean)
          if read -r argument
          then
-            log_error "Superflous argument \"${argument}\""
+            log_error "Superfluous argument \"${argument}\""
             make::build::clean_usage
          fi
 
@@ -1245,7 +1245,7 @@ Maybe repair with:
       list)
          if read -r argument
          then
-            log_error "Superflous argument \"${argument}\""
+            log_error "Superfluous argument \"${argument}\""
             make::build::list_usage
          fi
          make::build::list "${OPTION_INFO_DIRS}"
@@ -1254,7 +1254,7 @@ Maybe repair with:
       project)
          if read -r argument
          then
-            log_error "Superflous argument \"${argument}\""
+            log_error "Superfluous argument \"${argument}\""
             make::build::project_usage
          fi
 
@@ -1284,7 +1284,7 @@ Maybe repair with:
 
          if read -r argument
          then
-            log_error "Superflous argument \"${argument}\""
+            log_error "Superfluous argument \"${argument}\""
             make::build::install_usage
          fi
 

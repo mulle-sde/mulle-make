@@ -98,7 +98,7 @@ make::log::list()
 
    local logsdir="$1"; shift
 
-   [ $# -eq 0 ] || make::log::list_usage "Superflous arguments \"$*\""
+   [ $# -eq 0 ] || make::log::list_usage "Superfluous arguments \"$*\""
 
    local i
 
@@ -115,7 +115,7 @@ make::log::clean()
 
    local logsdir="$1"; shift
 
-   [ $# -eq 0 ] || make::log::clean_usage "Superflous arguments \"$*\""
+   [ $# -eq 0 ] || make::log::clean_usage "Superfluous arguments \"$*\""
 
    local i
 

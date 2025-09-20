@@ -1150,7 +1150,7 @@ make::definition::unset_main()
 
    if read -r argument
    then
-      make::definition::unset_usage "Superflous argument \"${argument}\""
+      make::definition::unset_usage "Superfluous argument \"${argument}\""
    fi
 
    if [ "${directories}" != "NONE" ]
@@ -1263,7 +1263,7 @@ make::definition::set_main()
 
    if read -r argument
    then
-      make::definition::set_usage "Superflous argument \"${argument}\""
+      make::definition::set_usage "Superfluous argument \"${argument}\""
    fi
 
    local directory
@@ -1370,7 +1370,7 @@ make::definition::get_main()
 
    if read -r argument
    then
-      make::definition::get_usage "Superflous argument \"${argument}\""
+      make::definition::get_usage "Superfluous argument \"${argument}\""
    fi
 
    local directory
@@ -1433,7 +1433,7 @@ make::definition::list_main()
 
    if [ ! -z "${argument}" ]
    then
-      make::definition::list_usage "Superflous argument \"${argument}\""
+      make::definition::list_usage "Superfluous argument \"${argument}\""
    fi
 
    if [ "${OPTION_SET_IS_PLUS}" = 'YES' ]
@@ -1495,7 +1495,7 @@ make::definition::export_main()
 
    if [ ! -z "${argument}" ]
    then
-      make::definition::export_usage "Superflous argument \"${argument}\""
+      make::definition::export_usage "Superfluous argument \"${argument}\""
    fi
 
    local directory
@@ -1534,7 +1534,7 @@ make::definition::cat_main()
 
    if [ ! -z "${argument}" ]
    then
-      make::definition::cat_usage "Superflous argument \"${argument}\""
+      make::definition::cat_usage "Superfluous argument \"${argument}\""
    fi
 
    local directory
@@ -1622,7 +1622,7 @@ make::definition::write_main()
    read -r argument
    if [ ! -z "${argument}" ]
    then
-      make::definition::write_usage "Superflous argument \"${argument}\""
+      make::definition::write_usage "Superfluous argument \"${argument}\""
    fi
 
    if [ "${directories}" != "NONE" ]
