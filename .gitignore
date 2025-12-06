@@ -32,3 +32,5 @@ cola/wilted/
 mulle-markdown-preview-*.html
 build-*/
 .mulle/etc/project/publisher-info.sh
+.mulle/etc/make
+test/01-cmake-build/.mulle/etc

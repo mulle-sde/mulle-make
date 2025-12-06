@@ -336,6 +336,13 @@ ${C_MAGENTA}${C_BOLD}${underline}${name}${C_INFO}"
 ${C_MAGENTA}${C_BOLD}${underline}${sdk}${C_INFO}"
       fi
 
+      if [ "${platform}" != "Default" -a "${platform}" != "${MULLE_UNAME}" ] \
+         || [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+      then
+         blurb="${blurb}${underline} targetting platform \
+${C_MAGENTA}${C_BOLD}${underline}${platform}${C_INFO}"
+      fi
+
       if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
       then
          blurb="${blurb}${underline} in \"${prettykitchendir}\" ..."
@@ -1034,6 +1041,10 @@ make::build::common()
             read -r DEFINITION_XCODE_XCCONFIG_FILE || fail "missing argument to \"${argument}\""
          ;;
 
+         --toolchain)
+            read -r DEFINITION_TOOLCHAIN || fail "missing argument to \"${argument}\""
+         ;;
+
          #
          # with shortcuts
          #
@@ -1206,6 +1217,7 @@ Maybe repair with:
             ;;
          esac
       fi
+
       if [ -f "${srcdir}" ]
       then
          fail "\"${srcdir}\" is a file, but mulle-make wants a directory."

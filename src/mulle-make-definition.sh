@@ -165,7 +165,7 @@ Example:
 
 Options:
    --non-additive : create a non-additive setting
-   --concat       : append value to a previous value now
+   --concat       : append value to a previous value of the definition (now)
    --concat0      : like concat but without space separation
    --append       : append value to a previous setting at make time (default)
    --append0      : like append but without space separation
@@ -298,6 +298,7 @@ DEFINITION_SELECT_CC
 DEFINITION_SELECT_COBJC
 DEFINITION_SELECT_CXX
 DEFINITION_TARGETS
+DEFINITION_TOOLCHAIN
 DEFINITION_USE_NINJA
 DEFINITION_WARNING_CFLAGS"
 
@@ -1166,6 +1167,7 @@ make::definition::unset_main()
    fi
 
    # remove all possible old settings
+   # maintain append folder (no longer used) for backwards compatibility
    make::definition::remove_other_keyfiles_than "" \
                                                 "${directory}/set/${key}"          \
                                                 "${directory}/set/append/${key}"   \
@@ -1224,6 +1226,7 @@ make::definition::set_main()
          ;;
 
          --append)
+            # this now the same as set.
             OPTION_OPERATION=
          ;;
 
@@ -1649,7 +1652,7 @@ make::definition::main()
 
    [ -z "${DEFAULT_IFS}" ] && _internal_fail "IFS fail"
 
-   local OPTION_ALLOW_UNKNOWN_OPTION="DEFAULT"
+   local OPTION_ALLOW_UNKNOWN_OPTION='DEFAULT'
    local OPTION_INFO_DIRS=""
 
    local argument

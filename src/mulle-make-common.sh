@@ -156,7 +156,7 @@ make::common::__std_flags()
 
    case "${DEFINITION_PROJECT_LANGUAGE:-c}" in
       'c')
-         make::compiler::r_c_dialect_compiler
+         make::compiler::r_c_compiler
          _c_compiler="${RVAL}"
 
          make::compiler::r_cflags_value "${_c_compiler}" "${configuration}" "${addoptflags}"
@@ -682,6 +682,7 @@ make::common::r_headerpath_preprocessor_flags()
 
    if [ -z "${compiler}" ]
    then
+      # MULLE_UNAME is the host not the crossplatform target
       case "${MULLE_UNAME}" in
          'windows'|'mingw')
             compiler="cl"

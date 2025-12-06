@@ -91,6 +91,14 @@ make::plugin::cmake::tools_environment()
    # used for running tests
    CMAKE1="${DEFINITION_CMAKE1:-${CMAKE}}"
    CMAKE2="${DEFINITION_CMAKE2:-${CMAKE1}}"
+
+   toolname="${DEFINITION_CMAKE_PP:-${CMAKE_PP}}"
+   # forces optionality like tis
+   if [ ! -z "${toolname}" ]
+   then
+      make::command::r_verify_binary "${toolname}" "" "${toolname}"
+      CMAKE_PP="${RVAL}"
+   fi
 }
 
 
@@ -609,6 +617,13 @@ make::plugin::cmake::build()
       cmakeflags="${RVAL}"
    fi
 
+   local cmake_pp
+
+   if [ ! -z "${CMAKE_PP}" ]
+   then
+      cmake_pp="'${CMAKE_PP}'"
+   fi
+
    log_setting "PREFIX:        ${dstdir}"
    log_setting "PHASE:         ${OPTION_PHASE}"
 #   log_setting "MAKEFLAGS:     ${DEFINITION_MAKEFLAGS}"
@@ -835,6 +850,46 @@ make::plugin::cmake::build()
       cmakeflags="${RVAL}"
    fi
 
+   case "${DEFINITION_TOOLCHAIN}" in
+      '')
+         : # empty toolchain ignore
+      ;;
+
+      *.cmake)
+         # not just a name, assume its proper path already
+         r_escaped_singlequotes "${DEFINITION_TOOLCHAIN}"
+         r_concat "${arguments}" "--toolchain '${RVAL}'"
+         arguments="${RVAL}"
+      ;;
+
+      *)
+         # by name only, we append 'cmake' and make a search to cmake and
+         # cmake/share for mulle-sde
+         value="${DEFINITION_TOOLCHAIN}.cmake"
+         if [ ! -f "${value}" ]
+         then
+            value="cmake/${DEFINITION_TOOLCHAIN}.cmake"
+            if [ ! -f "${value}" ]
+            then
+               value="cmake/share/${DEFINITION_TOOLCHAIN}.cmake"
+               if [ ! -f "${value}" ]
+               then
+                  value="${DEFINITION_TOOLCHAIN}"
+                  if [ ! -f "${value}" ]
+                  then
+                     fail "Can not locate toolchain \"${DEFINITION_CMAKE}\" for cmake"
+                  fi
+               fi
+            fi
+         fi
+
+         r_absolutepath "${value}"
+         r_escaped_singlequotes "${RVAL}"
+         r_concat "${cmakeflags}" "--toolchain '${RVAL}'"
+         cmakeflags="${RVAL}"
+      ;;
+   esac
+
    #
    # the userdefined definitions must be quoted properly already
    #
@@ -844,8 +899,8 @@ make::plugin::cmake::build()
 
    .foreachline target in $DEFINITION_TARGETS
    .do
-      r_concat "${arguments}" "--target '${target}'"
-      arguments="${RVAL}"
+      r_concat "${cmakeflags}" "--target '${target}'"
+      cmakeflags="${RVAL}"
    .done
 
    local cmaketarget
@@ -861,7 +916,7 @@ make::plugin::cmake::build()
 
       local version
 
-      version="`"${CMAKE2}" --version | head -1`"
+      version="`eval_rexekutor "${cmake_pp}" "${CMAKE2}" '--version' | head -1`"
       version="${version##cmake version }"
 
       include "version"
@@ -872,13 +927,38 @@ make::plugin::cmake::build()
       fi
    fi
 
+   # for our log files, we want to see the proper commandline produced
+   # so verbose it is by default
    local cmakeflags2
+
+   case "${generator}" in
+      ''|'Unix Make'*)
+         if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+         then
+            r_concat "${cmakeflags2}" "-- VERBOSE=1"
+            cmakeflags2="${RVAL}"
+         fi
+
+      ;;
+
+      "Ninja")
+         if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+         then
+            cmakeflags2="-- -v"
+         fi
+      ;;
+   esac
+
    local cmakeflags3
+
+   if [ "${cmake_is_3_15_or_later}" = 'YES' -a "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+   then
+      cmakeflags3="-v"
+   fi
 
    local cores
 
    # cmake install can't take -j 1 apparently... build does though
-
 
    case "${MULLE_UNAME}" in
       'mingw'|'msys'|'windows')
@@ -896,29 +976,10 @@ make::plugin::cmake::build()
                   r_get_core_count
                   cores=${MULLE_CORES}
                fi
-
-               if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
-               then
-                  r_concat "${cmakeflags2}" "-- VERBOSE=1"
-                  cmakeflags2="${RVAL}"
-               fi
-
-            ;;
-
-            "Ninja")
-               if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
-               then
-                  cmakeflags2="-- -v"
-               fi
             ;;
          esac
       ;;
    esac
-
-   if [ "${cmake_is_3_15_or_later}" = 'YES' -a  "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
-   then
-      cmakeflags3="-v"
-   fi
 
    cores="${cores:-${OPTION_CORES:-0}}"
    if [ ${cores} -gt 0 ]
@@ -1047,7 +1108,7 @@ found in \"${absprojectdir#"${MULLE_USER_PWD}/"}\""
 and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\" "
    fi
 
-   if [ "$MULLE_FLAG_LOG_VERBOSE" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
       make::common::r_safe_tty
       teefile1="${RVAL}"
@@ -1079,6 +1140,7 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
       then
          if ! logging_tee_eval_exekutor "${logfile1}" "${teefile1}" \
                   "${env_common}" \
+                  "${cmake_pp}" \
                   "'${CMAKE}'" "${CMAKEFLAGS}" \
                                "${cmakeflags}" \
                                -S "'${translated_projectdir}'" \

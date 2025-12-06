@@ -414,6 +414,28 @@ make::compiler::r_ldflags_value()
 
 
 
+make::compiler::r_value_for_keys()
+{
+   local key
+
+   while [ $# -ne 0 ]
+   do
+      key="$1"
+      shift
+
+      r_shell_indirect_expand "${key}"
+      if [ ! -z "${RVAL}" ]
+      then
+         log_debug "${key}=${RVAL} found"
+         return 0
+      fi
+   done
+
+   RVAL=
+   return 1
+}
+
+
 #
 # Support overriding c-compilers better.
 #
@@ -437,9 +459,9 @@ make::compiler::r_ldflags_value()
 # mulle-sde definition set CC gcc
 # mulle-sde definition set DEFINITION_PREFER_ENV_CC NO
 # ```
-make::compiler::r_c_compiler()
+make::compiler::r_cc_compiler()
 {
-   log_entry "make::compiler::r_c_compiler" "$@"
+   log_entry "make::compiler::r_cc_compiler" "$@"
 
    RVAL=
 
@@ -450,24 +472,25 @@ make::compiler::r_c_compiler()
 
    case ",${selection}," in
       *',definition,environment,'*)
-         RVAL="${DEFINITION_CC:-${CC}}"
+         make::compiler::r_value_for_keys 'DEFINITION_CC' 'CC'
       ;;
 
       *',environment,definition,'*)
-         RVAL="${CC:-${DEFINITION_CC}}"
+         make::compiler::r_value_for_keys 'CC' 'DEFINITION_CC'
       ;;
 
       *',environment,'*)
-         RVAL="${CC}"
+         make::compiler::r_value_for_keys 'CC'
       ;;
 
       *',definition,'*)
-         RVAL="${DEFINITION_CC}"
+         make::compiler::r_value_for_keys 'DEFINITION_CC'
       ;;
 
       *',clobber,'*)
          CC=
          export CC
+         log_debug "CC set to empty"
       ;;
 
       *',none,'*)
@@ -484,14 +507,55 @@ make::compiler::r_c_compiler()
       ;;
    esac
 
-   log_fluff "C compiler set to ${RVAL:-system default cc}"
+   log_fluff "C compiler is ${RVAL:-system default}"
 }
 
 
-
-make::compiler::r_c_dialect_compiler()
+make::compiler::r_cobjc_compiler()
 {
-   log_entry "make::compiler::r_c_dialect_compiler" "$@"
+   local selection
+
+   selection="${DEFINITION_SELECT_COBJC:-environment,definition}"
+   log_debug "selection: ${selection}"
+
+   case ",${selection}," in
+      *',definition,environment,'*)
+         make::compiler::r_value_for_keys 'DEFINITION_COBJC' 'COBJC'
+      ;;
+
+      *',environment,definition,'*)
+         make::compiler::r_value_for_keys 'COBJC' 'DEFINITION_COBJC'
+      ;;
+
+      *',environment,'*)
+         make::compiler::r_value_for_keys 'COBJC'
+      ;;
+
+      *',definition,'*)
+         make::compiler::r_value_for_keys 'DEFINITION_COBJC'
+      ;;
+
+      *',clobber,'*)
+         COBJC=
+         export COBJC
+         log_debug "COBJC set to empty"
+      ;;
+
+      *',none,'*)
+      ;;
+
+      *)
+         fail "invalid value \"${DEFINITION_SELECT_COBJC}\" for DEFINITION_SELECT_COBJC (environment, definition, clobber, none, no-fallback))"
+      ;;
+   esac
+
+   [ ! -z "${RVAL}" ]
+}
+
+
+make::compiler::r_c_compiler()
+{
+   log_entry "make::compiler::r_c_compiler" "$@"
 
    local language
    local dialect
@@ -521,54 +585,20 @@ make::compiler::r_c_dialect_compiler()
          RVAL=
          case "${dialect}" in
             'objc'|'obj-c'|'objective-c'|'objectivec')
-               selection="${DEFINITION_SELECT_COBJC:-environment,definition}"
-               log_debug "selection: ${selection}"
-
-               case ",${selection}," in
-                  *',definition,environment,'*)
-                     RVAL="${DEFINITION_COBJC:-${COBJC}}"
-                  ;;
-
-                  *',environment,definition,'*)
-                     RVAL="${COBJC:-${DEFINITION_COBJC}}"
-                  ;;
-
-                  *',environment,'*)
-                     RVAL="${COBJC}"
-                  ;;
-
-                  *',definition,'*)
-                     RVAL="${DEFINITION_COBJC}"
-                  ;;
-
-                  *',clobber,'*)
-                     COBJC=
-                     export COBJC
-                  ;;
-
-                  *',none,'*)
-                  ;;
-
-                  *)
-                     fail "invalid value \"${DEFINITION_SELECT_COBJC}\" for DEFINITION_SELECT_COBJC (environment, definition, clobber, none, no-fallback))"
-                  ;;
-               esac
-
-               if [ ! -z "${RVAL}" ]
+               if make::compiler::r_cobjc_compiler
                then
                   return
                fi
-
                case ",${DEFINITION_SELECT_COBJC}," in
                   *,no-fallback,*)
                      log_fluff "No fallback and no objc compiler set"
-                     return
+                     return 1
                   ;;
                esac
             ;;
          esac
 
-         make::compiler::r_c_compiler
+         make::compiler::r_cc_compiler
       ;;
    esac
 }
@@ -581,24 +611,25 @@ make::compiler::r_cxx_compiler()
    RVAL=
    case ",${DEFINITION_SELECT_CXX:-environment,definition}," in
       *',definition,environment,'*)
-         RVAL="${DEFINITION_CXX:-${CXX}}"
+         make::compiler::r_value_for_keys 'DEFINITION_CXX' 'CXX'
       ;;
 
       *',environment,definition,'*)
-         RVAL="${CXX:-${DEFINITION_CXX}}"
+         make::compiler::r_value_for_keys 'CXX' 'DEFINITION_CXX'
       ;;
 
       *',environment,'*)
-         RVAL="${CXX}"
+         make::compiler::r_value_for_keys 'CXX'
       ;;
 
       *',definition,'*)
-         RVAL="${DEFINITION_CXX}"
+         make::compiler::r_value_for_keys 'DEFINITION_CXX'
       ;;
 
       *',clobber,'*)
          CXX=
          export CXX
+         log_debug "CXX set to empty"
       ;;
 
       *',none,'*)
@@ -625,13 +656,13 @@ make::compiler::r_cxx_compiler()
 }
 
 
-# useful for some tool selection
+# useful for some tool selection, oif you know you want C usr r_c_compiler direct
 make::compiler::r_compiler()
 {
    RVAL=
    case "${DEFINITION_PROJECT_LANGUAGE:-c}" in
       'c')
-         make::compiler::r_c_dialect_compiler
+         make::compiler::r_c_compiler
       ;;
 
       'cxx'|'c++'|'cpp'|'cplusplus')
