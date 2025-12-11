@@ -5,10 +5,18 @@ _mulle_make_complete()
     _get_comp_words_by_ref -n : cur prev words cword
 
     # Global options
-    local global_options="-f --force --clear --clear-global-definitions --version -h --help --args"
+    local global_options="-f --force --clear --clear-global-definitions --no-clear --no-clear-global-definitions --version -h --help --args"
 
-    # Commands
+    # Commands (visible and hidden)
     local commands="project build make clean definition install craft list log show libexec-dir library-path uname version"
+
+    # Common build options
+    local build_common_options="-h --help -D -U -d --definition-dir --aux-definition-dir --build-dir --debug --release -c --configuration --include-path --library-path --dynamic --no-ninja --mulle-test --verbose-make -j --cores --static --shared --standalone --preferred-library-style --library-style --frameworks-path -F -I -L"
+    
+    # Uncommon build options
+    local build_uncommon_options="--prefix --append --ifempty --remove --no-determine-sdk --phase --platform --project-name --name --project-language --language --project-dialect --dialect --log-dir --tool-preferences --plugin-preferences --tools --plugins --sdk -s --xcode-config-file --toolchain --target --targets --allow-script --allow-build-script --no-allow-script --allow-unknown-option --no-allow-unknown-option --analyze --no-analyze --ninja --ccache --make --no-make --autoconf --no-autoconf --configure --no-configure --no-cmake --xcodebuild --no-xcodebuild --determine-sdk --prefer-xcodebuild --rerun-cmake --set-is-plus --underline --path --load -l --serial --no-parallel --clean -k --no-clean -K"
+    
+    local build_options="${build_common_options} ${build_uncommon_options}"
 
     # First word after script name
     if [[ $cword -eq 1 ]]; then
@@ -20,7 +28,7 @@ _mulle_make_complete()
     cmd="${words[1]}"
 
     case "$cmd" in
-        -f|--force|--clear|--clear-global-definitions|--version|-h|--help)
+        -f|--force|--clear|--clear-global-definitions|--no-clear|--no-clear-global-definitions|--version|-h|--help)
             # These are flags, so no completion or just commands
             if [[ $cword -eq 2 ]]; then
                 COMPREPLY=($(compgen -W "${commands}" -- "$cur"))
@@ -33,25 +41,23 @@ _mulle_make_complete()
             fi
             ;;
         clean)
-            # clean [options] [directory? but usually none]
-            if [[ "$prev" == "clean" ]]; then
-                # options for clean, but from build.sh
-                COMPREPLY=($(compgen -W "--help -h --build-dir -D --debug --release --configuration --clean --no-clean --clean-before-build --include-path --library-path --prefix --sdk --platform --log-dir --tool-preferences --no-determine-sdk --frameworks-path --include-path --library-path -j --cores --static --shared --dynamic --library-style -F -I -L -s -j -c -k -K -f --force" -- "$cur"))
+            if [[ "$cur" == -* ]]; then
+                COMPREPLY=($(compgen -W "${build_options}" -- "$cur"))
             else
-                COMPREPLY=()
+                COMPREPLY=($(compgen -d -- "$cur"))
             fi
             ;;
         project|build|make)
-            if [[ "$cword" -eq 2 ]]; then
-                COMPREPLY=($(compgen -W "--help -h -D --debug --release --configuration --clean --no-clean --build-dir --include-path --library-path --prefix --sdk --platform --log-dir --tool-preferences --no-determine-sdk --frameworks-path -F -I -L -s -j --cores --static --shared --dynamic --library-style -j -k -K -f --force --mulle-test --verbose-make --set-is-plus" -- "$cur"))
+            if [[ "$cur" == -* ]]; then
+                COMPREPLY=($(compgen -W "${build_options}" -- "$cur"))
             else
                 # directory argument
                 COMPREPLY=($(compgen -d -- "$cur"))
             fi
             ;;
         install|craft)
-            if [[ "$cword" -eq 2 ]]; then
-                COMPREPLY=($(compgen -W "--help -h -D --debug --release --configuration --clean --no-clean --build-dir --include-path --library-path --prefix --sdk --platform --log-dir --tool-preferences --no-determine-sdk --frameworks-path -F -I -L -s -j --cores --static --shared --dynamic --library-style -j -k -K -f --force --mulle-test --verbose-make --set-is-plus" -- "$cur"))
+            if [[ "$cur" == -* ]]; then
+                COMPREPLY=($(compgen -W "${build_options}" -- "$cur"))
             else
                 # src dst, but directories
                 COMPREPLY=($(compgen -d -- "$cur"))
@@ -59,23 +65,18 @@ _mulle_make_complete()
             ;;
         list)
             if [[ "$cur" == -* ]]; then
-                COMPREPLY=($(compgen -W "--help -h -D --debug --release --configuration --clean --no-clean --build-dir --include-path --library-path --prefix --sdk --platform --log-dir --tool-preferences --no-determine-sdk --frameworks-path -F -I -L -s -j --cores --static --shared --dynamic --library-style -j -k -K -f --force --mulle-test --verbose-make --set-is-plus" -- "$cur"))
+                COMPREPLY=($(compgen -W "${build_options}" -- "$cur"))
             else
                 COMPREPLY=()
             fi
             ;;
         log)
-            # log commands: clean, list, or grep etc.
+            # log commands: clean, list, or any tool like cat, grep, etc.
             if [[ $cword -eq 2 ]]; then
-                COMPREPLY=($(compgen -W "clean list" -- "$cur"))
-            elif [[ $cword -eq 3 ]]; then
-                if [[ "${words[2]}" == "list" ]]; then
-                    COMPREPLY=()
-                elif [[ "${words[2]}" == "clean" ]]; then
-                    COMPREPLY=()
+                if [[ "$cur" == -* ]]; then
+                    COMPREPLY=($(compgen -W "-h --help -t --tool" -- "$cur"))
                 else
-                    # assume file or something
-                    COMPREPLY=()
+                    COMPREPLY=($(compgen -W "clean list cat grep ack" -- "$cur"))
                 fi
             else
                 COMPREPLY=()
@@ -84,38 +85,54 @@ _mulle_make_complete()
         definition)
             # definition subcommands
             if [[ $cword -eq 2 ]]; then
-                COMPREPLY=($(compgen -W "cat export get list unset set show write" -- "$cur"))
+                if [[ "$cur" == -* ]]; then
+                    COMPREPLY=($(compgen -W "-h --help -D -U --definition-dir --aux-definition-dir --allow-unknown-option --no-allow-unknown-option" -- "$cur"))
+                else
+                    COMPREPLY=($(compgen -W "cat export get list unset set show keys write merge remove" -- "$cur"))
+                fi
             else
                 local subcmd="${words[2]}"
                 case "$subcmd" in
-                    unset|set|get|list|cat|export|write)
+                    set)
                         if [[ "$cur" == -* ]]; then
-                            case "$subcmd" in
-                                set)
-                                    COMPREPLY=($(compgen -W "--help --non-additive --additive --concat --concat0 --append --append0 --clobber --ifempty --set-is-plus" -- "$cur"))
-                                    ;;
-                                get)
-                                    COMPREPLY=($(compgen -W "--help --output-key --set-is-plus" -- "$cur"))
-                                    ;;
-                                list)
-                                    COMPREPLY=($(compgen -W "--help --set-is-plus" -- "$cur"))
-                                    ;;
-                                cat|export|write)
-                                    COMPREPLY=($(compgen -W "--help --set-is-plus" -- "$cur"))
-                                    ;;
-                                unset)
-                                    COMPREPLY=($(compgen -W "--help --set-is-plus" -- "$cur"))
-                                    ;;
-                            esac
-                        elif [[ "$subcmd" == "set" || "$subcmd" == "get" || "$subcmd" == "unset" ]]; then
-                            # for keys, but since keys are many, perhaps just no completion or fixed
-                            COMPREPLY=()
+                            COMPREPLY=($(compgen -W "-h --help --non-additive --additive --concat --concat0 --append --append0 --clobber --ifempty --set-is-plus" -- "$cur"))
                         else
-                            if [[ "$subcmd" == "write" ]]; then
-                                COMPREPLY=($(compgen -d -- "$cur"))
-                            else
-                                COMPREPLY=()
-                            fi
+                            COMPREPLY=()
+                        fi
+                        ;;
+                    get)
+                        if [[ "$cur" == -* ]]; then
+                            COMPREPLY=($(compgen -W "-h --help --output-key --set-is-plus" -- "$cur"))
+                        else
+                            COMPREPLY=()
+                        fi
+                        ;;
+                    list|cat|show|keys)
+                        if [[ "$cur" == -* ]]; then
+                            COMPREPLY=($(compgen -W "-h --help --set-is-plus" -- "$cur"))
+                        else
+                            COMPREPLY=()
+                        fi
+                        ;;
+                    export)
+                        if [[ "$cur" == -* ]]; then
+                            COMPREPLY=($(compgen -W "-h --help --set-is-plus --export-command" -- "$cur"))
+                        else
+                            COMPREPLY=($(compgen -d -- "$cur"))
+                        fi
+                        ;;
+                    write|merge)
+                        if [[ "$cur" == -* ]]; then
+                            COMPREPLY=($(compgen -W "-h --help --set-is-plus" -- "$cur"))
+                        else
+                            COMPREPLY=($(compgen -d -- "$cur"))
+                        fi
+                        ;;
+                    unset|remove)
+                        if [[ "$cur" == -* ]]; then
+                            COMPREPLY=($(compgen -W "-h --help --set-is-plus" -- "$cur"))
+                        else
+                            COMPREPLY=()
                         fi
                         ;;
                     *)
@@ -125,8 +142,9 @@ _mulle_make_complete()
             fi
             ;;
         show)
-            # no subcommands
-            if [[ "$cword" -eq 2 ]]; then
+            if [[ "$cur" == -* ]]; then
+                COMPREPLY=($(compgen -W "-h --help" -- "$cur"))
+            else
                 COMPREPLY=()
             fi
             ;;
