@@ -563,13 +563,10 @@ make::plugin::cmake::build()
    local pkgconfigpath="${_pkgconfigpath}"
 
    #
-   # We are clobbering the CMAKE_C_FLAGS variable, which means that cmake will
-   # not pickup CFLAGS. What we do here is look of DEFINITION_CFLAGS is defined
-   # and if yes, use it, otherwise use environment CFLAGS as initial value.
-   #
    # https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html#variable:CMAKE_%3CLANG%3E_FLAGS
    #
    # cmake has no CMAKE_CPP_FLAGS so we have to merge them into CMAKE_C_CFLAGS
+   #
 
    if [ ! -z "${cpp_flags}" ]
    then

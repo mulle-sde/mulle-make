@@ -1,0 +1,192 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+
+run_mulle_make()
+{
+   log_fluff "####################################" >&2
+   log_fluff ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@" >&2
+   log_fluff "####################################" >&2
+
+   exekutor ${MULLE_MAKE} ${MULLE_MAKE_FLAGS} "$@"
+}
+
+
+main()
+{
+   MULLE_MAKE_FLAGS="$@"
+
+   _options_mini_main "$@" && set -x
+
+   local directory
+   local original
+   local mirror
+
+   r_make_tmp_directory || exit 1
+   directory="${RVAL}"
+   directory="${directory:-/tmp/build}"
+
+   original="${directory}/original"
+   mirror="${directory}/mirror"
+
+   #
+   # Create original definition directory with various definition types
+   #
+   mkdir_if_missing "${original}"
+
+   (
+      cd "${original}" || exit 1
+      
+      # Simple non-additive definition (clobber/default)
+      run_mulle_make definition set --non-additive CC "mulle-clang" || exit 1
+      
+      # Additive definition with append (default for additive)
+      run_mulle_make definition set CFLAGS "-O2 -Wall" || exit 1
+      
+      # Additive with append0 (no space)
+      run_mulle_make definition set DEFINES "-DFOO=1" || exit 1
+      
+      # Non-additive with clobber
+      run_mulle_make definition set --non-additive --clobber LD "mulle-ld" || exit 1
+      
+      # Non-additive with ifempty
+      run_mulle_make definition set --non-additive --ifempty AR "ar" || exit 1
+      
+      # Concat (immediate concatenation, not runtime) - builds on previous value
+      run_mulle_make definition set VERSION "1.0" || exit 1
+      run_mulle_make definition set --concat VERSION ".0" || exit 1
+      
+      # Concat0 (immediate concatenation without space) - builds on previous value
+      run_mulle_make definition set PREFIX "/usr" || exit 1
+      run_mulle_make definition set --concat0 PREFIX "/local" || exit 1
+      
+   ) || exit 1
+
+   log_verbose "----- #1 Setup PASSED -----"
+
+   #
+   # Export definitions to a script
+   #
+   (
+      cd "${original}" || exit 1
+      run_mulle_make definition export > "${directory}/export.sh" || exit 1
+   ) || exit 1
+
+   [ ! -f "${directory}/export.sh" ] && fail "export.sh not created"
+
+   log_verbose "----- #2 Export PASSED -----"
+
+   #
+   # Create mirror and import definitions
+   #
+   mkdir_if_missing "${mirror}"
+
+   (
+      cd "${mirror}" || exit 1
+      # Execute the commands from the export script
+      bash "${directory}/export.sh" || exit 1
+   ) || exit 1
+
+   log_verbose "----- #3 Import PASSED -----"
+
+   #
+   # Compare the definition directories
+   #
+   local original_def="${original}/.mulle/etc/craft/definition"
+   local mirror_def="${mirror}/.mulle/etc/craft/definition"
+
+   if [ ! -d "${mirror_def}" ]
+   then
+      fail "Mirror definition directory not created"
+   fi
+
+   # Compare all definition files recursively
+   local diff_output
+
+   diff_output="`diff -r "${original_def}" "${mirror_def}" 2>&1`"
+   case $? in
+      0)
+         log_verbose "Definitions match"
+      ;;
+
+      1)
+         fail "Definition directories differ:
+${diff_output}"
+      ;;
+
+      *)
+         fail "diff failed"
+      ;;
+   esac
+
+   log_verbose "----- #4 Comparison PASSED -----"
+
+   #
+   # Verify specific values are correct
+   #
+   local result
+
+   # Check CC (non-additive, clobber)
+   result="`cd "${mirror}" && run_mulle_make definition get CC`"
+   if [ "${result}" != "mulle-clang" ]
+   then
+      fail "CC value incorrect: '${result}' != 'mulle-clang'"
+   fi
+
+   # Check CFLAGS (additive, append)
+   result="`cd "${mirror}" && run_mulle_make definition get CFLAGS`"
+   if [ "${result}" != "-O2 -Wall" ]
+   then
+      fail "CFLAGS value incorrect: '${result}' != '-O2 -Wall'"
+   fi
+
+   # Check DEFINES (additive, append)
+   result="`cd "${mirror}" && run_mulle_make definition get DEFINES`"
+   if [ "${result}" != "-DFOO=1" ]
+   then
+      fail "DEFINES value incorrect: '${result}' != '-DFOO=1'"
+   fi
+
+   # Check VERSION (concat with space)
+   result="`cd "${mirror}" && run_mulle_make definition get VERSION`"
+   if [ "${result}" != "1.0 .0" ]
+   then
+      fail "VERSION value incorrect: '${result}' != '1.0 .0'"
+   fi
+
+   # Check PREFIX (concat0 without space)
+   result="`cd "${mirror}" && run_mulle_make definition get PREFIX`"
+   if [ "${result}" != "/usr/local" ]
+   then
+      fail "PREFIX value incorrect: '${result}' != '/usr/local'"
+   fi
+
+   log_verbose "----- #5 Value Verification PASSED -----"
+
+   log_info "----- ALL PASSED -----"
+   cd ..
+   rmdir_safer "${directory}"
+}
+
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" "file" || exit 1
+
+   MULLE_MAKE="${MULLE_MAKE:-${PWD}/../../mulle-make}"
+}
+
+
+init "$@"
+main "$@"
