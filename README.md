@@ -8,7 +8,7 @@ It will then proceed to build the project using that tool.
 
 | Release Version                                       | Release Notes
 |-------------------------------------------------------|--------------
-| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-sde/mulle-make.svg?branch=release)  | [RELEASENOTES](RELEASENOTES.md) |
+| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-sde/mulle-make.svg)  | [RELEASENOTES](RELEASENOTES.md) |
 
 
 
