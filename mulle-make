@@ -34,7 +34,7 @@
 [ "${MULLE_MAKE_DUMP_ENV:-}" = 'YES' ] && env | sort >&2
 
 
-MULLE_EXECUTABLE_VERSION="2.4.2"
+MULLE_EXECUTABLE_VERSION="3.0.0"
 #
 # Determine location of own libexec directory. Which is `src` in development
 # and ../libexec when deployed. MULLE_EXECUTABLE needs to be defined for this.
@@ -135,10 +135,15 @@ EOF
 Options are command specific. Use ${MULLE_USAGE_NAME} <command> -h for help.
 
 Environment:
-   mulle-make itself ignores environment variables. CFLAGS and other 
-   environment variables are passed through to the actual build system. 
-   So \`CFLAGS=-O0 -g mulle-make\` will work. An exception are the environment
-   variables CC and CXX which are used to figure out the C compilers used.
+   CC
+   CXX
+   MAKE
+   CFLAGS
+   CXXFLAGS
+   LDFLAGS
+   OTHER_CFLAGS
+   OTHER_CXXFLAGS
+   OTHER_LDFLAGS
 
 EOF
 
@@ -238,6 +243,17 @@ make::_main()
       # wipe environment off all DEFINITION_ keys
       make::definition::clear_all_definition_keys
    fi
+
+   #
+   # Initialize DEFINITION_* variables from environment
+   # This allows definitions to build on top of environment settings
+   #
+   DEFINITION_CFLAGS="${CFLAGS}"
+   DEFINITION_CXXFLAGS="${CXXFLAGS}"
+   DEFINITION_LDFLAGS="${LDFLAGS}"
+   DEFINITION_OTHER_CFLAGS="${OTHER_CFLAGS}"
+   DEFINITION_OTHER_CXXFLAGS="${OTHER_CXXFLAGS}"
+   DEFINITION_OTHER_LDFLAGS="${OTHER_LDFLAGS}"
 
    case "${cmd}" in
       clean)

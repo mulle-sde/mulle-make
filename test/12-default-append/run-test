@@ -1,0 +1,69 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+   local directory
+
+   r_make_tmp_directory || exit 1
+   directory="${RVAL}"
+
+   cd "${directory}" || exit 1
+   touch CMakeLists.txt
+
+   # Set first definition WITHOUT any flag
+   ${MULLE_MAKE} definition set CFLAGS "-m32" || exit 1
+   
+   # Set second definition WITHOUT any flag (should overwrite first in same file)
+   ${MULLE_MAKE} definition set CFLAGS "-fPIC" || exit 1
+
+   # Check that only second value is present (default overwrites)
+   local result
+   result="`${MULLE_MAKE} definition get CFLAGS`"
+
+   if [ "${result}" != "-fPIC" ]
+   then
+      fail "Default behavior unexpected. Expected '-fPIC', got '${result}'"
+   fi
+
+   log_verbose "Default set overwrites previous value in same file"
+
+   # Now test with explicit --append
+   ${MULLE_MAKE} definition set CFLAGS "-m32" || exit 1
+   ${MULLE_MAKE} definition set --append CFLAGS "-fPIC" || exit 1
+
+   result="`${MULLE_MAKE} definition get CFLAGS`"
+
+   if [ "${result}" != "-fPIC" ]
+   then
+      fail "Append behavior unexpected. Expected '-fPIC', got '${result}'"
+   fi
+
+   log_verbose "--append also overwrites (append is for multiple definition dirs)"
+
+   log_info "----- PASSED: Default definition set behavior verified -----"
+   
+   cd ..
+   rmdir_safer "${directory}"
+}
+
+
+init()
+{
+   MULLE_MAKE="${MULLE_MAKE:-${PWD}/../../mulle-make}"
+}
+
+
+init "$@"
+main "$@"

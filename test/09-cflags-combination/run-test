@@ -1,0 +1,223 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+
+run_test()
+{
+   local testnum="$1"; shift
+   local test_dir="$1"; shift
+   local expect_cflags="$1"; shift
+
+   # Create empty CMakeLists.txt
+   touch "${test_dir}/CMakeLists.txt"
+
+   (
+      cd "${test_dir}" || exit 1
+
+      log_verbose "Test #${testnum}: CFLAGS=${CFLAGS} OTHER_CFLAGS=${OTHER_CFLAGS}"
+
+      MULLE_TMP_DIR="${test_dir}" \
+      MULLE_TEST_DIR="${MULLE_TEST_DIR}" \
+      CMAKE_REDIRECT_FILE="${test_dir}/cmake-args.txt" \
+      CMAKE1_REDIRECT_FILE="${test_dir}/cmake1-args.txt" \
+         ${MULLE_MAKE} project --no-ninja \
+                            --build-dir "${test_dir}/build" \
+                            -DCMAKE="${MULLE_TEST_DIR}/../mock-cmake" \
+                            -DCMAKE1="${MULLE_TEST_DIR}/../mock-cmake1" \
+                            "$@"
+   )
+
+   if [ "$?" -ne 0 ]
+   then
+      fail "Test #${testnum} failed"
+   fi
+
+   # Extract CMAKE_C_FLAGS from cmake-args.txt
+   local actual_cflags
+   actual_cflags="`grep '^CMAKE_C_FLAGS=' "${test_dir}/cmake-args.txt" | sed 's/^CMAKE_C_FLAGS=//'`"
+
+   if [ "${actual_cflags}" != "${expect_cflags}" ]
+   then
+      log_error "Test #${testnum}: CMAKE_C_FLAGS mismatch"
+      cat <<EOF >&2
+----------------
+Expected:
+----------------
+${expect_cflags}
+----------------
+Actual:
+----------------
+${actual_cflags}
+----------------
+Full cmake-args.txt:
+----------------
+`cat "${test_dir}/cmake-args.txt"`
+----------------
+EOF
+      exit 1
+   fi
+
+   remove_file_if_present "${test_dir}/CMakeLists.txt"
+   remove_file_if_present "${test_dir}/cmake-args.txt"
+   remove_file_if_present "${test_dir}/cmake1-args.txt"
+   rmdir_safer "${test_dir}/build"
+}
+
+
+main()
+{
+   MULLE_MAKE_FLAGS="$@"
+
+   _options_mini_main "$@" && set -x
+
+   local directory
+   local def1_dir
+   local def2_dir
+   local def3_dir
+   local test_dir
+
+   r_make_tmp_directory || exit 1
+   directory="${RVAL}"
+
+   # Save original test directory
+   MULLE_TEST_DIR="${PWD}"
+
+   def1_dir="${directory}/def1"
+   def2_dir="${directory}/def2"
+   def3_dir="${directory}/def3"
+   test_dir="${directory}/test"
+
+   #
+   # Create definition directories outside of test
+   #
+   mkdir_if_missing "${def1_dir}"
+   (
+      cd "${def1_dir}" || exit 1
+      touch CMakeLists.txt
+      ${MULLE_MAKE} definition set CFLAGS "-m32" || exit 1
+   ) || exit 1
+
+   mkdir_if_missing "${def2_dir}"
+   (
+      cd "${def2_dir}" || exit 1
+      touch CMakeLists.txt
+      ${MULLE_MAKE} definition set CFLAGS "-fPIC" || exit 1
+   ) || exit 1
+
+   mkdir_if_missing "${def3_dir}"
+   (
+      cd "${def3_dir}" || exit 1
+      touch CMakeLists.txt
+      ${MULLE_MAKE} definition set --clobber CFLAGS "-O3" || exit 1
+   ) || exit 1
+
+   log_verbose "----- Setup PASSED -----"
+   log_verbose "def1: CFLAGS=-m32"
+   log_verbose "def2: CFLAGS=-fPIC"
+   log_verbose "def3: CFLAGS=-O3 (clobber)"
+
+   mkdir_if_missing "${test_dir}"
+
+   #
+   # Test 1: No env, no definitions
+   #
+   (
+      unset CFLAGS
+      unset OTHER_CFLAGS
+      run_test "1" "${test_dir}" ""
+   ) || exit 1
+   log_verbose "----- #1 PASSED: No env, no def → empty -----"
+
+   #
+   # Test 2: Only env CFLAGS
+   #
+   (
+      export CFLAGS="-Wall"
+      unset OTHER_CFLAGS
+      run_test "2" "${test_dir}" "-Wall"
+   ) || exit 1
+   log_verbose "----- #2 PASSED: ENV -Wall → -Wall -----"
+
+   #
+   # Test 3: Env CFLAGS + OTHER_CFLAGS
+   #
+   (
+      export CFLAGS="-Wall"
+      export OTHER_CFLAGS="-Wextra"
+      run_test "3" "${test_dir}" "-Wall -Wextra"
+   ) || exit 1
+   log_verbose "----- #3 PASSED: ENV -Wall -Wextra → -Wall -Wextra -----"
+
+   #
+   # Test 4: Env + def1
+   #
+   (
+      export CFLAGS="-Wall"
+      export OTHER_CFLAGS="-Wextra"
+      run_test "4" "${test_dir}" "-Wall -m32 -Wextra" \
+         --definition-dir "${def1_dir}/.mulle/etc/craft/definition"
+   ) || exit 1
+   log_verbose "----- #4 PASSED: ENV -Wall -Wextra + def1 -m32 → -Wall -m32 -Wextra -----"
+
+   #
+   # Test 5: Env + def1 + def2 (both definitions are applied)
+   #
+   (
+      export CFLAGS="-Wall"
+      export OTHER_CFLAGS="-Wextra"
+      run_test "5" "${test_dir}" "-Wall -m32 -fPIC -Wextra" \
+         --definition-dir "${def1_dir}/.mulle/etc/craft/definition" \
+         --definition-dir "${def2_dir}/.mulle/etc/craft/definition"
+   ) || exit 1
+   log_verbose "----- #5 PASSED: ENV + def1 + def2 → -Wall -m32 -fPIC -Wextra (both applied) -----"
+
+   #
+   # Test 6: Env + def1 + def2 + def3 (def3 clobbers everything including env)
+   #
+   (
+      export CFLAGS="-Wall"
+      export OTHER_CFLAGS="-Wextra"
+      run_test "6" "${test_dir}" "-O3 -Wextra" \
+         --definition-dir "${def1_dir}/.mulle/etc/craft/definition" \
+         --definition-dir "${def2_dir}/.mulle/etc/craft/definition" \
+         --definition-dir "${def3_dir}/.mulle/etc/craft/definition"
+   ) || exit 1
+   log_verbose "----- #6 PASSED: ENV + def1 + def2 + def3 → -O3 -Wextra (clobber removes env+def1+def2) -----"
+
+   #
+   # Test 7: No env CFLAGS, but env OTHER_CFLAGS + defs
+   #
+   (
+      unset CFLAGS
+      export OTHER_CFLAGS="-Wextra"
+      run_test "7" "${test_dir}" "-O3 -Wextra" \
+         --definition-dir "${def1_dir}/.mulle/etc/craft/definition" \
+         --definition-dir "${def2_dir}/.mulle/etc/craft/definition" \
+         --definition-dir "${def3_dir}/.mulle/etc/craft/definition"
+   ) || exit 1
+   log_verbose "----- #7 PASSED: No ENV CFLAGS + def1+def2+def3 → -O3 -Wextra (clobber removes def1+def2) -----"
+
+   log_info "----- ALL PASSED -----"
+   log_info "Definition directories preserved in: ${directory}"
+   log_info "  def1: ${def1_dir}/.mulle/etc/craft/definition"
+   log_info "  def2: ${def2_dir}/.mulle/etc/craft/definition"
+   log_info "  def3: ${def3_dir}/.mulle/etc/craft/definition"
+}
+
+
+init()
+{
+   MULLE_MAKE="${MULLE_MAKE:-${PWD}/../../mulle-make}"
+}
+
+
+init "$@"
+main "$@"

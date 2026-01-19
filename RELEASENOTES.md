@@ -1,3 +1,30 @@
+# 3.0.0
+
+feat: environment variables as base for definitions
+
+* Change definition system to use environment as base
+  - Initialize `DEFINITION_CFLAGS` from CFLAGS at startup (and similar for CXXFLAGS, LDFLAGS, etc.)
+  - Remove fallback logic - environment is always the base
+  - Multiple --definition-dir now append to environment base
+  - --clobber removes environment and all previous definitions
+
+* Add --xcode-additive alias for clarity
+  - New --xcode-additive flag (alias for --additive/-+)
+  - New --no-xcode-additive flag (alias for --non-additive)
+  - Clarifies that += behavior is Xcode-specific
+
+* Improve definition documentation
+  - Simplify definition set usage with behavior matrix
+  - Add comprehensive test suite (test/09-cflags-combination)
+  - Create definition-list.md documenting all environment variables
+  - Update book chapter on definitions
+
+* Breaking change: Definitions now build on environment instead of replacing it
+  - Previous: CFLAGS=-Wall + definition CFLAGS=-m32 → -m32
+  - New: CFLAGS=-Wall + definition CFLAGS=-m32 → -Wall -m32
+  - Use --clobber to get old behavior (remove environment)
+
+
 ### 2.4.2
 
 

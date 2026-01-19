@@ -138,39 +138,33 @@ make::definition::set_usage()
 Usage:
    ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set [option] <key> <value>
 
-   Set a build setting. There are two different types of build settings.
-   Additive and non-additive. An additive setting will be added to environment
-   values and may be emitted as a += setting. A non-additive setting will
-   ignore the environment and will be emitted as =. For many build
-   settings like CFLAGS additive settings are often preferred, as it lets you
-   stack flags (like -m32, -fpic), therefore additive is the default.
+   Set a build setting. Environment variables (CFLAGS, LDFLAGS, etc.) are
+   the base. Definitions build on top or replace them.
 
-   Previous values of the same key can be either appended to or clobbered.
-   You would want to "clobber" a value for a build setting like "CC". For
-   a build setting like CFLAGS "append" may be a better choice, if you add
-   preprocessor definitions for example.
+   Multiple --definition-dir append to each other. Use --clobber to remove
+   environment and all previous definitions.
 
-   The --append flag appends over multiple definitions. The value you set
-   here still clobbers the old value.
+   CFLAGS |  d1  |  d2   | d3(clobber) |      Result
+   -------+------+-------+-------------+-----------------
+   -Wall  | -m32 | -fPIC | -O3         | -O3
+   -Wall  | -m32 | -fPIC | (none)      | -Wall -m32 -fPIC
+
+   (CFLAGS=environment, d1/d2/d3=definition dirs):
 
 Example:
-      ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set FOO foo
-      ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set --concat FOO bar
+   export CFLAGS="-Wall"
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set CFLAGS "-m32"
+   # Result: -Wall -m32
 
-   will produce -DFOO="foo bar", but --append only appends at runtime so:
-
-      ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set --append FOO bar
-
-   will now produce -DFOO="bar"
+   ${MULLE_USAGE_NAME} ${MULLE_USAGE_COMMAND:-definition} set --clobber CFLAGS "-O3"
+   # Result: -O3 (environment removed)
 
 Options:
-   --non-additive : create a non-additive setting
-   --concat       : append value to a previous value of the definition (now)
-   --concat0      : like concat but without space separation
-   --append       : append value to a previous setting at make time (default)
-   --append0      : like append but without space separation
-   --clobber      : clobber any existing previous value at make time
-   --ifempty      : only set if no value exists yet
+   --clobber          : remove environment + previous definitions
+   --concat           : append to previous value (within same definition)
+   --xcode-additive   : emit += for xcodebuild
+   --append           : same as default (no-op)
+   --ifempty          : only set if no value exists yet
 
 EOF
    exit 1
@@ -1209,11 +1203,11 @@ make::definition::set_main()
             make::definition::set_usage
          ;;
 
-         -+|--additive)
+         -+|--additive|--xcode-additive)
             OPTION_MODIFIER='plus'
          ;;
 
-         --non-additive)
+         --non-additive|--no-xcode-additive)
             OPTION_MODIFIER='set'
          ;;
 

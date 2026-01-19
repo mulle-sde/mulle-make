@@ -291,13 +291,14 @@ make::compiler::r_cflags_value()
 
    local result
 
-   # DEFINITION_LDFLAGS overrides LDFLAGS except it its += defined
+   # DEFINITION_CFLAGS is already initialized from CFLAGS at startup
+   # For xcode-additive (plus key), add environment on top
    if make::definition::is_plus_key "DEFINITION_CFLAGS"
    then
       r_concat "${DEFINITION_CFLAGS}" "${CFLAGS}"
       result="${RVAL}"
    else
-      result="${DEFINITION_CFLAGS:-${CFLAGS}}"
+      result="${DEFINITION_CFLAGS}"
    fi
 
    if make::definition::is_plus_key "DEFINITION_OTHER_CFLAGS"
@@ -306,7 +307,7 @@ make::compiler::r_cflags_value()
       r_concat "${result}" "${RVAL}"
       result="${RVAL}"
    else
-      r_concat "${result}" "${DEFINITION_OTHER_CFLAGS:-${OTHER_CFLAGS}}"
+      r_concat "${result}" "${DEFINITION_OTHER_CFLAGS}"
       result="${RVAL}"
    fi
 
@@ -330,13 +331,13 @@ make::compiler::r_cxxflags_value()
 
    local result
 
-   # DEFINITION_CXXFLAGS overrides CXXFLAGS except it its += defined
+   # DEFINITION_CXXFLAGS is already initialized from CXXFLAGS at startup
    if make::definition::is_plus_key "DEFINITION_CXXFLAGS"
    then
       r_concat "${DEFINITION_CXXFLAGS}" "${CXXFLAGS}"
       result="${RVAL}"
    else
-      result="${DEFINITION_CXXFLAGS:-${CXXFLAGS}}"
+      result="${DEFINITION_CXXFLAGS}"
    fi
 
    if make::definition::is_plus_key "DEFINITION_OTHER_CXXFLAGS"
@@ -345,7 +346,7 @@ make::compiler::r_cxxflags_value()
       r_concat "${result}" "${RVAL}"
       result="${RVAL}"
    else
-      r_concat "${result}" "${DEFINITION_OTHER_CXXFLAGS:-${OTHER_CXXFLAGS}}"
+      r_concat "${result}" "${DEFINITION_OTHER_CXXFLAGS}"
       result="${RVAL}"
    fi
 
@@ -368,13 +369,13 @@ make::compiler::r_ldflags_value()
 
    local result
 
-   # DEFINITION_LDFLAGS overrides LDFLAGS except it its += defined
+   # DEFINITION_LDFLAGS is already initialized from LDFLAGS at startup
    if make::definition::is_plus_key "DEFINITION_LDFLAGS"
    then
       r_concat "${DEFINITION_LDFLAGS}" "${LDFLAGS}"
       result="${RVAL}"
    else
-      result="${DEFINITION_LDFLAGS:-${LDFLAGS}}"
+      result="${DEFINITION_LDFLAGS}"
    fi
 
    if make::definition::is_plus_key "DEFINITION_OTHER_LDFLAGS"
@@ -383,7 +384,7 @@ make::compiler::r_ldflags_value()
       r_concat "${result}" "${RVAL}"
       result="${RVAL}"
    else
-      r_concat "${result}" "${DEFINITION_OTHER_LDFLAGS:-${OTHER_LDFLAGS}}"
+      r_concat "${result}" "${DEFINITION_OTHER_LDFLAGS}"
       result="${RVAL}"
    fi
 
