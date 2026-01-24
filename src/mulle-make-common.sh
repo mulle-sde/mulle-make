@@ -677,22 +677,40 @@ make::common::r_headerpath_preprocessor_flags()
 
    local compiler
 
-   make::compiler::r_compiler
-   compiler="${RVAL%.*}"
+   # Try to infer compiler style from toolchain name FIRST
+   case "${DEFINITION_TOOLCHAIN}" in
+      *gcc*|*gnu*|*mingw*)
+         compiler="gcc"
+      ;;
 
-   if [ -z "${compiler}" ]
-   then
-      # MULLE_UNAME is the host not the crossplatform target
-      case "${MULLE_UNAME}" in
-         'windows'|'mingw')
-            compiler="cl"
-         ;;
+      *clang*|*llvm*)
+         compiler="clang"
+      ;;
 
-         *)
-            compiler=gcc
-         ;;
-      esac
-   fi
+      *msvc*|*cl*)
+         compiler="cl"
+      ;;
+
+      *)
+         # Fallback to compiler detection
+         make::compiler::r_compiler
+         compiler="${RVAL%.*}"
+
+         if [ -z "${compiler}" ]
+         then
+            # MULLE_UNAME is the host not the crossplatform target
+            case "${MULLE_UNAME}" in
+               'windows'|'mingw')
+                  compiler="cl"
+               ;;
+
+               *)
+                  compiler=gcc
+               ;;
+            esac
+         fi
+      ;;
+   esac
 
    log_debug "compiler: ${compiler}"
 
