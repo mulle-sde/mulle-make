@@ -1045,6 +1045,10 @@ make::build::common()
             read -r DEFINITION_TOOLCHAIN || fail "missing argument to \"${argument}\""
          ;;
 
+         --toolchain-tools-root)
+            read -r DEFINITION_TOOLCHAIN_TOOLS_ROOT || fail "missing argument to \"${argument}\""
+         ;;
+
          #
          # with shortcuts
          #

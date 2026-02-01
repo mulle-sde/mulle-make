@@ -730,7 +730,7 @@ make::plugin::cmake::build()
    cmakeflags="${RVAL}"
 
 
-   if [ ! -z "${c_compiler}" ]
+   if [ ! -z "${c_compiler}" ] && [ -z "${DEFINITION_TOOLCHAIN}" ]
    then
       # on windows mulle-clang-cl.exe will not be found. if it's not in the
       # PATH of windows (not wsl!)
@@ -747,7 +747,7 @@ make::plugin::cmake::build()
 
    if [ "${DEFINITION_PROJECT_LANGUAGE}" != "c" ]
    then
-      if [ ! -z "${cxx_compiler}" ]
+      if [ ! -z "${cxx_compiler}" ] && [ -z "${DEFINITION_TOOLCHAIN}" ]
       then
          make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_CXX_COMPILER" "${cxx_compiler}"
          cmakeflags="${RVAL}"
@@ -847,45 +847,41 @@ make::plugin::cmake::build()
       cmakeflags="${RVAL}"
    fi
 
-   case "${DEFINITION_TOOLCHAIN}" in
-      '')
-         : # empty toolchain ignore
-      ;;
+   if [ ! -z "${DEFINITION_TOOLCHAIN}" ]
+   then
+      local toolchainname
 
-      *.cmake)
-         # not just a name, assume its proper path already
-         r_escaped_singlequotes "${DEFINITION_TOOLCHAIN}"
-         r_concat "${arguments}" "--toolchain '${RVAL}'"
-         arguments="${RVAL}"
-      ;;
-
-      *)
+      value="${DEFINITION_TOOLCHAIN}"
+      if [ ! -f "${value}" ]
+      then
+         toolchainname="${DEFINITION_TOOLCHAIN%.cmake}"
          # by name only, we append 'cmake' and make a search to cmake and
          # cmake/share for mulle-sde
-         value="${DEFINITION_TOOLCHAIN}.cmake"
+         value="${toolchainname}.cmake"
          if [ ! -f "${value}" ]
          then
-            value="cmake/${DEFINITION_TOOLCHAIN}.cmake"
+            value="cmake/${toolchainname}.cmake"
             if [ ! -f "${value}" ]
             then
-               value="cmake/share/${DEFINITION_TOOLCHAIN}.cmake"
+               value="cmake/share/${toolchainname}.cmake"
                if [ ! -f "${value}" ]
                then
-                  value="${DEFINITION_TOOLCHAIN}"
+                  value="${toolchainname}"
                   if [ ! -f "${value}" ]
                   then
-                     fail "Can not locate toolchain \"${DEFINITION_CMAKE}\" for cmake"
+                     fail "Can not locate toolchain \"${toolchainname}\" for cmake"
                   fi
                fi
             fi
          fi
+      fi
 
-         r_absolutepath "${value}"
-         r_escaped_singlequotes "${RVAL}"
-         r_concat "${cmakeflags}" "--toolchain '${RVAL}'"
-         cmakeflags="${RVAL}"
-      ;;
-   esac
+      r_absolutepath "${value}"
+      r_escaped_singlequotes "${RVAL}"
+      r_concat "${cmakeflags}" "--toolchain '${RVAL}'"
+      cmakeflags="${RVAL}"
+   fi
+
 
    #
    # the userdefined definitions must be quoted properly already
@@ -1053,6 +1049,15 @@ found in \"${absprojectdir#"${MULLE_USER_PWD}/"}\""
       r_concat "${env_common}" "PKG_CONFIG_PATH='${pkgconfigpath}'"
       env_common="${RVAL}"
       r_concat "${env_common}" "__MULLE_MAKE_ENV_ARGS='PKG_CONFIG_PATH'"
+      env_common="${RVAL}"
+   fi
+
+   # Pass toolchain tools root to toolchain if set
+   if [ ! -z "${DEFINITION_TOOLCHAIN_TOOLS_ROOT}" ]
+   then
+      r_concat "${env_common}" "MULLE_CROSS_COMPILER_ROOT='${DEFINITION_TOOLCHAIN_TOOLS_ROOT}'"
+      env_common="${RVAL}"
+      r_concat "${env_common}" "__MULLE_MAKE_ENV_ARGS='${__MULLE_MAKE_ENV_ARGS:+${__MULLE_MAKE_ENV_ARGS} }MULLE_CROSS_COMPILER_ROOT'"
       env_common="${RVAL}"
    fi
 
