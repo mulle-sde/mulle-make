@@ -146,6 +146,43 @@ make::plugin::configure::build()
 
    env_flags="${RVAL}"
 
+   # Add cross-compilation tools (AR, RANLIB, STRIP)
+   make::common::r_cross_compilation_env "${c_compiler}" "${cxx_compiler}"
+   if [ ! -z "${RVAL}" ]
+   then
+      r_concat "${env_flags}" "${RVAL}"
+      env_flags="${RVAL}"
+   fi
+
+   # Parse toolchain name for --host triplet and target flags
+   local toolchain="${DEFINITION_TOOLCHAIN_CMAKE:-${DEFINITION_TOOLCHAIN}}"
+   if [ ! -z "${toolchain}" ]
+   then
+      local _toolchain_build _toolchain_host _toolchain_platform _toolchain_triplet _toolchain_compiler
+      if make::common::r_parse_toolchain_name "${toolchain}"
+      then
+         if [ ! -z "${_toolchain_triplet}" ]
+         then
+            r_concat "${arguments}" "--host='${_toolchain_triplet}'"
+            arguments="${RVAL}"
+            log_setting "configure --host: ${_toolchain_triplet}"
+            
+            # Add -target flag for clang
+            case "${_toolchain_compiler}" in
+               *clang*)
+                  r_concat "${c_flags}" "-target ${_toolchain_triplet}"
+                  c_flags="${RVAL}"
+                  r_concat "${cxx_flags}" "-target ${_toolchain_triplet}"
+                  cxx_flags="${RVAL}"
+                  r_concat "${ld_flags}" "-target ${_toolchain_triplet}"
+                  ld_flags="${RVAL}"
+                  log_setting "Added -target ${_toolchain_triplet} for clang"
+               ;;
+            esac
+         fi
+      fi
+   fi
+
    local make_flags
 
    make::common::r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"

@@ -232,6 +232,21 @@ make::plugin::meson::build()
 #      cpp_flags="${RVAL}"
 #   fi
 
+   # Handle cross-compilation via meson cross-file
+   local meson_cross_file="${DEFINITION_MESON_CROSS_FILE:-${DEFINITION_TOOLCHAIN_MESON}}"
+   
+   if [ ! -z "${meson_cross_file}" ]
+   then
+      if [ ! -f "${meson_cross_file}" ]
+      then
+         fail "Meson cross file not found: ${meson_cross_file}"
+      fi
+      r_absolutepath "${meson_cross_file}"
+      r_concat "${meson_flags}" "--cross-file '${RVAL}'"
+      meson_flags="${RVAL}"
+      log_setting "meson cross-file: ${RVAL}"
+   fi
+
    local meson_env
 
    make::common::r_env_std_flags "${c_compiler}" \

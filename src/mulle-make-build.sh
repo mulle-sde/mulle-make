@@ -513,17 +513,17 @@ make::build::build_with_sdk_platform_configuration_preferences()
    log_setting "kitchendir : ${kitchendir}"
    log_setting "logsdir    : ${logsdir}"
 
-   local rval
+   local rc
    local preference
 
    .for preference in ${preferences}
    .do
       # pass local context w/o arguments
       make::build::__build_with_preference_if_possible
-      rval=$?
-      if [ $rval -ne 127 ]
+      rc=$?
+      if [ $rc -ne 127 ]
       then
-         return $rval
+         return $rc
       fi
    .done
 
@@ -1205,7 +1205,7 @@ make::build::common()
    include "make::sdk"
 
    local srcdir
-
+   local teststring
    # export some variables
 
    srcdir="${argument:-$PWD}"
@@ -1213,11 +1213,17 @@ make::build::common()
    then
       if [ ! -z "${MULLE_VIRTUAL_ROOT}" ]
       then
+         case "${MULLE_VIRTUAL_ROOT}" in
+            */test*)
+               teststring=" test"
+            ;;
+         esac
+
          case "${srcdir}" in
             */${MULLE_SOURCETREE_STASH_DIRNAME:-stash}/*)
                fail "Source directory \"${srcdir}\" is missing.
 Maybe repair with:
-   ${C_RESET_BOLD}mulle-sde clean fetch"
+   ${C_RESET_BOLD}mulle-sde${teststring} clean tidy"
             ;;
          esac
       fi

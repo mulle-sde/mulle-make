@@ -140,6 +140,14 @@ make::plugin::make::build()
    r_concat "${arguments}" "${RVAL}"
    arguments="${RVAL}"
 
+   # Add cross-compilation tools (AR, RANLIB, STRIP)
+   make::common::r_cross_compilation_env "${c_compiler}" "${cxx_compiler}"
+   if [ ! -z "${RVAL}" ]
+   then
+      r_concat "${arguments}" "${RVAL}"
+      arguments="${RVAL}"
+   fi
+
    make::common::r_build_make_flags "${MAKE}" "${DEFINITION_MAKEFLAGS}"
    r_concat "${arguments}" "${RVAL}"
    arguments="${RVAL}"

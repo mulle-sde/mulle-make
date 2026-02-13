@@ -140,6 +140,204 @@ make::common::r_env_std_flags()
 # local _cxxflags
 # local _ldflags
 # local _pkgconfigpath
+make::common::r_parse_toolchain_name()
+{
+   log_entry "make::common::r_parse_toolchain_name" "$@"
+
+   local toolchain="$1"
+
+   _toolchain_build=""
+   _toolchain_host=""
+   _toolchain_triplet=""
+   _toolchain_compiler=""
+
+   [ -z "${toolchain}" ] && return 1
+
+   r_basename "${toolchain}"
+   local name="${RVAL%.cmake}"
+
+   # Parse: toolchain--<build>-<host>--<triplet>--<compiler>
+   # Triplet format: <arch>-<vendor>-<os> or <arch>-<vendor>-<os>-<abi>
+   if [[ "${name}" =~ ^toolchain--([^-]+)-([^-]+)--([^-]+-[^-]+-[^-]+(-[^-]+)?)--(.+)$ ]]
+   then
+      _toolchain_build="${BASH_REMATCH[1]}"
+      _toolchain_host="${BASH_REMATCH[2]}"
+      _toolchain_triplet="${BASH_REMATCH[3]}"
+      _toolchain_compiler="${BASH_REMATCH[5]}"
+
+      log_debug "Parsed toolchain: build=${_toolchain_build} host=${_toolchain_host} triplet=${_toolchain_triplet} compiler=${_toolchain_compiler}"
+      return 0
+   fi
+
+   log_fluff "Toolchain name doesn't match expected pattern: ${name}"
+   return 1
+}
+
+
+make::common::r_toolchain_tool()
+{
+   log_entry "make::common::r_toolchain_tool" "$@"
+
+   local toolname="$1"
+
+   RVAL="${toolname}"
+
+   if [ ! -z "${DEFINITION_TOOLCHAIN_TOOLS_ROOT}" ]
+   then
+      local toolpath="${DEFINITION_TOOLCHAIN_TOOLS_ROOT}/bin/${toolname}"
+      if [ -x "${toolpath}" ]
+      then
+         RVAL="${toolpath}"
+         log_debug "Found toolchain tool: ${RVAL}"
+         return 0
+      fi
+   fi
+
+   log_debug "Using default tool: ${toolname}"
+}
+
+
+make::common::r_cross_compilation_env()
+{
+   log_entry "make::common::r_cross_compilation_env" "$@"
+
+   local c_compiler="$1"
+   local cxx_compiler="$2"
+
+   RVAL=""
+
+   if [ -z "${DEFINITION_TOOLCHAIN_TOOLS_ROOT}" ]
+   then
+      return
+   fi
+
+   # Parse toolchain to get compiler name and triplet
+   local toolchain="${DEFINITION_TOOLCHAIN_CMAKE:-${DEFINITION_TOOLCHAIN}}"
+   local _toolchain_build _toolchain_host _toolchain_triplet _toolchain_compiler
+
+   if ! make::common::r_parse_toolchain_name "${toolchain}"
+   then
+      log_fluff "Could not parse toolchain name, skipping cross-compilation tools"
+      return
+   fi
+
+   local cc cxx ar ranlib strip
+
+   # Determine tool names based on compiler
+   case "${_toolchain_compiler}" in
+      *clang*)
+         # Try triplet-prefixed tools first
+         make::common::r_toolchain_tool "${_toolchain_triplet}-clang"
+         if [ -x "${RVAL}" ]
+         then
+            cc="${RVAL}"
+         else
+            log_warning "Cross-compiler ${_toolchain_triplet}-clang not found, falling back to clang"
+            make::common::r_toolchain_tool "clang"
+            cc="${RVAL}"
+         fi
+
+         make::common::r_toolchain_tool "${_toolchain_triplet}-clang++"
+         if [ -x "${RVAL}" ]
+         then
+            cxx="${RVAL}"
+         else
+            make::common::r_toolchain_tool "clang++"
+            cxx="${RVAL}"
+         fi
+
+         make::common::r_toolchain_tool "${_toolchain_triplet}-ar"
+         if [ -x "${RVAL}" ]
+         then
+            ar="${RVAL}"
+         else
+            make::common::r_toolchain_tool "llvm-ar"
+            ar="${RVAL}"
+         fi
+
+         make::common::r_toolchain_tool "${_toolchain_triplet}-ranlib"
+         if [ -x "${RVAL}" ]
+         then
+            ranlib="${RVAL}"
+         else
+            make::common::r_toolchain_tool "llvm-ranlib"
+            ranlib="${RVAL}"
+         fi
+
+         make::common::r_toolchain_tool "${_toolchain_triplet}-strip"
+         if [ -x "${RVAL}" ]
+         then
+            strip="${RVAL}"
+         else
+            make::common::r_toolchain_tool "llvm-strip"
+            strip="${RVAL}"
+         fi
+      ;;
+
+      *gcc*)
+         # Try triplet-prefixed tools first
+         make::common::r_toolchain_tool "${_toolchain_triplet}-gcc"
+         if [ -x "${RVAL}" ]
+         then
+            cc="${RVAL}"
+         else
+            log_warning "Cross-compiler ${_toolchain_triplet}-gcc not found, falling back to gcc"
+            make::common::r_toolchain_tool "gcc"
+            cc="${RVAL}"
+         fi
+
+         make::common::r_toolchain_tool "${_toolchain_triplet}-g++"
+         if [ -x "${RVAL}" ]
+         then
+            cxx="${RVAL}"
+         else
+            make::common::r_toolchain_tool "g++"
+            cxx="${RVAL}"
+         fi
+
+         make::common::r_toolchain_tool "${_toolchain_triplet}-ar"
+         if [ -x "${RVAL}" ]
+         then
+            ar="${RVAL}"
+         else
+            make::common::r_toolchain_tool "ar"
+            ar="${RVAL}"
+         fi
+
+         make::common::r_toolchain_tool "${_toolchain_triplet}-ranlib"
+         if [ -x "${RVAL}" ]
+         then
+            ranlib="${RVAL}"
+         else
+            make::common::r_toolchain_tool "ranlib"
+            ranlib="${RVAL}"
+         fi
+
+         make::common::r_toolchain_tool "${_toolchain_triplet}-strip"
+         if [ -x "${RVAL}" ]
+         then
+            strip="${RVAL}"
+         else
+            make::common::r_toolchain_tool "strip"
+            strip="${RVAL}"
+         fi
+      ;;
+
+      *)
+         log_fluff "Unknown compiler '${_toolchain_compiler}', skipping cross-compilation tools"
+         return
+      ;;
+   esac
+
+   RVAL=""
+   r_concat "${RVAL}" "CC='${cc}'"
+   r_concat "${RVAL}" "CXX='${cxx}'"
+   r_concat "${RVAL}" "AR='${ar}'"
+   r_concat "${RVAL}" "RANLIB='${ranlib}'"
+   r_concat "${RVAL}" "STRIP='${strip}'"
+}
+
+
 make::common::__std_flags()
 {
    log_entry "make::common::__std_flags" "$@"
@@ -891,7 +1089,7 @@ make::common::build_fail()
 
    local logfile="$1"
    local command="$2"
-   local rval="$3"
+   local errcode="$3"
    local greplog="${4:-YES}"
 
    if [ "${greplog}" = 'YES' ] && [ -f "${logfile}" ]
@@ -936,7 +1134,7 @@ ${C_INFO}(${logfile#"${MULLE_USER_PWD}/"})"
       fi
    fi
 
-   case "$rval" in 
+   case "$errcode" in
       127)
          if [ -z "${MULLE_VIRTUAL_ROOT}" ]
          then
@@ -958,7 +1156,7 @@ ${C_RESET_BOLD}   mulle-sde tool --global add --optional ${command}"
       ;;
 
       *)
-         fail "${C_RESET_BOLD}${command}${C_ERROR} failed with $rval (${PWD#${MULLE_USER_PWD}/})"
+         fail "${C_RESET_BOLD}${command}${C_ERROR} failed with $errcode (${PWD#${MULLE_USER_PWD}/})"
       ;;
    esac
 }

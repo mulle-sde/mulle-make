@@ -1145,6 +1145,7 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\
                   "${cmake_pp}" \
                   "'${CMAKE}'" "${CMAKEFLAGS}" \
                                "${cmakeflags}" \
+                               "${CMAKE_DEBUG_FLAGS}" \
                                -S "'${translated_projectdir}'" \
                                -B "'${translated_kitchendir}'" | ${grepper}
          then

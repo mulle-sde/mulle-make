@@ -186,7 +186,7 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\""
          fi
       fi
 
-      local rval 
+      local rc
 
       if [ ! -z "${bootstrapper}" ]
       then
@@ -197,9 +197,9 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\""
                                                       "${env_common}" \
                                                       "./${bootstrapper}" | ${grepper}
          then
-            rval="${PIPESTATUS[ 0]}"
+            rc="${PIPESTATUS[ 0]}"
             make::plugin::autoconf::set_needs_rerun "${projectfile}"
-            make::common::build_fail "${logfile1}" "${bootstrapper}" "${rval}" "${greplog}"
+            make::common::build_fail "${logfile1}" "${bootstrapper}" "${rc}" "${greplog}"
          fi
       else
          if ! [ -f "aclocal4.am" ]
@@ -210,9 +210,9 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\""
                                            "${AUTORECONF}" \
                                            "${autoreconf_flags}" | ${grepper}
             then
-               rval="${PIPESTATUS[ 0]}"
+               rc="${PIPESTATUS[ 0]}"
                make::plugin::autoconf::set_needs_rerun "${projectfile}"
-               make::common::build_fail "${logfile1}" "autoreconf" "${rval}" "${greplog}"
+               make::common::build_fail "${logfile1}" "autoreconf" "${rc}" "${greplog}"
             fi
          fi
 
@@ -221,9 +221,9 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\""
                                         "${AUTOCONF}" \
                                         "${autoconf_flags}" | ${grepper}
          then
-            rval="${PIPESTATUS[ 0]}"
+            rc="${PIPESTATUS[ 0]}"
             make::plugin::autoconf::set_needs_rerun "${projectfile}"
-            make::common::build_fail "${logfile2}" "autoconf" "${rval}" "${greplog}"
+            make::common::build_fail "${logfile2}" "autoconf" "${rc}" "${greplog}"
          fi
       fi
    ) || exit 1
