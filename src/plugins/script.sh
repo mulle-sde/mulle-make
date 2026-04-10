@@ -149,6 +149,21 @@ make::plugin::script::build()
    make::build::r_env_flags
    env_common="${RVAL}"
 
+   # Add cross-compilation tools (CC, CXX, AR, RANLIB, STRIP)
+   make::common::r_cross_compilation_env "${DEFINITION_CC}" "${DEFINITION_CXX}"
+   if [ ! -z "${RVAL}" ]
+   then
+      r_concat "${env_common}" "${RVAL}"
+      env_common="${RVAL}"
+   fi
+
+   # Export toolchain root to script
+   if [ ! -z "${DEFINITION_TOOLCHAIN_TOOLS_ROOT}" ]
+   then
+      r_concat "${env_common}" "MULLE_TOOLCHAIN_TOOLS_ROOT='${DEFINITION_TOOLCHAIN_TOOLS_ROOT}'"
+      env_common="${RVAL}"
+   fi
+
    local arguments
 
    if [ "${OPTION_CORES:-0}" -eq 0 ]

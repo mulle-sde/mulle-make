@@ -522,6 +522,13 @@ make::plugin::cmake::build()
    [ -z "${logsdir}" ] && _internal_fail "logsdir is empty"
    [ -z "${sdk}" ] && _internal_fail "sdk is empty"
 
+   # Check for cross-compilation without toolchain
+   if [ "${platform}" != "${MULLE_UNAME}" -a -z "${DEFINITION_TOOLCHAIN}" -a -z "${DEFINITION_TOOLCHAIN_CMAKE}" ]
+   then
+      fail "Cross-compiling from ${MULLE_UNAME} to ${platform} requires a toolchain.
+${C_INFO}Set DEFINITION_TOOLCHAIN or DEFINITION_TOOLCHAIN_CMAKE, or ensure mulle-craft configures the toolchain automatically."
+   fi
+
    # CMAKE=make::plugin::cmake::debug_cmake
 
    # need this now
@@ -1082,11 +1089,16 @@ found in \"${absprojectdir#"${MULLE_USER_PWD}/"}\""
    make::common::r_build_log_name "${logsdir}" "cmake"
    logfile1="${RVAL}"
 
-   make::common::r_build_log_name "${logsdir}" "cmake" # "${logname2}"
+   make::common::r_build_log_name "${logsdir}" "cmake"
    logfile2="${RVAL}"
 
-   make::common::r_build_log_name "${logsdir}" "cmake" # "${logname2}"
-   logfile3="${RVAL}"
+   if [ "${cmd}" = "install" ]
+   then
+      make::common::r_build_log_name "${logsdir}" "cmake"
+      logfile3="${RVAL}"
+   else
+      logfile3="/dev/null"
+   fi
 
    local teefile1
    local teefile2
@@ -1106,8 +1118,14 @@ found in \"${absprojectdir#"${MULLE_USER_PWD}/"}\""
       logfile2="/dev/null"
       logfile3="/dev/null"
    else
-      _log_verbose "Build logs will be in \"${logfile1#"${MULLE_USER_PWD}/"}\" \
+      if [ "${cmd}" = "install" ]
+      then
+         _log_verbose "Build logs will be in \"${logfile1#"${MULLE_USER_PWD}/"}\" \
 and \"${logfile2#"${MULLE_USER_PWD}/"}\" and \"${logfile3#"${MULLE_USER_PWD}/"}\" "
+      else
+         _log_verbose "Build logs will be in \"${logfile1#"${MULLE_USER_PWD}/"}\" \
+and \"${logfile2#"${MULLE_USER_PWD}/"}\" "
+      fi
    fi
 
    if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]

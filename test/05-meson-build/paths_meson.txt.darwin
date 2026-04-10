@@ -1,5 +1,6 @@
 --backend ninja
 --buildtype release
+--libdir lib
 05-meson-build
 [CPPFLAGS=-isystem /usr/local/include -isystem /usr/include -F/Network/Library/Frameworks -F/Library/Frameworks]
 [LDFLAGS=-L/usr/local/lib -L/usr/lib -F/Network/Library/Frameworks -F/Library/Frameworks]

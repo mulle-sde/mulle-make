@@ -1195,6 +1195,10 @@ make::common::r_build_log_name()
          redirect_exekutor "${countfile}" printf "%s\n" "${count}"
          exekutor touch "${logfile}"
          RVAL="${logfile}"
+         if [ "${OPTION_SHOW_LOG_INFO}" = 'YES' ]
+         then
+            log_info "Log: ${C_RESET_BOLD}${logfile#${MULLE_USER_PWD}/}"
+         fi
          return
       fi
    done

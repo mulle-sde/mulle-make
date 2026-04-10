@@ -54,6 +54,7 @@ EOF
    --no-ninja                 : prefer make over ninja
    --release                  : build with configuration "Release" (Default)
    --mulle-test               : build for mulle-test
+   --show-log-info            : print log file paths before each build step
    --verbose-make             : verbose make output
 EOF
    case "${MULLE_UNAME}" in
@@ -1137,6 +1138,10 @@ make::build::common()
 
          --prefer-xcodebuild)
             DEFINITION_PREFER_XCODEBUILD='YES'
+         ;;
+
+         --show-log-info)
+            OPTION_SHOW_LOG_INFO='YES'
          ;;
 
          --rerun-cmake)
