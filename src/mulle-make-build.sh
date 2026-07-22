@@ -97,6 +97,7 @@ EOF
    --log-dir <dir>            : specify log directory
    --no-determine-sdk         : don't try to figure out the default SDK
    --phase <name>             : run make phase (for parallel builds)
+   --syntax-check             : compile-only with -fsyntax-only (no link)
    --platform <name>          : platform to build for (Default)
    --project-name <name>      : explicitly set project name
    --project-language <c|cpp> : set project language
@@ -852,6 +853,7 @@ make::build::common()
    local OPTION_LOAD
    local OPTION_RERUN_CMAKE
    local OPTION_SET_IS_PLUS
+   local OPTION_SYNTAX_CHECK
    local OPTION_TARGET
 
    local state
@@ -1142,6 +1144,10 @@ make::build::common()
 
          --show-log-info)
             OPTION_SHOW_LOG_INFO='YES'
+         ;;
+
+         --syntax-check)
+            OPTION_SYNTAX_CHECK='YES'
          ;;
 
          --rerun-cmake)

@@ -147,6 +147,15 @@ make::plugin::meson::build()
    local cxx_flags="${_cxxflags}"
    local ld_flags="${_ldflags}"
    local pkgconfigpath="${_pkgconfigpath}"
+
+   if [ "${OPTION_SYNTAX_CHECK}" = 'YES' ]
+   then
+      r_concat "${c_flags}" "-fsyntax-only"
+      c_flags="${RVAL}"
+      r_concat "${cxx_flags}" "-fsyntax-only"
+      cxx_flags="${RVAL}"
+      log_warning "syntax-check with meson may fail at link stage (expected)"
+   fi
    #
    # not really sure about what MESON wants, assume its like configure
    # and does CPPFLAGS

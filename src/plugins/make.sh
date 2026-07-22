@@ -84,6 +84,15 @@ make::plugin::make::build()
    local ld_flags="${_ldflags}"
    local pkgconfigpath="${_pkgconfigpath}"
 
+   if [ "${OPTION_SYNTAX_CHECK}" = 'YES' ]
+   then
+      r_concat "${c_flags}" "-fsyntax-only"
+      c_flags="${RVAL}"
+      r_concat "${cxx_flags}" "-fsyntax-only"
+      cxx_flags="${RVAL}"
+      log_warning "syntax-check with make may fail at link stage (expected)"
+   fi
+
    local arguments
 
    dstdir="${dstdir}"

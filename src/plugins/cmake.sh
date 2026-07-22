@@ -672,6 +672,28 @@ ${C_INFO}Set DEFINITION_TOOLCHAIN or DEFINITION_TOOLCHAIN_CMAKE, or ensure mulle
       cmakeflags="${RVAL}"
    fi
 
+   if [ "${OPTION_SYNTAX_CHECK}" = 'YES' ]
+   then
+      # compile only, no link
+      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "MULLE_MAKE_PHASE" "COMPILE"
+      cmakeflags="${RVAL}"
+
+      # skip cmake compiler test (it fails with -fsyntax-only)
+      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_C_COMPILER_FORCED" "ON"
+      cmakeflags="${RVAL}"
+      make::plugin::cmake::r_cmakeflags_add_flag "${cmakeflags}" "CMAKE_CXX_COMPILER_FORCED" "ON"
+      cmakeflags="${RVAL}"
+
+      # append -fsyntax-only to compile flags
+      # cmake always adds -c (compile to object file) inside its build rules.
+      # With -fsyntax-only no object file is produced, making -c unused.
+      # Suppress the resulting -Wunused-command-line-argument warning.
+      r_concat "${c_flags}" "-fsyntax-only -Wno-unused-command-line-argument"
+      c_flags="${RVAL}"
+      r_concat "${cxx_flags}" "-fsyntax-only -Wno-unused-command-line-argument"
+      cxx_flags="${RVAL}"
+   fi
+
    #
    # For tcc can add some cmake values like CMAKE_C_COMPILER_WORKS=ON
    # but tcc doesn't work well on OSX because it can't link

@@ -82,6 +82,15 @@ make::plugin::configure::build()
    local ld_flags="${_ldflags}"
    local pkgconfigpath="${_pkgconfigpath}"
 
+   if [ "${OPTION_SYNTAX_CHECK}" = 'YES' ]
+   then
+      r_concat "${c_flags}" "-fsyntax-only"
+      c_flags="${RVAL}"
+      r_concat "${cxx_flags}" "-fsyntax-only"
+      cxx_flags="${RVAL}"
+      log_warning "syntax-check with configure/autoconf may fail at link stage (expected)"
+   fi
+
 #
 # cpp_flags should not be duplicated into CFLAGS and CXXFLAGS for configure.
 # cmake has no CMAKE_CPP_FLAGS so we have to do it there
