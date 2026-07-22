@@ -1,3 +1,7 @@
+### 3.0.1
+
+Various small improvements
+
 # 3.0.0
 
 feat: environment variables as base for definitions
