@@ -36,3 +36,4 @@ build-*/
 test/01-cmake-build/.mulle/etc
 dox.unreleased
 .graveyard/
+.roam/
