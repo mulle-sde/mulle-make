@@ -182,8 +182,6 @@ dump_library()
 
    [ -z "${libraryname}" ] && echo "empty libraryname" >&2 && exit 1
 
-   local filename
-
    filename="`find_library "${libraryname}"`"
    if [ -z "${filename}" ]
    then
