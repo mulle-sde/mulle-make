@@ -685,7 +685,7 @@ make::build::build()
          fail "No permission to run script \"${DEFINITION_BUILD_SCRIPT}\".
 ${C_INFO}Use \"--allow-build-script ${DEFINITION_BUILD_SCRIPT}\" option or enable the
 script permanently:
-${C_RESET_BOLD}   mulle-sde environment --global set --concat MULLE_CRAFT_USE_SCRIPTS ${DEFINITION_BUILD_SCRIPT}
+${C_RESET_BOLD}   mulle-sde environment --global set --append MULLE_CRAFT_USE_SCRIPTS ${DEFINITION_BUILD_SCRIPT}
 ${C_RESET_BOLD}   mulle-sde craft --build-style ${configuration} --allow-build-script ${DEFINITION_BUILD_SCRIPT}"
       fi
 
