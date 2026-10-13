@@ -7,6 +7,7 @@
       username="mulle-sde";
       reponame="mulle-make";
       homepage="https://github.com/mulle-sde/mulle-make";
-      license="BSD-3-Clause"
+      license="BSD-3-Clause";
+      version="3.1.1"
    };
 }
