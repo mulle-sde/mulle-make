@@ -1,3 +1,11 @@
+### 3.1.2
+
+* fix for cmake --install
+
+
+
+* Fix error message suggesting the wrong `mulle-sde environment` option (`--append` instead of `--concat`) when enabling a build script
+
 ### 3.1.1
 
 
