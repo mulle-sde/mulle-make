@@ -978,6 +978,29 @@ ${C_INFO}Set DEFINITION_TOOLCHAIN or DEFINITION_TOOLCHAIN_CMAKE, or ensure mulle
       cmakeflags3="-v"
    fi
 
+   #
+   # 'cmake --install' runs the cmake_install.cmake that a previous configure
+   # has generated. If that configure did not receive a CMAKE_INSTALL_PREFIX,
+   # as it happens for a build that has no destination, then cmake defaults it
+   # to /usr/local and bakes it into that file. Passing the destination to
+   # --install overrides it, no matter what cache or file contain.
+   # Only '--install' understands it, so not the '--build --target install'
+   # of pre cmake 3.15.
+   #
+   local cmakeinstallflags
+
+   if [ "${cmake_is_3_15_or_later}" = 'YES' -a ! -z "${dstdir}" ]
+   then
+      local escaped_dstdir
+
+      make::common::r_translated_path "${dstdir}"
+      r_absolutepath "${RVAL}"
+      r_escaped_singlequotes "${RVAL}"
+      escaped_dstdir="${RVAL}"
+
+      cmakeinstallflags="--prefix '${escaped_dstdir}'"
+   fi
+
    local cores
 
    # cmake install can't take -j 1 apparently... build does though
@@ -1100,6 +1123,7 @@ found in \"${absprojectdir#"${MULLE_USER_PWD}/"}\""
    log_setting "cmakeflags:    ${cmakeflags}"
    log_setting "cmakeflags2:   ${cmakeflags2}"
    log_setting "cmakeflags3:   ${cmakeflags3}"
+   log_setting "cmakeinstallflags: ${cmakeinstallflags}"
    log_setting "env_common:    ${env_common}"
 
    local logfile1
@@ -1227,7 +1251,8 @@ and \"${logfile2#"${MULLE_USER_PWD}/"}\" "
             if ! logging_tee_eval_exekutor "${logfile3}" "${teefile3}" \
                      "${env_common}" \
                      "'${CMAKE2}'" --install "'${translated_kitchendir}'" \
-                                   "${cmakeflags3}" | ${grepper}
+                                   "${cmakeflags3}" \
+                                   "${cmakeinstallflags}" | ${grepper}
             then
                make::common::build_fail "${logfile3}" "cmake" "${PIPESTATUS[ 0]}" "${greplog}"
             fi
